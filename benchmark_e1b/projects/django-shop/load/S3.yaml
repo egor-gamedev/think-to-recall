@@ -1,0 +1,157 @@
+segment: S3
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [G08]
+    text: |
+      Привет. Покупают у нас в основном частники, но есть юрлица — веломастерские, — они платят по счёту. Сейчас счёт я делаю руками в Word. Хочу генерить PDF из заказа. Чем лучше?
+  - role: assistant
+    facts: []
+    text: |
+      Для PDF из Django удобнее всего WeasyPrint: вы верстаете счёт обычным HTML-шаблоном с CSS, а он превращает его в PDF.
+
+      ```python
+      from weasyprint import HTML
+
+      def invoice_pdf(request, order_id):
+          order = get_object_or_404(Order.objects.select_related("company"), pk=order_id, company__isnull=False)
+          html = render_to_string("invoices/invoice.html", {"order": order, "seller": settings.SELLER_REQUISITES})
+          pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
+          resp = HttpResponse(pdf, content_type="application/pdf")
+          resp["Content-Disposition"] = f'inline; filename="schet-{order.number}.pdf"'
+          return resp
+      ```
+
+      В шаблоне счёта: номер и дата, реквизиты продавца и покупателя (ИНН, КПП, банк), таблица позиций, итог прописью. Сумму прописью делайте библиотекой `num2words` с `lang="ru", to="currency"`.
+
+      Нумерацию счетов ведите отдельной последовательностью в базе, а не по id заказа, — у бухгалтерии обычно свои требования к сквозной нумерации.
+  - role: user
+    facts: [G13]
+    text: |
+      WeasyPrint завёлся. По налогам: магазин на УСН без НДС, цены в рублях — в счёте пишу «Без НДС», так? И второе: в докере шрифты кракозябрами, шрифт PT Sans.
+  - role: assistant
+    facts: []
+    text: |
+      Да, при УСН без НДС в счёте в графе налога пишут «Без НДС», а в итоге — сумму без выделения налога; можно добавить строку-основание (применение УСН). Держите это в шаблоне одной настройкой, а не текстом в разметке, — если налоговый режим поменяется, переделывать придётся в одном месте.
+
+      По шрифтам: в slim-образе нет шрифтов с кириллицей, а WeasyPrint берёт системные через fontconfig. Либо поставьте шрифты в образ, либо подключите их через `@font-face` в CSS счёта:
+
+      ```dockerfile
+      RUN apt-get update && apt-get install -y --no-install-recommends \
+          libpango-1.0-0 libpangoft2-1.0-0 fonts-paratype && rm -rf /var/lib/apt/lists/*
+      ```
+
+      ```css
+      @font-face { font-family: "PT Sans"; src: url("/static/fonts/PTSans-Regular.ttf"); }
+      body { font-family: "PT Sans", sans-serif; }
+      ```
+
+      Через `@font-face` надёжнее: не зависите от пакетов дистрибутива, и счёт выглядит одинаково локально и на сервере. Убедитесь, что `base_url` указан, иначе относительный путь к шрифту не разрешится.
+  - role: user
+    facts: [G09]
+    text: |
+      Шрифт подключил через font-face, всё ок. Теперь поиск. Он у нас на полнотекстовом поиске PostgreSQL. Проблема: по артикулам с дефисами не находит, например «SM-BB52» ищут как «smbb52» или «sm bb52».
+  - role: assistant
+    facts: []
+    text: |
+      Полнотекстовый парсер PostgreSQL режет «SM-BB52» на части по дефису и по-разному нормализует. Для артикулов лучше отдельное нормализованное поле и точное/префиксное совпадение по нему:
+
+      ```python
+      class Product(models.Model):
+          sku = models.CharField(max_length=64)
+          sku_norm = models.CharField(max_length=64, db_index=True, editable=False)
+
+          def save(self, *args, **kwargs):
+              self.sku_norm = re.sub(r"[^0-9a-z]", "", self.sku.lower())
+              super().save(*args, **kwargs)
+      ```
+
+      ```python
+      def search(q: str):
+          norm = re.sub(r"[^0-9a-z]", "", q.lower())
+          by_sku = Product.objects.filter(sku_norm__startswith=norm) if len(norm) >= 3 else Product.objects.none()
+          vector = SearchVector("name", weight="A", config="russian") + SearchVector("description", weight="C", config="russian")
+          by_text = Product.objects.annotate(rank=SearchRank(vector, SearchQuery(q, config="russian"))).filter(rank__gt=0.05)
+          return list(by_sku[:10]) + list(by_text.order_by("-rank")[:40])
+      ```
+
+      Для `bulk_update` из импорта `save()` не вызывается — заполните `sku_norm` и там, либо сделайте его генерируемой колонкой в PostgreSQL.
+  - role: user
+    facts: [G09r]
+    text: |
+      Сделаю генерируемой колонкой. Мне советовали всё бросить и поставить Elasticsearch. Отказался: лишний сервис, а каталог у нас небольшой, PostgreSQL справляется.
+  - role: assistant
+    facts: []
+    text: |
+      На 30 тысяч позиций PostgreSQL действительно хватает, а Elasticsearch добавил бы синхронизацию индекса, ещё один сервис в мониторинге и отдельную память.
+
+      Чтобы выжать из PostgreSQL больше:
+      - **GIN-индекс** по вектору, иначе поиск будет сканировать таблицу:
+
+      ```sql
+      ALTER TABLE shop_product ADD COLUMN search_vec tsvector
+        GENERATED ALWAYS AS (setweight(to_tsvector('russian', name), 'A') || setweight(to_tsvector('russian', coalesce(description, '')), 'C')) STORED;
+      CREATE INDEX product_search_idx ON shop_product USING GIN (search_vec);
+      ```
+
+      - **Синонимы** для частых случаев («звезда» = «звёздочка», «каретка» = «BB»), через словарь синонимов или простую замену в запросе.
+      - **Подсветка** найденных слов через `SearchHeadline` — пользователям приятно.
+  - role: user
+    facts: [G14]
+    text: |
+      Индекс добавил, поиск стал мгновенный. Другая беда: фотки товаров. Они лежат в Яндекс Object Storage, миниатюры режет imgproxy на лету. На первой загрузке каталога миниатюры тормозят.
+  - role: assistant
+    facts: []
+    text: |
+      imgproxy режет картинку при каждом запросе, если перед ним нет кэша. Первый просмотр каждой миниатюры всегда будет медленным, но повторные должны отдаваться из кэша.
+
+      1. **Кэш перед imgproxy**: CDN (у Яндекс Облака есть Cloud CDN) или nginx с `proxy_cache`:
+
+      ```nginx
+      proxy_cache_path /var/cache/imgproxy levels=1:2 keys_zone=img:50m max_size=5g inactive=30d;
+      location /img/ {
+          proxy_pass http://imgproxy:8080/;
+          proxy_cache img;
+          proxy_cache_valid 200 30d;
+          add_header X-Cache $upstream_cache_status;
+      }
+      ```
+
+      2. **Фиксированный набор размеров** (например, 240, 480, 960) — чтобы кэш переиспользовался, а не плодил варианты.
+      3. **Прогрев**: после загрузки нового товара фоновой задачей запросить его миниатюры, чтобы первый покупатель не ждал.
+      4. **Формат**: imgproxy умеет отдавать WebP/AVIF по заголовку `Accept` — включите `IMGPROXY_ENABLE_WEBP_DETECTION=true`.
+  - role: user
+    facts: [G15]
+    text: |
+      Поставлю nginx-кэш. И последнее на сегодня: заказами и ценами у нас занимается менеджер через Django admin. Он не технарь, ему неудобно: список заказов огромный, не видно главного. Можно его как-то очеловечить?
+  - role: assistant
+    facts: []
+    text: |
+      Django admin хорошо настраивается под нетехнического человека:
+
+      ```python
+      @admin.register(Order)
+      class OrderAdmin(admin.ModelAdmin):
+          list_display = ("number", "created_at", "customer_phone", "total_rub", "status_badge", "delivery_status")
+          list_filter = ("status", ("created_at", admin.DateFieldListFilter), "payment_method")
+          search_fields = ("number", "contact_phone", "company__inn")
+          date_hierarchy = "created_at"
+          list_per_page = 50
+          readonly_fields = ("payment_id", "created_at")
+          actions = ["mark_shipped"]
+
+          @admin.display(description="Статус")
+          def status_badge(self, obj):
+              colors = {"new": "#2563eb", "paid": "#16a34a", "cancelled": "#9ca3af"}
+              return format_html('<b style="color:{}">{}</b>', colors.get(obj.status, "#000"), obj.get_status_display())
+
+          @admin.display(description="Сумма, ₽")
+          def total_rub(self, obj):
+              return f"{obj.total:,.0f}".replace(",", " ")
+      ```
+
+      Плюс: по умолчанию фильтр «Новые и оплаченные», понятные русские названия полей (`verbose_name`), и убрать из формы технические поля. Если захочется современнее — тема `django-unfold`, но начните с настройки списков.
+  - role: user
+    facts: []
+    text: |
+      Менеджер доволен, цветные статусы зашли. Спасибо.

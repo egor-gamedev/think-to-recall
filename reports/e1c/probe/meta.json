@@ -1,0 +1,30 @@
+{
+ "backend": "nvidia",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b",
+ "encoder": "e5:intfloat/multilingual-e5-base",
+ "limits": {
+  "context": 6600,
+  "answer": 1500,
+  "memory": 600,
+  "summary": 500,
+  "system": 250,
+  "window": 3750
+ },
+ "variants": [
+  1,
+  2,
+  6,
+  7
+ ],
+ "questions": [
+  "Q01",
+  "Q02",
+  "Q03",
+  "Q04",
+  "Q05"
+ ],
+ "projects": [
+  "crypto-wallet"
+ ],
+ "started": "2026-10-22 20:27:12"
+}

@@ -1,0 +1,13 @@
+{
+  "id": "egor123hhh/ctxgraph-e1d-rerank-run",
+  "title": "ctxgraph-e1d-rerank-run",
+  "code_file": "run.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": ["egor123hhh/ctxgraph-e1d-rerank"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

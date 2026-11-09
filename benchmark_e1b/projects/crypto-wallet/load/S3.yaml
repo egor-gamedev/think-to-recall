@@ -1,0 +1,224 @@
+segment: S3
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: []
+    text: |
+      Привет. Неделя прошла, онбординг собрали. Сейчас про бэк. Курсы валют тянем с CoinGecko каждые 5 минут, и при каждом запросе от клиента лезем в базу. Можно как-то проще?
+  - role: assistant
+    facts: []
+    text: |
+      Курсы обновляются раз в 5 минут, а читаются постоянно — значит, держите последний срез в памяти процесса и отдавайте из неё, а в базу пишите только историю.
+
+      ```ts
+      @Injectable()
+      export class RatesService implements OnModuleInit {
+        private latest = new Map<string, number>(); // 'eth:eur' -> 2345.67
+        private updatedAt = 0;
+
+        constructor(private readonly gecko: CoinGeckoClient, private readonly repo: PriceRepo) {}
+
+        onModuleInit() { void this.refresh(); setInterval(() => void this.refresh(), 5 * 60_000); }
+
+        async refresh() {
+          const rows = await this.gecko.simplePrice(['ethereum', 'matic-network'], ['eur', 'usd', 'rub']);
+          for (const r of rows) this.latest.set(`${r.asset}:${r.fiat}`, r.price);
+          this.updatedAt = Date.now();
+          await this.repo.insertMany(rows);
+        }
+
+        get(asset: string, fiat: string) {
+          return { price: this.latest.get(`${asset}:${fiat}`), updatedAt: this.updatedAt };
+        }
+      }
+      ```
+
+      Плюс HTTP-кэш на ответе: `Cache-Control: public, max-age=60`. Клиенты будут реже ходить, а если перед бэком появится CDN или обратный прокси, он тоже сможет кэшировать.
+  - role: user
+    facts: [F05b]
+    text: |
+      Сделал. И вот ещё что решили, пока считали деньги: от PostgreSQL отказываемся. Историю цен держим в SQLite прямо на том же сервере — данных копейки, отдельный постгрес ради этого дорого и лишний сервис поддерживать. Prisma с SQLite же дружит?
+  - role: assistant
+    facts: []
+    text: |
+      Дружит, и для такого объёма SQLite — разумный выбор. Что поменять:
+
+      ```prisma
+      datasource db {
+        provider = "sqlite"
+        url      = "file:/data/kladez.db"
+      }
+
+      model PricePoint {
+        asset String
+        fiat  String
+        ts    DateTime
+        price Decimal
+        @@id([asset, fiat, ts])
+      }
+      ```
+
+      Нюансы перехода:
+      - **Типы.** В SQLite нет `TIMESTAMPTZ` и настоящего `NUMERIC` — Prisma хранит `DateTime` как текст/число, `Decimal` как текст. Для графиков это не важно, но агрегаты (`avg`) считайте в коде или через `CAST`.
+      - **`date_trunc`** из PostgreSQL нет — группировку по дням делайте через `strftime('%Y-%m-%d', ts)`.
+      - **Режим WAL.** Включите `PRAGMA journal_mode=WAL;`, чтобы чтение не блокировалось записью раз в 5 минут.
+      - **Миграции.** `prisma migrate` работает и с SQLite; старые миграции под PostgreSQL удалите и сгенерируйте заново, они несовместимы.
+      - **Перенос данных.** Если в PostgreSQL уже есть история — выгрузите в CSV и загрузите скриптом; если там пара недель тестовых данных, проще начать с нуля.
+  - role: user
+    facts: []
+    text: |
+      Тестовые там, начнём с нуля. Слушай, в dev-сборке мобилки при запросе к локальному API ловлю CORS ошибку. Хотя это же мобилка, откуда там CORS?
+  - role: assistant
+    facts: []
+    text: |
+      В нативном приложении CORS действительно нет — браузерного механизма там не существует. Значит, запрос идёт не из нативного кода. Варианты:
+
+      1. Вы открываете экран через отладчик в Chrome (старый remote JS debugging) — тогда JS выполняется в браузере, и CORS появляется. С Hermes и новым дебаггером такого быть не должно.
+      2. Запрос делает WebView (например, страница, встроенная в приложение) — там CORS настоящий.
+      3. Ошибка не CORS, а `Network request failed`, которую кто-то в коде оборачивает в сообщение про CORS.
+
+      Чаще всего на Android проблема в другом: эмулятор не видит `localhost` хоста. Используйте `10.0.2.2` вместо `localhost`, а для HTTP без TLS добавьте в debug-манифест `android:usesCleartextTraffic="true"`.
+
+      Если всё-таки хотите разрешить CORS на бэке для отладки:
+
+      ```ts
+      app.enableCors({ origin: process.env.NODE_ENV === 'development' ? true : false });
+      ```
+  - role: user
+    facts: [F11]
+    text: |
+      Был remote debugging, выключил — прошло. Теперь деплой. Хостимся на одном VPS в Hetzner, всё в Docker Compose. Kubernetes не берём, нам двоим он не нужен. Как сделать, чтобы обновление было без простоя хотя бы минимального?
+  - role: assistant
+    facts: []
+    text: |
+      На одном сервере с Compose проще всего так: обратный прокси (Caddy или Traefik) перед API и выкатка новой версии рядом со старой.
+
+      ```yaml
+      services:
+        caddy:
+          image: caddy:2
+          ports: ["80:80", "443:443"]
+          volumes: ["./Caddyfile:/etc/caddy/Caddyfile", "caddy_data:/data"]
+        api:
+          image: ghcr.io/kladez/api:${API_TAG}
+          env_file: .env
+          volumes: ["db:/data"]
+          healthcheck:
+            test: ["CMD", "wget", "-qO-", "http://localhost:3000/health"]
+            interval: 10s
+      volumes: { caddy_data: {}, db: {} }
+      ```
+
+      Выкатка: `docker compose pull api && docker compose up -d --no-deps api`. Простой будет несколько секунд, пока стартует контейнер; для MVP это нормально. Если нужно совсем без простоя — поднимайте `api_blue` и `api_green` и переключайте upstream в Caddy, но это уже усложнение.
+
+      Важно для SQLite: том `db` должен быть один и тот же, и одновременно с базой должен работать только один экземпляр API, иначе получите блокировки записи.
+  - role: user
+    facts: []
+    text: |
+      Понял, сине-зелёный не надо. Бэкапы как сделать? Сервер один, если умрёт — всё.
+  - role: assistant
+    facts: []
+    text: |
+      С SQLite бэкап — это копия одного файла, но копировать его нужно правильно, не `cp` во время записи.
+
+      ```bash
+      # /opt/kladez/backup.sh
+      set -euo pipefail
+      ts=$(date +%F-%H%M)
+      docker compose exec -T api sqlite3 /data/kladez.db ".backup '/data/backup-$ts.db'"
+      docker compose cp api:/data/backup-$ts.db /opt/kladez/backups/
+      docker compose exec -T api rm /data/backup-$ts.db
+      rclone copy /opt/kladez/backups/ hetzner-storage:kladez-backups --max-age 2d
+      find /opt/kladez/backups -mtime +7 -delete
+      ```
+
+      Крон раз в сутки. Хранилище — Hetzner Storage Box или любой S3-совместимый бакет в другом дата-центре. Раз в месяц проверяйте восстановление: скачайте бэкап и откройте его `sqlite3 backup.db 'select count(*) from PricePoint'`.
+
+      И помните, что на сервере нет ничего критичного для пользователей: ключи у них на устройствах. Потерять историю цен неприятно, но не катастрофа.
+  - role: user
+    facts: [F12]
+    text: |
+      Да, это и успокаивает. Дальше ноды. Берём узлы у Alchemy, бесплатный тариф. Там жёсткий лимит запросов в секунду, мы его уже пару раз ловили на тестах, когда грузили балансы всех токенов.
+  - role: assistant
+    facts: []
+    text: |
+      На бесплатном тарифе лимит считается в «compute units» в секунду, и разные методы стоят по-разному: `eth_getBalance` дешёвый, а `eth_getLogs` по большому диапазону — дорогой. Что помогает:
+
+      1. **Батчинг.** Балансы токенов одного адреса — одним вызовом `alchemy_getTokenBalances` вместо N вызовов `balanceOf`, или через Multicall3:
+
+      ```ts
+      const results = await client.multicall({
+        contracts: tokens.map((t) => ({ address: t.address, abi: erc20Abi, functionName: 'balanceOf', args: [owner] })),
+      });
+      ```
+
+      2. **Ретраи с паузой** при 429: экспоненциальная задержка с джиттером, не больше 3 попыток.
+      3. **Обновление по требованию.** Не опрашивайте балансы по таймеру каждые 10 секунд; обновляйте при открытии экрана и по пушу о входящей транзакции.
+      4. **Разные ключи** для бэкенда и для мобилки, чтобы мобилки одного пользователя-энтузиаста не съели лимит бэкенда.
+  - role: user
+    facts: [F13]
+    text: |
+      Про обновление по требованию — как раз в тему. Требование от меня: приложение должно показывать балансы и без сети, из локального кэша, и писать, когда последний раз обновлялось. В метро у нас половина пользователей.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда балансы — это локальное состояние, которое иногда синхронизируется, а не данные, которые всегда тянутся из сети.
+
+      ```ts
+      type CachedBalances = { address: string; chain: ChainKey; items: { token: string; raw: string }[]; updatedAt: number };
+
+      export async function loadBalances(address: string, chain: ChainKey) {
+        const cached = await storage.get<CachedBalances>(`bal:${chain}:${address}`);
+        if (cached) store.setBalances(cached); // сразу показываем
+        if (!(await NetInfo.fetch()).isConnected) return;
+        try {
+          const fresh = await fetchBalances(address, chain);
+          await storage.set(`bal:${chain}:${address}`, fresh);
+          store.setBalances(fresh);
+        } catch { /* остаёмся на кэше */ }
+      }
+      ```
+
+      В интерфейсе: под суммой мелкая подпись «обновлено 12 мин назад», а без сети — «нет сети, данные от 14:32». Кнопку «Отправить» без сети блокируйте с понятным текстом: подписать транзакцию можно и офлайн, но отправить нельзя.
+
+      Храните кэш в MMKV — он быстрый и синхронный. Балансы не секрет, шифровать их отдельно не обязательно, но если включено «скрывать балансы», не показывайте их и из кэша.
+  - role: user
+    facts: []
+    text: |
+      MMKV у нас уже есть для настроек, туда и положим. Последнее — логи на бэке. Сейчас NestJS пишет в консоль, docker это собирает, но читать невозможно.
+  - role: assistant
+    facts: []
+    text: |
+      Переведите на структурные JSON-логи и ограничьте размер логов Docker.
+
+      ```ts
+      // main.ts
+      import { Logger } from 'nestjs-pino';
+      const app = await NestFactory.create(AppModule, { bufferLogs: true });
+      app.useLogger(app.get(Logger));
+      ```
+
+      ```ts
+      LoggerModule.forRoot({
+        pinoHttp: {
+          level: process.env.LOG_LEVEL ?? 'info',
+          redact: ['req.headers.authorization', 'req.body.pushToken'],
+          customProps: () => ({ service: 'api' }),
+        },
+      }),
+      ```
+
+      В Compose:
+
+      ```yaml
+      api:
+        logging:
+          driver: json-file
+          options: { max-size: "20m", max-file: "5" }
+      ```
+
+      Читать удобно через `docker compose logs -f api | npx pino-pretty`. Обратите внимание на `redact`: push-токены и заголовки авторизации в логах не нужны.
+  - role: user
+    facts: []
+    text: |
+      Сделал, стало читаемо. Спасибо, на этой неделе всё.

@@ -1,0 +1,150 @@
+segment: S3
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: []
+    text: |
+      Привет, у меня катастрофа: кластер пишет, что квота превышена, задачи падают с «Disk quota exceeded». Пайплайн был на середине перезапуска.
+  - role: assistant
+    facts: []
+    text: |
+      Сначала найдите, что съело место:
+
+      ```bash
+      du -sh /scratch/$USER/* | sort -h | tail -20
+      du -sh work/ results/ 2>/dev/null
+      ```
+
+      У Nextflow почти всегда главный пожиратель — каталог `work/`: в нём лежат промежуточные файлы всех задач, включая BAM от STAR (несколько ГБ на образец) и отсортированные копии.
+
+      Что можно сделать прямо сейчас:
+      - `nextflow clean -f -k` удалит рабочие файлы старых запусков, сохранив последний (для `-resume`).
+      - Если результаты уже скопированы в `results/`, старые `work/` можно удалить целиком.
+      - Не держите `work/` в домашнем каталоге с маленькой квотой — указывайте `-w /scratch/...`.
+  - role: user
+    facts: [B02b]
+    text: |
+      Да, всё съели BAM. Обсудили с руководителем и решили: переходим на режим только Salmon, псевдовыравнивание, без STAR. BAM-файлы с нашей квотой просто не влезают, а для анализа экспрессии они нам не нужны.
+  - role: assistant
+    facts: []
+    text: |
+      Для DE-анализа это нормальное решение: оценки Salmon хорошо подходят для DESeq2 через tximport, а место экономится в разы. В nf-core/rnaseq это режим псевдовыравнивания:
+
+      ```bash
+      nextflow run /home/$USER/nf-core-rnaseq/3_14_0 -profile singularity \
+          --input samplesheet.csv --outdir results_salmon \
+          --pseudo_aligner salmon --skip_alignment \
+          --fasta $REF/genome.fa --gtf $REF/genes.gtf \
+          -w /scratch/$USER/work -c slurm.config
+      ```
+
+      Что вы теряете: без BAM нет проверок покрытия по геному (gene body coverage от RSeQC, Qualimap) и не посмотреть риды в IGV. Решение по F3 вы уже приняли по старому прогону — в методах просто укажите, что QC делали по выравниванию, а количественную оценку — Salmon.
+  - role: user
+    facts: [B06b]
+    text: |
+      Окей. И раз всё равно перезапускаем, руководитель сказал заодно перейти на свежий референс: GRCm39 с аннотацией GENCODE M33. Всё пересчитываем на нём, GRCm38 больше не используем.
+  - role: assistant
+    facts: []
+    text: |
+      Хорошее время для перехода: пересчёт всё равно делаете. Важно, чтобы fasta, GTF и индекс Salmon были из одного релиза.
+
+      Скачивание (на логин-ноде):
+
+      ```bash
+      mkdir -p $REF && cd $REF
+      wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/GRCm39.primary_assembly.genome.fa.gz
+      wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/gencode.vM33.annotation.gtf.gz
+      wget https://ftp.ebi.ac.uk/pub/databases/gencode/Gencode_mouse/release_M33/gencode.vM33.transcripts.fa.gz
+      gunzip *.gz
+      ```
+
+      nf-core сам соберёт индекс Salmon с «декоями» из генома, если передать `--fasta` и `--gtf`; если хотите собрать отдельно один раз и переиспользовать — сохраните его через `--save_reference`.
+
+      Старые результаты на GRCm38 переложите в архивную папку с понятным названием, чтобы случайно не смешать таблицы двух референсов. ID генов в GENCODE содержат версию (`ENSMUSG00000000001.5`) — tximport это учитывает, но при переводе в символы обрезайте версию.
+  - role: user
+    facts: []
+    text: |
+      Перезапустила, место теперь в норме. Пересчитала DESeq2 на новых счётах. Сколько генов считать значимыми — тут у нас договорённость.
+  - role: assistant
+    facts: []
+    text: |
+      Расскажите, какие пороги вы договорились использовать. Обычно комбинируют поправку на множественные сравнения (FDR) и минимальную величину эффекта (log2 fold change), чтобы не набирать статистически значимые, но биологически ничтожные изменения.
+
+      Для DESeq2 есть два способа применить порог по fold change:
+      - отфильтровать таблицу после `results()` по `padj` и `log2FoldChange`;
+      - или проверять гипотезу сразу против порога: `results(dds, lfcThreshold = 1, altHypothesis = "greaterAbs")` — это строже и честнее статистически.
+  - role: user
+    facts: [B12]
+    text: |
+      Руководитель сказал: FDR < 0,05 и |log2FC| > 1. Простым фильтром таблицы, как в лаборатории принято. Давай volcano в Python.
+  - role: assistant
+    facts: []
+    text: |
+      С вашими порогами:
+
+      ```python
+      import numpy as np
+      res = pd.read_csv("results/deseq2_fasting_vs_control.tsv", sep="\t").dropna(subset=["padj"])
+      res["neglog10"] = -np.log10(res["padj"])
+      sig = (res["padj"] < 0.05) & (res["log2FoldChange"].abs() > 1)
+      up = sig & (res["log2FoldChange"] > 0)
+      down = sig & (res["log2FoldChange"] < 0)
+
+      fig, ax = plt.subplots(figsize=(6, 5))
+      ax.scatter(res.loc[~sig, "log2FoldChange"], res.loc[~sig, "neglog10"], s=6, c="lightgrey")
+      ax.scatter(res.loc[up, "log2FoldChange"], res.loc[up, "neglog10"], s=8, c="#c0392b")
+      ax.scatter(res.loc[down, "log2FoldChange"], res.loc[down, "neglog10"], s=8, c="#2c7fb8")
+      ax.axhline(-np.log10(0.05), ls="--", lw=0.8, c="k")
+      ax.axvline(-1, ls="--", lw=0.8, c="k"); ax.axvline(1, ls="--", lw=0.8, c="k")
+      ax.set_xlabel("log2 fold change"); ax.set_ylabel("-log10 FDR")
+      for _, r in res[sig].nsmallest(10, "padj").iterrows():
+          ax.annotate(r["symbol"], (r["log2FoldChange"], r["neglog10"]), fontsize=7)
+      plt.tight_layout()
+      ```
+
+      Подписывайте 10 самых значимых генов — больше на маленьком рисунке не читается. Для отчёта посчитайте `up.sum()` и `down.sum()`.
+  - role: user
+    facts: []
+    text: |
+      812 вверх, 640 вниз. Руководитель хочет, чтобы через полгода любой мог воспроизвести анализ. Как сохранить R-часть, чтобы не было «у меня работало»?
+  - role: assistant
+    facts: []
+    text: |
+      Для R-части:
+      - сохраните объект: `saveRDS(dds, "results/dds.rds")` — чтобы не пересчитывать для рисунков;
+      - запишите версии: `writeLines(capture.output(sessionInfo()), "results/sessionInfo.txt")`;
+      - сам анализ держите скриптом или R Markdown, а не историей консоли.
+
+      А версии пакетов лучше зафиксировать на уровне окружения, а не только записать.
+  - role: user
+    facts: [B14]
+    text: |
+      Так и сделаем: окружение фиксируем conda-lock файлом, а запускаем в Singularity-образах, как пайплайн. Чтоб и Python, и R были зафиксированы.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда схема такая:
+
+      ```yaml
+      # environment.yml
+      name: liver-rnaseq
+      channels: [conda-forge, bioconda]
+      dependencies:
+        - python=3.11
+        - pandas=2.2
+        - seaborn=0.13
+        - scikit-learn=1.5
+        - r-base=4.3
+        - bioconductor-deseq2=1.42
+        - bioconductor-tximport=1.30
+      ```
+
+      ```bash
+      conda-lock lock -f environment.yml -p linux-64       # → conda-lock.yml, точные версии и хеши
+      ```
+
+      Singularity-образ из lock-файла собирается рецептом с `micromamba install --file conda-lock.yml`. В репозиторий кладите `environment.yml`, `conda-lock.yml` и рецепт образа; сам `.sif` — на кластер или в Zenodo вместе с публикацией.
+  - role: user
+    facts: []
+    text: |
+      Собрала lock-файл, образ собирается. Всё, на сегодня хватит.

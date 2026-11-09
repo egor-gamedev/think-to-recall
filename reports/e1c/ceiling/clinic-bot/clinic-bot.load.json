@@ -1,0 +1,58 @@
+{
+ "project": "clinic-bot",
+ "kind": "load",
+ "compressions": [
+  {
+   "after_turn": "S1.7",
+   "turns": 8,
+   "tokens_out": 1996,
+   "summary_tokens": 510
+  },
+  {
+   "after_turn": "S2.1",
+   "turns": 8,
+   "tokens_out": 2013,
+   "summary_tokens": 510
+  },
+  {
+   "after_turn": "S2.9",
+   "turns": 8,
+   "tokens_out": 1721,
+   "summary_tokens": 510
+  },
+  {
+   "after_turn": "S3.3",
+   "turns": 6,
+   "tokens_out": 1584,
+   "summary_tokens": 517
+  },
+  {
+   "after_turn": "S3.11",
+   "turns": 8,
+   "tokens_out": 1747,
+   "summary_tokens": 515
+  },
+  {
+   "after_turn": "S4.9",
+   "turns": 10,
+   "tokens_out": 2153,
+   "summary_tokens": 515
+  },
+  {
+   "after_turn": "S5.7",
+   "turns": 10,
+   "tokens_out": 1932,
+   "summary_tokens": 506
+  },
+  {
+   "after_turn": "S6.0",
+   "turns": 9,
+   "tokens_out": 1886,
+   "summary_tokens": 505
+  }
+ ],
+ "summary": "- **Проект**: Telegram-бот записи для стоматологии «Белая линия» (Python, aiogram 3, вебхук на aiohttp, VPS Selectel, дедлайн 15.12, 3 мес. гарантии). После гарантии сопровождает Вадим (Windows/1С, без Python) → **минимум зависимостей**.\n- **Структура**: плоская по слоям (`handlers/`, `keyboards/`, `clinic/`, `services/`, `storage/`, `config.py`, `__main__.py`). Добавлены `storage/fsm_sqlite.py`, `storage/holds.py`, `storage/sent.py` (дедуп уведомлений).\n- **Инфраструктура**: Вебхук через nginx (Let's Encrypt) → `127.0.0.1:8080`. Обязателен `secret_token` в заголовке `X-Telegram-Bot-Api-Secret-Token`. **Redis убран**. Состояние FSM, флаги напоминаний, холды слотов, лог отправленных уведомлений — в **SQLite** (один файл, бэкап = копия файла). Один процесс бота под systemd.\n- **Интеграция**: Облачный REST API «СтомаОфис» (токен, лимит 60 req/min) + **прямой read-only доступ к Firebird** (пользователь `BOT_RO`, `SELECT` на `SCHEDULE`, `DOCTORS`, `PATIENTS`, `BRANCHES`). Создание/отмена записей — только через API.\n- **API-клиент** (`clinic/api.py`): `httpx.AsyncClient` + `aiolimiter.AsyncLimiter(55, 60)`. Единый экземпляр `StomaApi` в `dp[\"api\"]`. Методы: `create_visit`, `cancel_visit`. Ретраи с бэкоффом на 429 (заголовок `Retry-After`).\n- **Чтение расписания** (`clinic/schedule_reader.py`): `fdb` (async пу",
+ "window_tokens": 2604,
+ "archive_turns": 67,
+ "seconds": 97.8
+}

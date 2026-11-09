@@ -1,0 +1,183 @@
+segment: S1
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [G01, G10]
+    text: |
+      Привет. У меня магазин велозапчастей «Спица», Django 5, шаблоны на сервере плюс HTMX, никакого SPA. Делаю всё один, дизайнер иногда пару часов в неделю. Страница каталога стала грузиться секунды по три. Куда смотреть?
+  - role: assistant
+    facts: []
+    text: |
+      На каталоге в Django три самые частые причины: N+1 запросы в шаблоне, отсутствие индексов под фильтры и тяжёлый `count()` в пагинации. Начните с замера:
+
+      ```bash
+      pip install django-debug-toolbar
+      ```
+
+      ```python
+      # settings/dev.py
+      INSTALLED_APPS += ["debug_toolbar"]
+      MIDDLEWARE.insert(0, "debug_toolbar.middleware.DebugToolbarMiddleware")
+      INTERNAL_IPS = ["127.0.0.1"]
+      ```
+
+      ```python
+      # urls.py
+      if settings.DEBUG:
+          urlpatterns += [path("__debug__/", include("debug_toolbar.urls"))]
+      ```
+
+      Откройте каталог и посмотрите панель SQL: сколько запросов и есть ли одинаковые запросы, повторяющиеся десятки раз. Если запросов больше 20–30 на страницу — почти наверняка N+1.
+  - role: user
+    facts: [G19]
+    text: |
+      Поставил. 212 запросов на страницу, ага. В каталоге примерно 30 тысяч позиций, на странице 48 карточек. Повторяется запрос к бренду и к картинкам.
+  - role: assistant
+    facts: []
+    text: |
+      Это N+1: для каждой карточки шаблон отдельно достаёт бренд (`product.brand.name`) и картинки (`product.images.first`). Лечится в queryset:
+
+      ```python
+      def catalog(request):
+          qs = (
+              Product.objects.filter(is_active=True)
+              .select_related("brand", "category")
+              .prefetch_related(
+                  Prefetch("images", queryset=ProductImage.objects.order_by("position"), to_attr="ordered_images")
+              )
+              .only("id", "name", "slug", "price", "brand__name", "category__slug")
+          )
+          ...
+      ```
+
+      В шаблоне берите `product.ordered_images.0`, а не `product.images.first` — `first()` делает новый запрос, игнорируя prefetch.
+
+      `select_related` — для ForeignKey (один JOIN), `prefetch_related` — для обратных связей и M2M (один дополнительный запрос на всю страницу). Должно стать 4–5 запросов.
+  - role: user
+    facts: []
+    text: |
+      5 запросов, стало 400 мс. Остался тяжёлый count от пагинатора, на фильтрах до секунды.
+  - role: assistant
+    facts: []
+    text: |
+      `Paginator` считает `COUNT(*)` по всему отфильтрованному набору. На 30 тысячах это не катастрофа, но с JOIN и фильтрами может тормозить. Варианты:
+
+      1. Индексы под частые фильтры:
+
+      ```python
+      class Product(models.Model):
+          ...
+          class Meta:
+              indexes = [
+                  models.Index(fields=["category", "is_active", "price"]),
+                  models.Index(fields=["brand", "is_active"]),
+              ]
+      ```
+
+      2. Считать по упрощённому запросу без JOIN: в пагинатор передайте queryset без `select_related`, а карточки грузите только для текущей страницы.
+
+      3. Отказаться от номера последней страницы и делать «Показать ещё» — тогда count вообще не нужен. С HTMX это делается очень просто.
+  - role: user
+    facts: [G03]
+    text: |
+      База у нас PostgreSQL, индексы добавлю. Давай «показать ещё» на HTMX, как раз хотел.
+  - role: assistant
+    facts: []
+    text: |
+      Кнопка подгружает следующую порцию и сама себя заменяет:
+
+      ```html
+      <!-- catalog/_page.html -->
+      {% for product in page %}
+        {% include "catalog/_card.html" %}
+      {% endfor %}
+      {% if has_next %}
+        <button hx-get="{% url 'catalog' %}?{{ query }}&after={{ last_id }}"
+                hx-target="this" hx-swap="outerHTML"
+                class="btn btn-outline w-full">Показать ещё</button>
+      {% endif %}
+      ```
+
+      ```python
+      def catalog(request):
+          after = int(request.GET.get("after", 0))
+          qs = filtered_products(request).filter(id__gt=after).order_by("id")[:49]
+          items = list(qs)
+          ctx = {"page": items[:48], "has_next": len(items) > 48,
+                 "last_id": items[47].id if len(items) > 48 else None,
+                 "query": request.GET.urlencode()}
+          template = "catalog/_page.html" if request.htmx else "catalog/index.html"
+          return render(request, template, ctx)
+      ```
+
+      Пагинация «по ключу» (`id > after`) не делает ни count, ни offset — быстро на любой глубине. Для сортировки по цене ключ должен быть парой `(price, id)`. Не забудьте `django-htmx`, чтобы был `request.htmx`.
+  - role: user
+    facts: [G11]
+    text: |
+      Работает. Кстати, мобильного приложения у нас нет и не будет, только адаптивный сайт — так что на телефонах «показать ещё» как раз то, что надо.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда пара мелочей для мобильных:
+
+      - Кнопку «Показать ещё» можно заменить на автоподгрузку при прокрутке: `hx-trigger="revealed"` на последнем элементе. Но оставьте кнопку как запасной вариант — бесконечная лента мешает добраться до футера с контактами.
+      - Сохраняйте позицию: при возврате «назад» из карточки товара браузер должен вернуться к тому же месту. С HTMX помогает `hx-push-url` с параметром `after`, чтобы история знала, сколько было загружено.
+      - Картинки в карточках — `loading="lazy"` и правильный `sizes`, чтобы на телефоне не грузить десктопные размеры.
+
+      ```html
+      <img src="{{ img.url_small }}" srcset="{{ img.url_small }} 320w, {{ img.url_medium }} 640w"
+           sizes="(max-width: 640px) 50vw, 240px" loading="lazy" alt="{{ product.name }}">
+      ```
+  - role: user
+    facts: [G02]
+    text: |
+      Сделал lazy. Теперь про оплату. Онлайн-оплата у нас через ЮKassa. Иногда заказ остаётся «не оплачен», хотя деньги списались. Как правильно ловить уведомления?
+  - role: assistant
+    facts: []
+    text: |
+      Статус заказа нельзя менять по редиректу покупателя на «спасибо» — только по уведомлению (вебхуку) от платёжки или по проверке статуса платежа через API.
+
+      ```python
+      @csrf_exempt
+      def yookassa_webhook(request):
+          event = json.loads(request.body)
+          payment_id = event["object"]["id"]
+          # не доверяем телу: перепроверяем статус через API
+          payment = Payment.find_one(payment_id)
+          if payment.status == "succeeded":
+              mark_order_paid.delay(payment.metadata["order_id"], payment_id)
+          return HttpResponse(status=200)
+      ```
+
+      Типичные причины «деньги списались, заказ не оплачен»:
+      1. Вебхук не дошёл (сервер отвечал 500 или долго) — платёжка повторит, но не бесконечно.
+      2. Обработчик упал после списания, но до обновления заказа — нужна идемпотентность: повторный вебхук с тем же `payment_id` не должен ломаться.
+      3. Нет фоновой сверки. Добавьте задачу раз в 10–15 минут: найти заказы «ожидают оплату» старше 15 минут и спросить статус платежа через API.
+  - role: user
+    facts: [G06]
+    text: |
+      Сверку сделаю. И ещё деталь: своего склада нет, товар лежит у поставщика. Остатки мы раз в час подтягиваем из его CSV. Импорт сейчас идёт минут 10 и в это время сайт подтупливает.
+  - role: assistant
+    facts: []
+    text: |
+      Импорт на 30 тысяч строк не должен идти 10 минут. Скорее всего, он делает `save()` для каждой строки и тянет за собой сигналы. Ускорить:
+
+      ```python
+      def import_stock(rows: list[dict]):
+          by_sku = {p.sku: p for p in Product.objects.only("id", "sku", "stock")}
+          changed = []
+          for r in rows:
+              p = by_sku.get(r["sku"])
+              if p and p.stock != int(r["qty"]):
+                  p.stock = int(r["qty"])
+                  changed.append(p)
+          Product.objects.bulk_update(changed, ["stock"], batch_size=1000)
+      ```
+
+      Обновляются только изменившиеся позиции, одним пакетом. Обычно это секунды.
+
+      И уведите импорт с веб-процесса: пусть он идёт фоновой задачей, а не по запросу, тогда сайт не будет «подтупливать». Плюс защитите от двойного запуска (блокировка), чтобы два импорта не наложились.
+  - role: user
+    facts: []
+    text: |
+      Да, импорт сейчас дёргается из cron через curl в вьюху, понимаю, что убого. На сегодня всё, спасибо.

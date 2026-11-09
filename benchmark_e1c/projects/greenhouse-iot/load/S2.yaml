@@ -1,0 +1,211 @@
+segment: S2
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [G11]
+    text: |
+      Датчики пришли, я на месте до воскресенья. Узел полива прошил, щёлкает как надо, батя доволен. Теперь датчиковые узлы. Прошивки ESP32 пишу на Arduino-фреймворке в PlatformIO. Узлов будет несколько, код почти одинаковый — как организовать проект, чтобы не плодить копии?
+  - role: assistant
+    facts: []
+    text: |
+      Один проект PlatformIO, несколько окружений — по одному на узел. Общий код в `src/`, различия — через флаги сборки:
+
+      ```ini
+      ; platformio.ini
+      [env]
+      platform = espressif32
+      board = esp32dev
+      framework = arduino
+      monitor_speed = 115200
+      lib_deps =
+          knolleary/PubSubClient @ ^2.8
+          bblanchon/ArduinoJson @ ^7.0
+          adafruit/Adafruit SHT31 Library @ ^2.2
+
+      [env:t1_sens]
+      build_flags = -DTEPLICA=1 -DZONE_A=1 -DZONE_B=2
+
+      [env:t2_sens]
+      build_flags = -DTEPLICA=2 -DZONE_A=3 -DZONE_B=4
+
+      [env:poliv]
+      build_src_filter = +<poliv/>
+      ```
+
+      Пароли Wi-Fi и брокера — в `include/secrets.h`, который добавлен в `.gitignore`, а в репозитории лежит `secrets.example.h` с пустыми значениями. Прошивка нужного узла: `pio run -e t2_sens -t upload`.
+  - role: user
+    facts: [G11r]
+    text: |
+      Сделал. Сосед, кстати, советует снести всё и поставить Home Assistant с ESPHome — мол, всё из коробки, прошивки из YAML. Я подумал и отказался: хочу свой код и своё дерево MQTT-топиков, а не то, что HA сам придумает. Так что давай топики.
+  - role: assistant
+    facts: []
+    text: |
+      Понял, остаёмся на своём. Тогда дерево топиков — главное решение, его потом дорого менять. Рекомендации:
+
+      - Иерархия от общего к частному: место → зона → величина. Так удобно подписываться маской (`.../#`).
+      - Отдельно — показания, отдельно — команды и статусы узлов.
+      - Латиница, нижний регистр, без пробелов.
+      - Для каждого узла — LWT (Last Will): брокер сам опубликует `offline`, если узел пропал.
+
+      Какую схему хотите — короткую или с именами?
+  - role: user
+    facts: [G09]
+    text: |
+      Давай так: топики вида teplica/<номер>/<зона>/<датчик>, например teplica/1/z1/soil или teplica/2/air/temp для воздуха. Полезная нагрузка — JSON с полями v и ts, чтобы потом не гадать, когда мерили.
+  - role: assistant
+    facts: []
+    text: |
+      Хорошая схема. Дополню, чтобы всё легло в неё:
+
+      ```
+      teplica/1/z1/soil        {"v": 41.5, "ts": 1716012345}
+      teplica/1/air/temp       {"v": 27.3, "ts": ...}
+      teplica/1/air/hum        {"v": 81.0, "ts": ...}
+      teplica/1/node/t1_sens   "online" / "offline"   (retained, LWT)
+      poliv/z1/set             1200                   (команды, как сейчас)
+      ```
+
+      `ts` — unix-время в секундах; на ESP32 его даёт `configTime()` после подключения к Wi-Fi. Если время ещё не получено (`time(nullptr) < 1700000000`), лучше не публиковать вовсе, чем публиковать с `ts` из 1970 года.
+
+      Показания публикуйте без флага retain, а статусы узлов — с retain, чтобы новый подписчик сразу видел, кто онлайн.
+  - role: user
+    facts: [G10]
+    text: |
+      Принято. Теперь брокер — ты обещал закрыть. Сделаю так: Mosquitto с логином и паролем, без TLS — он слушает порт 1883 только в локальной сети, наружу всё равно ничего не торчит. Пароли у каждого узла свои?
+  - role: assistant
+    facts: []
+    text: |
+      Да, по пользователю на тип узла — удобно потом по логам понять, кто подключался. Конфиг `/etc/mosquitto/conf.d/lan.conf` заменяем на:
+
+      ```conf
+      listener 1883 192.168.1.10      # адрес Pi в локальной сети
+      listener 1883 127.0.0.1
+      allow_anonymous false
+      password_file /etc/mosquitto/passwd
+      acl_file /etc/mosquitto/acl
+      persistence true
+      ```
+
+      Пользователи:
+
+      ```bash
+      sudo mosquitto_passwd -c /etc/mosquitto/passwd poliv_py
+      sudo mosquitto_passwd /etc/mosquitto/passwd t1_sens
+      sudo mosquitto_passwd /etc/mosquitto/passwd t2_sens
+      sudo mosquitto_passwd /etc/mosquitto/passwd poliv_node
+      ```
+
+      ACL, чтобы датчиковый узел не мог случайно (или из-за бага) открыть клапан:
+
+      ```conf
+      # /etc/mosquitto/acl
+      user poliv_py
+      topic readwrite #
+
+      user t1_sens
+      topic write teplica/1/#
+
+      user t2_sens
+      topic write teplica/2/#
+
+      user poliv_node
+      topic read poliv/+/set
+      topic write poliv/+/state
+      ```
+
+      После `sudo systemctl restart mosquitto` не забудьте добавить логин и пароль в cron-строки (`-u poliv_py -P ...`), иначе утренний полив молча не придёт. Пароль в crontab — не идеально; лучше вынести вызов в маленький скрипт с правами 700.
+  - role: user
+    facts: [G12]
+    text: |
+      Ой, про cron бы забыл, спасибо. Теперь код датчикового узла. Схема пока такая: все узлы шлют показания по Wi-Fi напрямую в Mosquitto каждые 30 секунд — SHT31 плюс две почвы.
+  - role: assistant
+    facts: []
+    text: |
+      Вот основа. Без `delay()` в цикле, с неблокирующим переподключением — чтобы узел не зависал, если брокер перезагружается.
+
+      ```cpp
+      #include <WiFi.h>
+      #include <PubSubClient.h>
+      #include <ArduinoJson.h>
+      #include <Adafruit_SHT31.h>
+      #include "secrets.h"
+
+      WiFiClient net;
+      PubSubClient mqtt(net);
+      Adafruit_SHT31 sht;
+      const int SOIL[2] = {34, 35};
+      const int ZONES[2] = {ZONE_A, ZONE_B};
+      char nodeTopic[40];
+      unsigned long lastSend = 0, lastTry = 0;
+
+      void publish(const char* topic, float v) {
+        JsonDocument doc;
+        doc["v"] = v;
+        doc["ts"] = (long)time(nullptr);
+        char buf[64];
+        serializeJson(doc, buf);
+        mqtt.publish(topic, buf);
+      }
+
+      void ensureMqtt() {
+        if (mqtt.connected() || millis() - lastTry < 5000) return;
+        lastTry = millis();
+        mqtt.connect(NODE_ID, MQTT_USER, MQTT_PASS, nodeTopic, 1, true, "offline");
+        if (mqtt.connected()) mqtt.publish(nodeTopic, "online", true);
+      }
+
+      void setup() {
+        snprintf(nodeTopic, sizeof nodeTopic, "teplica/%d/node/%s", TEPLICA, NODE_ID);
+        WiFi.begin(WIFI_SSID, WIFI_PASS);
+        configTime(3 * 3600, 0, "pool.ntp.org");
+        mqtt.setServer(MQTT_HOST, 1883);
+        sht.begin(0x44);
+      }
+
+      void loop() {
+        ensureMqtt();
+        mqtt.loop();
+        if (millis() - lastSend < 30000 || time(nullptr) < 1700000000) return;
+        lastSend = millis();
+        char t[40];
+        snprintf(t, sizeof t, "teplica/%d/air/temp", TEPLICA); publish(t, sht.readTemperature());
+        snprintf(t, sizeof t, "teplica/%d/air/hum", TEPLICA);  publish(t, sht.readHumidity());
+        for (int i = 0; i < 2; i++) {
+          snprintf(t, sizeof t, "teplica/%d/z%d/soil", TEPLICA, ZONES[i]);
+          publish(t, analogRead(SOIL[i]));     // пока сырые отсчёты, проценты после калибровки
+        }
+      }
+      ```
+
+      `NODE_ID`, `MQTT_HOST` и прочее — из `secrets.h` и флагов сборки. Почву пока отправляем сырыми отсчётами АЦП: калибровку удобнее сделать, когда датчики уже стоят в грунте.
+  - role: user
+    facts: [G08]
+    text: |
+      Работает, вижу всё в mosquitto_sub. Теперь корпуса. Для первой теплицы взял распаечную коробку IP65, туда же блок 5 В от розетки. Во вторую кабель не тянули — там стоит панелька на 6 Вт и два 18650 в держателе с платой заряда, от этого и запитаю узел. Как бороться с конденсатом? В теплице утром всё мокрое.
+  - role: assistant
+    facts: []
+    text: |
+      Конденсат в теплице — главный убийца электроники, и герметичная коробка его не спасает: воздух внутри остывает ночью, влага выпадает на плату. Что помогает:
+
+      - **Мембранный клапан-«дыхалка»** (вентиляционная заглушка с ePTFE-мембраной, M12) — выравнивает давление и пропускает пар, не пропуская капли. Ставьте снизу корпуса.
+      - **Кабельные вводы снизу**, и петля кабеля ниже ввода — вода стекает с петли, а не в коробку.
+      - **Силикагель** в мешочке внутри, менять раз в месяц-два (индикаторный удобнее).
+      - **Лак на плату** (акриловый, типа Plastik 70 или специальный конформный), кроме разъёмов и самого SHT31.
+      - **SHT31 — снаружи коробки**, в радиационном экране. Внутри коробки он будет мерить климат коробки, а не теплицы.
+      - Коробку — **не на солнце** и не под капельницей; лучше на северной стороне стойки, под козырьком.
+
+      Платы заряда для 18650 тоже боятся влаги — её в ту же коробку, под лак.
+  - role: user
+    facts: [G13]
+    text: |
+      Сделаю. И ещё хочу Grafana — смотреть графики с телефона, когда я на работе. Бате графики ни к чему — у него Nokia 1280, он ей только мне звонит, когда огурцы повяли. Так что графики — для меня одного. С чего начать?
+  - role: assistant
+    facts: []
+    text: |
+      Grafana сама данные не хранит — она рисует то, что лежит в базе. Сейчас показания только пролетают через брокер и нигде не остаются, поэтому порядок такой:
+
+      1. **Хранилище.** Небольшой сервис на Pi, подписанный на `teplica/#`, пишет каждое сообщение в базу.
+      2. **Grafana** подключается к этой базе как к источнику данных.
+      3. **Доступ с телефона** — дома по Wi-Fi сразу, из города понадобится туннель (серый IP).
+
+      Для базы на Raspberry Pi есть варианты от простого (SQLite — один файл, ничего не надо администрировать) до специализированных временных рядов (InfluxDB). С вашим объёмом — несколько узлов раз в 30 секунд — справится любая. Предлагаю сначала откалибровать почву, чтобы в базу сразу шли проценты, а не сырые отсчёты, и после этого поднять запись.

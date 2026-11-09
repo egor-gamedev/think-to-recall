@@ -1,0 +1,2 @@
+{"status": "FROZEN 2026-10-31 with reports/prereg_bench1b.md (Egor approved); rarity = IDF chosen on dev-200b by Egor's rule",
+ "gate": {"rarity": "idf", "max_df": 10, "ref_n": 7599, "anchor": 3, "margin": 3.0, "slots": 2, "top": 5}}

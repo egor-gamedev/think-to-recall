@@ -1,0 +1,215 @@
+segment: S3
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [C02b]
+    text: |
+      Плохие новости. Вендор «СтомаОфис» узнал, что мы пишем прямо в базу, и запретил прямую запись под угрозой снять клинику с поддержки. Без поддержки клиника не может, так что перешли на их облачный API: лимит 60 запросов в минуту, и чтение расписания, и запись — всё через API. Доку прислали, REST с токеном. Переделываем.
+  - role: assistant
+    facts: []
+    text: |
+      Неприятно, но так даже чище: у вас будет один клиент с понятными методами, а не SQL по чужой схеме. Важно с самого начала уважать лимит, иначе первый же наплыв пациентов упрётся в 429.
+
+      ```python
+      # clinic_bot/clinic/api.py
+      import asyncio
+      import httpx
+      from aiolimiter import AsyncLimiter
+
+      from ..config import settings
+
+      class StomaApi:
+          def __init__(self):
+              self._http = httpx.AsyncClient(
+                  base_url=settings.stoma_api_url,
+                  headers={"Authorization": f"Bearer {settings.stoma_api_token}"},
+                  timeout=httpx.Timeout(10, connect=5),
+              )
+              # 55, а не 60: запас на часы вендора и повторы
+              self._limit = AsyncLimiter(55, 60)
+
+          async def _request(self, method: str, url: str, **kw) -> dict:
+              for attempt in range(4):
+                  async with self._limit:
+                      r = await self._http.request(method, url, **kw)
+                  if r.status_code == 429:
+                      wait = float(r.headers.get("Retry-After", 2 ** attempt))
+                      await asyncio.sleep(wait)
+                      continue
+                  r.raise_for_status()
+                  return r.json()
+              raise RuntimeError(f"StomaApi: 429 после повторов: {url}")
+
+          async def free_slots(self, doctor_id: int, branch_id: int, day: str) -> list[dict]:
+              return await self._request("GET", "/v1/slots", params={"doctor": doctor_id, "branch": branch_id, "date": day})
+
+          async def create_visit(self, slot_id: int, patient_id: int | None, note: str = "") -> dict:
+              return await self._request("POST", "/v1/visits", json={"slot": slot_id, "patient": patient_id, "note": note})
+
+          async def cancel_visit(self, visit_id: int) -> None:
+              await self._request("DELETE", f"/v1/visits/{visit_id}")
+      ```
+
+      Лимитер один на весь процесс — создайте `StomaApi()` один раз в `__main__` и передавайте через `dp["api"]`, иначе у каждого хэндлера будет свой счётчик и лимит фактически умножится.
+  - role: user
+    facts: []
+    text: |
+      Переделал. Сразу упёрся: показ слотов на неделю для одного врача — это 7 запросов, по одному на день. При десятке пациентов, которые одновременно листают календарь, это уже за 60 в минуту, бот подвисает.
+  - role: assistant
+    facts: []
+    text: |
+      Тут два приёма, лучше оба.
+
+      1. Кэш слотов на короткое время. Слоты меняются не каждую секунду; кэш на 60–90 секунд снимает почти всю нагрузку от «листающих»:
+
+      ```python
+      from cachetools import TTLCache
+
+      _slots_cache: TTLCache = TTLCache(maxsize=2000, ttl=90)
+
+      async def cached_slots(api: StomaApi, doctor_id: int, branch_id: int, day: str):
+          key = (doctor_id, branch_id, day)
+          if key not in _slots_cache:
+              _slots_cache[key] = await api.free_slots(doctor_id, branch_id, day)
+          return _slots_cache[key]
+      ```
+
+      2. Сбрасывать кэш дня сразу после записи или отмены через бота, чтобы человек не видел только что занятое им же время.
+
+      Риск кэша понятен: слот могли занять в регистратуре за эти 90 секунд. Поэтому финальная проверка — сам `create_visit`: если API ответит, что слот занят, показываем «время только что заняли, выберите другое».
+
+      Если и с кэшем не хватит — спросите вендора, есть ли метод «слоты на диапазон дат»: одна неделя одним запросом вместо семи.
+  - role: user
+    facts: [C11]
+    text: |
+      Спрошу. Ещё момент, который я сразу не сказал: после гарантии бот сопровождает приходящий айтишник клиники, Вадим. Знает Windows и 1С, Python — нет. Так что Redis, который ты в прошлый раз предлагал для FSM, мне кажется лишним — ещё один сервис, который ему придётся понимать. Можно без него?
+  - role: assistant
+    facts: []
+    text: |
+      Можно и, с учётом сопровождения, нужно: чем меньше движущихся частей, тем больше шансов, что человек без Python перезапустит и починит. У вас уже есть SQLite для флагов напоминаний — положим туда и FSM. Встроенного SQL-хранилища в aiogram нет, но интерфейс маленький:
+
+      ```python
+      # clinic_bot/storage/fsm_sqlite.py
+      import json
+      import aiosqlite
+      from aiogram.fsm.storage.base import BaseStorage, StorageKey
+
+      class SqliteStorage(BaseStorage):
+          def __init__(self, path: str):
+              self.path = path
+
+          async def _init(self, db):
+              await db.execute("CREATE TABLE IF NOT EXISTS fsm (k TEXT PRIMARY KEY, state TEXT, data TEXT)")
+
+          @staticmethod
+          def _k(key: StorageKey) -> str:
+              return f"{key.bot_id}:{key.chat_id}:{key.user_id}"
+
+          async def set_state(self, key, state=None):
+              st = state.state if hasattr(state, "state") else state
+              async with aiosqlite.connect(self.path) as db:
+                  await self._init(db)
+                  await db.execute("INSERT INTO fsm(k, state, data) VALUES (?, ?, '{}') "
+                                   "ON CONFLICT(k) DO UPDATE SET state=excluded.state", (self._k(key), st))
+                  await db.commit()
+
+          async def get_state(self, key):
+              async with aiosqlite.connect(self.path) as db:
+                  cur = await db.execute("SELECT state FROM fsm WHERE k=?", (self._k(key),))
+                  row = await cur.fetchone()
+                  return row[0] if row else None
+
+          async def set_data(self, key, data):
+              async with aiosqlite.connect(self.path) as db:
+                  await self._init(db)
+                  await db.execute("INSERT INTO fsm(k, state, data) VALUES (?, NULL, ?) "
+                                   "ON CONFLICT(k) DO UPDATE SET data=excluded.data", (self._k(key), json.dumps(data)))
+                  await db.commit()
+
+          async def get_data(self, key):
+              async with aiosqlite.connect(self.path) as db:
+                  cur = await db.execute("SELECT data FROM fsm WHERE k=?", (self._k(key),))
+                  row = await cur.fetchone()
+                  return json.loads(row[0]) if row and row[0] else {}
+
+          async def close(self):
+              pass
+      ```
+
+      Итого на VPS: один процесс бота под systemd, nginx и один файл SQLite. Бэкап — копия одного файла.
+  - role: user
+    facts: [C13]
+    text: |
+      Отлично, Redis снёс. Теперь отмена. Правило клиники: отменить запись в боте можно не позже чем за 12 часов до приёма; позже — только звонком в регистратуру. Сделай кнопку «Отменить» в «Моих записях».
+  - role: assistant
+    facts: []
+    text: |
+      ```python
+      # clinic_bot/handlers/my_visits.py
+      from datetime import datetime, timedelta
+
+      CANCEL_DEADLINE = timedelta(hours=12)
+
+      class CancelCb(CallbackData, prefix="cancel"):
+          visit_id: int
+
+      @router.callback_query(CancelCb.filter())
+      async def cancel(cb: CallbackQuery, callback_data: CancelCb, api: StomaApi, state: FSMContext):
+          visit = await my_visit_or_none(cb.from_user.id, callback_data.visit_id, api)
+          if not visit:
+              await cb.answer("Запись не найдена", show_alert=True)
+              return
+          if visit.start - datetime.now() < CANCEL_DEADLINE:
+              await cb.message.answer(LATE_CANCEL_TEXT)
+              await cb.answer()
+              return
+          await api.cancel_visit(visit.id)
+          await cb.message.edit_text(f"Запись на {visit.start:%d.%m в %H:%M} отменена.")
+          await cb.answer()
+      ```
+
+      Проверка времени — на сервере в момент нажатия, а не при показе кнопки: список «Моих записей» могли открыть за 13 часов, а нажать через два. Функция `my_visit_or_none` должна проверять, что запись принадлежит карте этого Telegram-пользователя, — иначе подменой `visit_id` можно отменить чужую.
+  - role: user
+    facts: [C19]
+    text: |
+      А что писать в LATE_CANCEL_TEXT? Номер регистратуры дать, ок. Кстати, про регистратуру: у девочек на стойке личные телефоны, Олег Викторович запретил рабочие чаты на личных, поэтому рабочий телеграм у них только на компьютере у стойки. Работают с 8 до 21, в воскресенье закрыто.
+  - role: assistant
+    facts: []
+    text: |
+      Текст лучше сделать коротким и с кликабельным номером — в Telegram номер в формате `+7…` сам становится ссылкой на звонок:
+
+      ```python
+      LATE_CANCEL_TEXT = (
+          "До приёма меньше 12 часов — отменить запись в боте уже нельзя.\n"
+          "Пожалуйста, позвоните в регистратуру: +7 4012 00-00-00\n"
+          "Мы работаем с 8:00 до 21:00, кроме воскресенья."
+      )
+      ```
+
+      Номер и часы работы вынесите в настройки, а не в код: клиника их поменяет раньше, чем вы думаете. И в Telegram можно добавить кнопку-ссылку, но `tel:` в inline-кнопках Telegram не поддерживает, так что номер просто текстом.
+  - role: user
+    facts: [C23r]
+    text: |
+      Заказчик спросил, нельзя ли сделать так, чтобы пациент писал свободным текстом «запишите на четверг к Соколовой», а нейросеть разбирала. LLM-ассистента для записи свободным текстом отказались делать — главврач боится ошибочных записей, и я с ним согласен. Но люди всё равно пишут текстом. Что им отвечать?
+  - role: assistant
+    facts: []
+    text: |
+      Нужен обработчик «последнего шанса» — он регистрируется самым последним роутером и ловит любой текст, который не попал в сценарий:
+
+      ```python
+      # clinic_bot/handlers/fallback.py
+      router = Router()
+
+      @router.message(F.text)
+      async def any_text(message: Message, state: FSMContext):
+          await message.answer(
+              "Я пока понимаю только кнопки 🙂\n"
+              "Нажмите «Записаться», чтобы выбрать врача и время, или «Мои записи».",
+              reply_markup=main_menu_kb(),
+          )
+      ```
+
+      Пара полезных деталей:
+
+      - Если человек находится в состоянии FSM (например, выбирает время) и пишет текст — не сбрасывайте сценарий, а повторите последний вопрос с кнопками: «Выберите время кнопкой ниже».
+      - Текстовые сообщения, которые бот не понял, полезно складывать в счётчик (без содержимого) — через месяц станет видно, каких кнопок людям не хватает.

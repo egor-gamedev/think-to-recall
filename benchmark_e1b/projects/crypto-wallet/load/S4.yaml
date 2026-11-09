@@ -1,0 +1,187 @@
+segment: S4
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [F15]
+    text: |
+      Привет. Новости: добавляем обмен токенов прямо в приложении. Через 0x API, берём комиссию 0,3% в свою пользу. Начнём с экрана обмена — как его устроить, чтобы было понятно, сколько человек получит?
+  - role: assistant
+    facts: []
+    text: |
+      Экран обмена держится на котировке: пользователь вводит сумму, вы запрашиваете цену, показываете итог и только потом строите транзакцию.
+
+      У 0x для этого два шага: `price` (индикативная цена, дешёвый запрос — можно дёргать при вводе) и `quote` (твёрдая котировка с данными транзакции — только по нажатию «Обменять»).
+
+      ```ts
+      const params = new URLSearchParams({
+        chainId: String(chainId),
+        sellToken, buyToken,
+        sellAmount: amountWei.toString(),
+        taker: address,
+        swapFeeRecipient: FEE_WALLET,
+        swapFeeBps: '30',            // 0,3%
+        swapFeeToken: buyToken,
+      });
+      const res = await fetch(`https://api.0x.org/swap/permit2/price?${params}`, {
+        headers: { '0x-api-key': ZEROX_KEY, '0x-version': 'v2' },
+      });
+      ```
+
+      На экране показывайте: «Вы отдаёте», «Вы получаете (примерно)», «Минимум с учётом проскальзывания», «Комиссия сервиса 0,3%», «Комиссия сети ≈ … €». Комиссию сервиса показывайте явно отдельной строкой — и сторам, и пользователям это важно.
+
+      Ключ 0x не кладите в приложение: проксируйте запросы через ваш бэкенд, иначе его вытащат из сборки за пять минут.
+  - role: user
+    facts: []
+    text: |
+      Окей, через бэк проксируем. Комиссию сети как посчитать заранее, чтобы показать в евро?
+  - role: assistant
+    facts: []
+    text: |
+      Комиссия сети = `gas × (baseFee + priorityFee)`. 0x в ответе `quote` возвращает оценку газа; цену газа берите у узла:
+
+      ```ts
+      const fees = await client.estimateFeesPerGas(); // { maxFeePerGas, maxPriorityFeePerGas }
+      const feeWei = BigInt(quote.transaction.gas) * fees.maxFeePerGas;
+      const feeEth = Number(feeWei) / 1e18;          // для показа, не для расчётов
+      const feeEur = feeEth * rates.get('eth', 'eur').price;
+      ```
+
+      Нюансы:
+      - Показывайте верхнюю оценку (`maxFeePerGas`), а фактически спишется меньше — лучше приятно удивить.
+      - В Polygon нативная монета другая, курс берите для неё.
+      - Если у пользователя не хватает нативной монеты на комиссию, ошибку надо показать до подписи: «Недостаточно ETH для оплаты сети», а не дать транзакции упасть.
+      - При обмене ERC-20 первым шагом может понадобиться одобрение (approve) или подпись Permit2 — это отдельная комиссия или отдельная подпись, предупредите об этом.
+  - role: user
+    facts: [F01b]
+    text: |
+      Так, и вторая новость, побольше. Помнишь, говорили, что веба не будет? Передумали: делаем веб-дашборд на Next.js. Только просмотр портфеля — балансы, история, графики. Никаких отправок средств с сайта.
+  - role: assistant
+    facts: []
+    text: |
+      Понял, это меняет картину: появляется второй клиент, и ему нужно как-то понять, чей портфель показывать. Раз дашборд только для просмотра, базовая версия может вообще ничего не хранить: пользователь вводит или подключает адрес, вы показываете публичные данные блокчейна.
+
+      Структура в монорепе:
+
+      ```
+      apps/
+        mobile/
+        api/
+        web/          # Next.js, App Router
+      packages/
+        shared/       # типы, сети, форматирование сумм — теперь пригодится вебу
+      ```
+
+      Графики — из того же `GET /rates/history`, балансы — через тот же код, что в мобилке, вынесенный в `packages/shared`. Хороший момент проверить, что в `shared` нет ничего React Native-специфичного.
+  - role: user
+    facts: [F14]
+    text: |
+      Только сразу: логинов и паролей у нас нет ни в приложении, ни на сайте и не будет. Личность — это адрес кошелька и подпись. Хочу, чтобы на сайт входили, подключив кошелёк.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда стандартный путь — Sign-In with Ethereum (EIP-4361): сайт показывает сообщение со случайным nonce, пользователь подписывает его в кошельке (через WalletConnect с телефона или расширением), сервер проверяет подпись и узнаёт адрес.
+
+      ```ts
+      // web: формирование сообщения
+      import { createSiweMessage } from 'viem/siwe';
+      const message = createSiweMessage({
+        domain: 'app.kladez.io', address, chainId: 1,
+        uri: 'https://app.kladez.io', version: '1',
+        nonce, statement: 'Вход в дашборд Кладезь',
+      });
+      const signature = await walletClient.signMessage({ account: address, message });
+      ```
+
+      ```ts
+      // api: проверка
+      import { verifySiweMessage } from 'viem/siwe';
+      const ok = await verifySiweMessage(publicClient, { message, signature, nonce: storedNonce });
+      ```
+
+      Nonce одноразовый и живёт пару минут — храните его на сервере и удаляйте после проверки.
+  - role: user
+    facts: [F04b]
+    text: |
+      Ага. И чтобы не подписывать на каждый клик: после проверки подписи бэк выдаёт короткую JWT-сессию для дашборда. Значит, бэк теперь не только курсы и пуши. Как это аккуратно сделать в Nest?
+  - role: assistant
+    facts: []
+    text: |
+      Отдельный модуль `AuthModule` только для веба: проверка SIWE → выдача JWT → guard на эндпоинтах дашборда.
+
+      ```ts
+      @Controller('auth')
+      export class AuthController {
+        constructor(private readonly siwe: SiweService, private readonly jwt: JwtService) {}
+
+        @Get('nonce')
+        nonce() { return { nonce: this.siwe.issueNonce() }; }
+
+        @Post('verify')
+        async verify(@Body() dto: VerifyDto, @Res({ passthrough: true }) res: Response) {
+          const address = await this.siwe.verify(dto.message, dto.signature);
+          const token = await this.jwt.signAsync({ sub: address.toLowerCase() }, { expiresIn: '15m' });
+          res.cookie('session', token, { httpOnly: true, secure: true, sameSite: 'lax' });
+          return { address };
+        }
+      }
+      ```
+
+      Решения, которые стоит зафиксировать:
+      - JWT в `httpOnly`-cookie, а не в localStorage — меньше риск кражи через XSS.
+      - Короткое время жизни; продление — повторной подписью или отдельным refresh-токеном (обсудим, когда понадобится).
+      - Мобильному приложению эта сессия не нужна: у него свои ключи на устройстве, и эндпоинты курсов/пушей остаются без авторизации, как были.
+  - role: user
+    facts: []
+    text: |
+      15 минут пока ок. Слушай, а что делать, если человек в кошельке нажал «отклонить» на подписи? Сейчас у нас на сайте просто белый экран.
+  - role: assistant
+    facts: []
+    text: |
+      Отклонение подписи — это нормальный сценарий, а не ошибка. Кошельки возвращают его как `UserRejectedRequestError` (код 4001), его надо ловить отдельно:
+
+      ```ts
+      import { UserRejectedRequestError } from 'viem';
+
+      try {
+        const signature = await walletClient.signMessage({ account, message });
+        await api.verify(message, signature);
+      } catch (e) {
+        if (e instanceof UserRejectedRequestError || (e as any)?.code === 4001) {
+          setState({ kind: 'idle', notice: 'Вход отменён — подпись не была подтверждена' });
+          return;
+        }
+        setState({ kind: 'error', message: 'Не удалось войти. Попробуйте ещё раз' });
+        reportError(e);
+      }
+      ```
+
+      Белый экран, скорее всего, — необработанное исключение в компоненте. Добавьте в Next.js `error.tsx` на уровне сегмента, чтобы любая ошибка показывала аккуратную заглушку, а не пустую страницу.
+  - role: user
+    facts: []
+    text: |
+      Поймал, было исключение в рендере. Последнее на сегодня — вёрстка дашборда. Хочу слева список активов, справа график, на мобильном вебе — одно под другим. Tailwind у нас.
+  - role: assistant
+    facts: []
+    text: |
+      На Tailwind это сетка с переключением колонок на брейкпоинте:
+
+      ```tsx
+      export default function Dashboard() {
+        return (
+          <main className="mx-auto max-w-6xl p-4 grid gap-4 grid-cols-1 lg:grid-cols-[320px_1fr]">
+            <aside className="rounded-xl border p-3">
+              <AssetList />
+            </aside>
+            <section className="rounded-xl border p-3 min-h-[360px]">
+              <PortfolioChart />
+            </section>
+          </main>
+        );
+      }
+      ```
+
+      График — `recharts` или `lightweight-charts` (последний легче и лучше для финансовых рядов). Числа в списке выравнивайте `tabular-nums`, чтобы суммы не «прыгали» при обновлении. И не забудьте режим скрытия балансов из мобилки — на вебе он тоже нужен, хотя бы как переключатель в шапке.
+  - role: user
+    facts: []
+    text: |
+      lightweight-charts возьмём. Всё, до завтра.

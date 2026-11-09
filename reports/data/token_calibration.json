@@ -1,0 +1,77 @@
+{
+ "model": "deepseek/deepseek-flash",
+ "overhead": 31,
+ "rows": [
+  {
+   "topic": "рыбы",
+   "auto_depth": 0,
+   "real": 369,
+   "est": 362,
+   "chars": 897
+  },
+  {
+   "topic": "рыбы",
+   "auto_depth": 1,
+   "real": 634,
+   "est": 601,
+   "chars": 1533
+  },
+  {
+   "topic": "SQL-оплаты",
+   "auto_depth": 0,
+   "real": 241,
+   "est": 243,
+   "chars": 614
+  },
+  {
+   "topic": "SQL-оплаты",
+   "auto_depth": 1,
+   "real": 475,
+   "est": 464,
+   "chars": 1179
+  },
+  {
+   "topic": "медицина",
+   "auto_depth": 0,
+   "real": 220,
+   "est": 247,
+   "chars": 622
+  },
+  {
+   "topic": "медицина",
+   "auto_depth": 1,
+   "real": 437,
+   "est": 457,
+   "chars": 1161
+  },
+  {
+   "topic": "программирование",
+   "auto_depth": 0,
+   "real": 251,
+   "est": 260,
+   "chars": 681
+  },
+  {
+   "topic": "программирование",
+   "auto_depth": 1,
+   "real": 353,
+   "est": 355,
+   "chars": 941
+  },
+  {
+   "topic": "история",
+   "auto_depth": 0,
+   "real": 299,
+   "est": 296,
+   "chars": 752
+  },
+  {
+   "topic": "история",
+   "auto_depth": 1,
+   "real": 523,
+   "est": 523,
+   "chars": 1321
+  }
+ ],
+ "real_over_est": 0.998
+}

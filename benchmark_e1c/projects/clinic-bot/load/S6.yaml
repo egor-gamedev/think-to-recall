@@ -1,0 +1,206 @@
+segment: S6
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [C03c]
+    text: |
+      Опять напоминания. Пациенты жалуются, что сообщение за 2 часа приходит, когда они уже в пути, — раздражает, а неявок меньше не стало. Новая схема от клиники: напоминание одно — за 48 часов, с кнопкой «Подтверждаю». Кто не подтвердил за сутки до приёма, того бот не отменяет, а передаёт регистратуре на обзвон. Напоминание за 2 часа убрали совсем, за 24 — тоже.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда в `REMINDERS` остаётся одна запись, а за сутки работает уже не напоминание, а отдельная задача «собрать неподтверждённых».
+
+      ```python
+      class ConfirmCb(CallbackData, prefix="ok"):
+          visit_id: int
+
+      async def remind_48(bot, reader):
+          now = datetime.now()
+          for v in await reader.visits_between(now + timedelta(hours=47, minutes=50), now + timedelta(hours=48, minutes=10)):
+              if await sent.was_sent(v.id, "48h"):
+                  continue
+              tg_id = await links.tg_for_card(v.patient_id)
+              if tg_id:
+                  kb = InlineKeyboardBuilder()
+                  kb.button(text="✅ Подтверждаю", callback_data=ConfirmCb(visit_id=v.id))
+                  await bot.send_message(
+                      tg_id,
+                      f"Напоминаем о приёме {v.start:%d.%m в %H:%M} у врача {v.doctor}.\n"
+                      f"{BRANCHES[v.branch_id]}\n\nПожалуйста, подтвердите, что придёте.",
+                      reply_markup=kb.as_markup(),
+                  )
+              await sent.mark(v.id, "48h")
+
+      async def unconfirmed_to_registry(bot, reader):
+          now = datetime.now()
+          for v in await reader.visits_between(now + timedelta(hours=23, minutes=50), now + timedelta(hours=24, minutes=10)):
+              if await sent.was_sent(v.id, "48h") and not await sent.was_sent(v.id, "confirmed"):
+                  if not await sent.was_sent(v.id, "to_registry"):
+                      await notify_registry(bot, fmt_unconfirmed(v))
+                      await sent.mark(v.id, "to_registry")
+      ```
+
+      Учтите граничный случай: тем, кто записался меньше чем за 48 часов, напоминание не придёт, и в список неподтверждённых они попадать не должны — отсюда условие `was_sent(v.id, "48h")`. Старые флаги `24h` и `2h` в таблице `sent` можно оставить, они ничему не мешают.
+  - role: user
+    facts: []
+    text: |
+      Кнопка «Подтверждаю» — хочу, чтобы подтверждение было видно и в самой учётке, а не только у меня в SQLite. Регистратура смотрит в СтомаОфис, а не в бот.
+  - role: assistant
+    facts: []
+    text: |
+      Писать в учётку можем только через API, так что смотрите в доке вендора метод изменения визита. Обычно это `PATCH /v1/visits/{id}` со статусом или флагом подтверждения:
+
+      ```python
+      @router.callback_query(ConfirmCb.filter())
+      async def confirmed(cb: CallbackQuery, callback_data: ConfirmCb, writer: VisitWriter):
+          visit = await my_visit_or_none(cb.from_user.id, callback_data.visit_id)
+          if not visit:
+              await cb.answer("Запись не найдена", show_alert=True)
+              return
+          try:
+              await writer.confirm(visit.id)        # PATCH /v1/visits/{id} {"confirmed": true}
+          except httpx.HTTPError:
+              logging.exception("confirm failed, visit=%s", visit.id)
+          await sent.mark(visit.id, "confirmed")    # у себя отмечаем в любом случае
+          await cb.message.edit_reply_markup(reply_markup=None)
+          await cb.message.answer("Спасибо! Ждём вас.")
+          await cb.answer()
+      ```
+
+      Если API упал, пациент всё равно видит «Спасибо», а у себя мы отметку ставим — иначе он попадёт в обзвон, хотя подтвердил. Неудачные `confirm` стоит повторять той же периодической задачей: раз в 5 минут перебирать визиты с флагом `confirmed`, но без флага `confirmed_api`.
+
+      Если подходящего поля в API нет, остаётся `note` — спросите вендора, можно ли менять его у существующего визита.
+  - role: user
+    facts: []
+    text: |
+      Поле есть, `confirmed`. Сделал, в СтомаОфисе появляется галочка. Повторы тоже.
+  - role: assistant
+    facts: []
+    text: |
+      Отлично. Чтобы повторы не крутились вечно, ограничьте их: если визит уже прошёл, а `confirmed_api` так и не встал — перестаём пытаться и пишем одну строку в лог с id визита. Через API отмечать подтверждение прошедшего приёма смысла нет.
+
+      ```python
+      async def retry_confirms(writer, reader):
+          for visit_id in await sent.ids_with("confirmed", without="confirmed_api"):
+              v = await reader.visit(visit_id)
+              if v is None or v.start < datetime.now():
+                  await sent.mark(visit_id, "confirmed_api")   # больше не трогаем
+                  continue
+              try:
+                  await writer.confirm(visit_id)
+                  await sent.mark(visit_id, "confirmed_api")
+              except httpx.HTTPError:
+                  pass
+      ```
+  - role: user
+    facts: [C12]
+    text: |
+      Теперь неприятное. Юрист клиники посмотрел логи на сервере, когда проверял, где хранятся данные пациентов, и устроил разнос: в логах ФИО и телефоны открытым текстом — из уведомлений регистратуре и из ошибок. Требование юриста клиники: в логах ФИО и телефоны маскируются. Как это сделать, не переписывая каждый вызов logging?
+  - role: assistant
+    facts: []
+    text: |
+      Фильтр на уровне корневого логгера — он обрабатывает уже отформатированное сообщение, так что поймает и ваши вызовы, и логи aiogram, и трейсбеки:
+
+      ```python
+      # clinic_bot/logging_setup.py
+      import logging
+      import re
+
+      PHONE_RE = re.compile(r"(?:\+7|8)[\s\-()]*\d(?:[\s\-()]*\d){9}")
+      FIO_RE = re.compile(r"\b[А-ЯЁ][а-яё]+(?:ов|ев|ин|ын|ский|цкий|ова|ева|ина|ына|ская|цкая)\s+[А-ЯЁ][а-яё]+(?:\s+[А-ЯЁ][а-яё]+)?")
+
+      def mask(text: str) -> str:
+          text = PHONE_RE.sub(lambda m: "***" + re.sub(r"\D", "", m.group())[-2:], text)
+          text = FIO_RE.sub(lambda m: m.group()[0] + "***", text)
+          return text
+
+      class MaskFilter(logging.Filter):
+          def filter(self, record: logging.LogRecord) -> bool:
+              record.msg = mask(record.getMessage())
+              record.args = ()
+              if record.exc_info:
+                  record.exc_text = mask(logging.Formatter().formatException(record.exc_info))
+                  record.exc_info = None
+              return True
+
+      def setup():
+          handler = logging.StreamHandler()
+          handler.addFilter(MaskFilter())
+          handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+          logging.basicConfig(level=logging.INFO, handlers=[handler])
+      ```
+
+      Фильтр вешаем на handler, а не на логгер: фильтры логгера не срабатывают для сообщений дочерних логгеров (aiogram, httpx), а фильтр обработчика видит всё.
+
+      Регулярка по ФИО эвристическая — она не поймает «Ким Анна» и может замаскировать лишнее. Поэтому второе правило важнее: не передавайте в логи объекты пациента вообще. Логируйте `visit_id`, `card_id`, `tg_id` — по ним вы и так всё найдёте в учётке.
+
+      И отключите логирование апдейтов целиком на уровне DEBUG в проде: `logging.getLogger("aiogram.event").setLevel(logging.INFO)` — в DEBUG aiogram печатает содержимое сообщений, включая контакты.
+  - role: user
+    facts: []
+    text: |
+      Сделал, в новых логах звёздочки. А что со старыми? Там за полтора месяца всё открытым текстом. И journald у меня хранит сколько хочет.
+  - role: assistant
+    facts: []
+    text: |
+      Старые логи с персональными данными лучше удалить, а не маскировать задним числом — так проще объяснить юристу, что их нет.
+
+      ```bash
+      # что сейчас занимает journald
+      journalctl --disk-usage
+
+      # удалить всё старше суток (после проверки, что новые логи уже с маской)
+      sudo journalctl --vacuum-time=1d
+
+      # если писали ещё и в файлы
+      sudo find /var/log/clinic-bot -name "*.log*" -mtime +0 -delete
+      ```
+
+      И ограничьте срок хранения на будущее, чтобы через год не было той же истории:
+
+      ```ini
+      # /etc/systemd/journald.conf
+      [Journal]
+      MaxRetentionSec=30day
+      SystemMaxUse=500M
+      ```
+
+      `sudo systemctl restart systemd-journald`. Не забудьте про бэкапы: если VPS снапшотится в Selectel, в старых снапшотах логи остались. Их тоже стоит удалить или дождаться, пока они уйдут по ротации, — и сказать об этом юристу честно.
+  - role: user
+    facts: []
+    text: |
+      Снапшоты есть, ротация 7 дней, подождём. Последнее на сегодня: сделай юнит systemd, чтобы бот сам поднимался, и пару команд, которые я потом оставлю Вадиму в инструкции.
+  - role: assistant
+    facts: []
+    text: |
+      ```ini
+      # /etc/systemd/system/clinic-bot.service
+      [Unit]
+      Description=Clinic Telegram bot
+      After=network-online.target wg-quick@wg0.service
+      Wants=network-online.target wg-quick@wg0.service
+
+      [Service]
+      User=clinicbot
+      WorkingDirectory=/opt/clinic-bot
+      EnvironmentFile=/etc/clinic-bot/.env
+      ExecStart=/opt/clinic-bot/.venv/bin/python -m clinic_bot
+      Restart=always
+      RestartSec=5
+
+      [Install]
+      WantedBy=multi-user.target
+      ```
+
+      `After=wg-quick@wg0` — чтобы бот не стартовал раньше туннеля до клиники и не сыпал ошибками подключения к Firebird.
+
+      Шпаргалка для инструкции — команды, которые можно копировать, ничего не понимая в Python:
+
+      | Что нужно | Команда |
+      |---|---|
+      | Работает ли бот | `sudo systemctl status clinic-bot` |
+      | Перезапустить | `sudo systemctl restart clinic-bot` |
+      | Последние 100 строк лога | `sudo journalctl -u clinic-bot -n 100` |
+      | Жив ли туннель до клиники | `sudo wg show` |
+      | Поменять настройки | `sudo nano /etc/clinic-bot/.env`, потом перезапустить |
+
+      Подключаться Вадиму удобнее всего через PuTTY или встроенный в Windows `ssh` — дайте ему отдельного пользователя с `sudo` только на эти команды, а не root.

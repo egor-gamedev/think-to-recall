@@ -1,0 +1,63 @@
+# Контексты, которых не было при починке после раунда 1 (написаны 2026-10-19, Claude Opus;
+# тестируемая модель DeepSeek их не видела). Нужны, чтобы проверить исправления не только
+# на тех контекстах, по рёбрам которых они придумывались.
+# past — прошлые сессии (копят «опыт»), current — текущий контекст для меню.
+- id: pg-backups
+  past:
+    - "Настраивали WAL-архивирование PostgreSQL, восстановление проверяли на стенде."
+    - "Бэкапы PostgreSQL кладём в S3; восстановление на стенде заняло 40 минут."
+  current: "Как организовать резервное копирование PostgreSQL: pg_dump каждую ночь, хранение 14 дней в S3?"
+- id: altai-hike
+  past:
+    - "В прошлом походе на Кольский забыли газовый баллон для горелки."
+  current: "Планирую поход на Алтай в августе на пять дней: палатка, спальник, горелка, аптечка. Что взять ещё?"
+- id: login-rate-limit
+  past:
+    - "We store sessions in Redis; the login endpoint already logs failed attempts."
+    - "Redis cluster handles sessions and the login endpoint rate counters."
+  current:
+    - role: user
+      content: "Add brute-force protection to the login endpoint: lock the account after 5 failed attempts."
+    - id: app/auth/routes.py
+      kind: file
+      title: app/auth/routes.py
+      content: |
+        @router.post("/login")
+        async def login(form: LoginForm, redis: Redis = Depends(get_redis)):
+            user = await users.get_by_email(form.email)
+            if not user or not verify_password(form.password, user.password_hash):
+                await redis.incr(f"login_fail:{form.email}")
+                raise HTTPException(status_code=401)
+- id: nginx-tls
+  past:
+    - "Nginx reverse proxy in docker-compose terminates TLS for the API."
+  current:
+    - role: user
+      content: "Certificates expired last night again. Automate Let's Encrypt renewal for our nginx container."
+    - id: deploy/docker-compose.yml
+      kind: file
+      title: deploy/docker-compose.yml
+      content: |
+        services:
+          nginx:
+            image: nginx:1.27
+            volumes:
+              - ./certs:/etc/nginx/certs:ro
+            ports: ["443:443"]
+- id: child-fever
+  past:
+    - "У дочки была аллергия на ибупрофен, педиатр советовал парацетамол."
+  current: "Ребёнку три года, температура 38,5. Сколько парацетамола можно дать по весу 15 кг?"
+- id: alexander-reforms
+  past:
+    - "Читали про Николая I и Крымскую войну, поражение показало отсталость армии."
+  current: "Какие реформы провёл Александр II после отмены крепостного права в 1861 году?"
+- id: sourdough
+  past:
+    - "My sourdough starter doubled in six hours after feeding with rye flour."
+  current: "How do I get a more open crumb in sourdough bread at 75% hydration baked in a Dutch oven?"
+- id: tg-bot
+  past:
+    - "Бот на aiogram хранит состояния диалога в Redis."
+    - "Состояния бота в Redis теряются после рестарта, если не включён persistence."
+  current: "Telegram-бот на aiogram упирается в лимит 30 сообщений в секунду при рассылке. Как сделать очередь?"

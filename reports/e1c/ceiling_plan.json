@@ -1,0 +1,20 @@
+{
+ "greenhouse-iot": [
+  "Q03",
+  "Q27",
+  "Q29"
+ ],
+ "clinic-bot": [
+  "Q17",
+  "Q34",
+  "Q35"
+ ],
+ "econ-thesis": [
+  "Q22",
+  "Q28"
+ ],
+ "indie-game": [
+  "Q24",
+  "Q32"
+ ]
+}

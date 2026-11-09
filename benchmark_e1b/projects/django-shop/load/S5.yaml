@@ -1,0 +1,127 @@
+segment: S5
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [G13b]
+    text: |
+      Привет. Бухгалтер обрадовала: с января магазин платит НДС. Значит, в ценах и в чеках НДС надо выделять. Онлайн-касса у нас через CloudPayments (их облачная касса). С чего начинать переделку?
+  - role: assistant
+    facts: []
+    text: |
+      Переделка в трёх местах: данные товара, расчёт и фискальный чек.
+
+      1. **Ставка у товара.** Добавьте поле ставки НДС (по умолчанию 20%, но держите поле — для части товаров может быть иная ставка):
+
+      ```python
+      class Product(models.Model):
+          vat_rate = models.PositiveSmallIntegerField(default=20, choices=[(20, "20%"), (10, "10%"), (0, "0%")])
+      ```
+
+      2. **Расчёт.** Розничные цены для покупателя обычно остаются «с НДС внутри»: сумма не меняется, просто из неё выделяется налог `price * rate / (100 + rate)`. Решите с бухгалтером, поднимаете ли цены или оставляете прежние.
+      3. **Чек.** В позициях чека для облачной кассы передавайте ставку НДС для каждой строки (`vat: 20`), а не «без НДС». И в счёте для юрлиц вместо «Без НДС» — сумма НДС отдельной строкой.
+
+      Сделайте переключение по дате: заказы, оформленные до 1 января, остаются со старыми правилами в истории и при возвратах.
+  - role: user
+    facts: []
+    text: |
+      Цены оставляем прежние. Как правильно хранить ставку в заказе, чтобы при возврате старого заказа не пересчиталось по-новому?
+  - role: assistant
+    facts: []
+    text: |
+      Фиксируйте всё, что нужно для чека, в строках заказа в момент оплаты — не ссылайтесь на текущие данные товара:
+
+      ```python
+      class OrderItem(models.Model):
+          order = models.ForeignKey(Order, related_name="items", on_delete=models.CASCADE)
+          product = models.ForeignKey(Product, on_delete=models.PROTECT)
+          name = models.CharField(max_length=255)        # как назывался на момент покупки
+          price = models.DecimalField(max_digits=10, decimal_places=2)
+          qty = models.PositiveIntegerField()
+          vat_rate = models.PositiveSmallIntegerField(null=True)  # None = без НДС (старые заказы)
+      ```
+
+      Чек возврата строится из строк заказа: ставка та же, что была в чеке прихода. Для старых заказов `vat_rate=None` → в чеке возврата «без НДС». Так налоговая видит согласованные чеки прихода и возврата.
+
+      Миграция: для существующих строк заказа заполнить `vat_rate=None`, для новых — копировать ставку из товара при оформлении.
+  - role: user
+    facts: [G18]
+    text: |
+      Сделал. Про возвраты как раз: принимаем их 14 дней, обратная отправка тоже через СДЭК. Сейчас менеджер оформляет возврат руками в трёх местах: в заказе, в кассе, в СДЭК. Можно собрать в одну кнопку?
+  - role: assistant
+    facts: []
+    text: |
+      Да, одно действие в админке, которое создаёт заявку на возврат и проводит шаги по очереди:
+
+      ```python
+      @admin.action(description="Оформить возврат")
+      def make_return(modeladmin, request, queryset):
+          for order in queryset:
+              if order.delivered_at and now() - order.delivered_at > timedelta(days=14):
+                  modeladmin.message_user(request, f"Заказ {order.number}: прошло больше 14 дней", level=messages.WARNING)
+                  continue
+              ret = Return.objects.create(order=order, status="requested")
+              create_cdek_return.delay(ret.id)          # накладная на обратную отправку
+      ```
+
+      Дальше по статусам:
+      1. СДЭК создал обратную накладную → покупателю SMS с номером.
+      2. Товар принят на склад поставщика → менеджер жмёт «Товар получен».
+      3. Возврат денег через API CloudPayments (`payments/refund`) → чек возврата формирует касса.
+
+      Проверку срока 14 дней делайте от даты получения, а не от даты заказа. Брак — отдельная ветка: там другие сроки, лучше пусть менеджер отмечает это явно.
+  - role: user
+    facts: []
+    text: |
+      Сделаю статусами. Ещё хочу обновить Django — сейчас 5.0, есть 5.2 LTS. Чего бояться?
+  - role: assistant
+    facts: []
+    text: |
+      Внутри 5.x переход обычно мягкий. План:
+
+      1. Включите предупреждения о депрекациях и прогоните тесты на текущей версии: `python -Wd -m pytest`. Всё, что выдаст `RemovedInDjango...Warning`, исправьте до обновления.
+      2. Проверьте сторонние пакеты: `django-htmx`, `django-debug-toolbar`, `django-celery-beat`, `weasyprint`-интеграцию — что они поддерживают 5.2.
+      3. Обновите в отдельной ветке, прогоните миграции на копии базы (`migrate --plan`, чтобы увидеть новые миграции из contrib-приложений).
+      4. Почитайте release notes 5.1 и 5.2 — раздел «Backwards incompatible changes».
+
+      Одна из частых мелочей — изменения в формах и виджетах админки, которые ломают кастомные шаблоны. У вас кастомизирован список заказов — посмотрите его глазами после обновления.
+  - role: user
+    facts: []
+    text: |
+      Тесты у меня есть, но мало, и они на unittest. Хочу перейти на pytest-django и покрыть оплату и возвраты. С чего?
+  - role: assistant
+    facts: []
+    text: |
+      pytest-django запускает и старые unittest-тесты, так что переход можно делать постепенно.
+
+      ```ini
+      # pytest.ini
+      [pytest]
+      DJANGO_SETTINGS_MODULE = spica.settings.test
+      python_files = tests.py test_*.py
+      addopts = --reuse-db -q
+      ```
+
+      Начните с самых дорогих ошибок — уведомления об оплате и возвраты:
+
+      ```python
+      @pytest.mark.django_db
+      def test_cp_pay_marks_order_paid(client, order_factory, settings):
+          order = order_factory(status="awaiting_payment", total=1500)
+          body = urlencode({"InvoiceId": order.number, "TransactionId": "123", "Amount": "1500.00"})
+          sign = base64.b64encode(hmac.new(settings.CP_API_SECRET.encode(), body.encode(), hashlib.sha256).digest()).decode()
+          r = client.post("/pay/cp/pay/", body, content_type="application/x-www-form-urlencoded", HTTP_CONTENT_HMAC=sign)
+          assert r.json() == {"code": 0}
+          order.refresh_from_db()
+          assert order.status == "paid"
+
+      @pytest.mark.django_db
+      def test_wrong_signature_rejected(client):
+          r = client.post("/pay/cp/pay/", "InvoiceId=1", content_type="application/x-www-form-urlencoded", HTTP_CONTENT_HMAC="x")
+          assert r.status_code == 403
+      ```
+
+      Фабрики — `factory_boy`. Celery в тестах — `CELERY_TASK_ALWAYS_EAGER = True`, чтобы задачи выполнялись сразу. Внешние API (CloudPayments, СДЭК) мокайте через `responses`.
+  - role: user
+    facts: []
+    text: |
+      Поехали так. Первые два теста зелёные. Дальше буду спрашивать по ходу.

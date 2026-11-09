@@ -1,0 +1,1516 @@
+﻿pair,task,requirement_id,requirement,noticed_question,addressed_question,answer,noticed,addressed
+1,auth-offline-field-app,offline-for-days,"Technicians are offline for two to four days, so a 15-minute access token
+that needs the network to refresh locks them out of the app in the field.
+Authentication must keep working offline (e.g. local verification, an
+offline session bound to the device, sync-time re-validation).",Does the answer recognize that users stay offline for days and cannot refresh tokens during that time?,Does the solution let technicians keep working offline for several days while staying secure?,"## Recommendation: short-lived JWT + server-side revocation, not a static JWT
+
+A plain JWT ""add auth"" fails two of your constraints: tablets work offline for days, and the security policy requires revoking access — including downloaded data — within one hour. A self-contained JWT cannot be revoked before it expires, so its lifetime *is* your revocation delay.
+
+**Design**
+
+1. **Two tokens.** Access JWT: RS256, TTL ≤ 15 min, claims `sub` (technician id), `dev` (tablet id), `iat`, `exp`, `jti`. Refresh token: opaque, random, stored hashed server-side in a `sessions` table with `revoked_at` and rotation + reuse detection. Never issue a JWT with a multi-day TTL.
+2. **Authenticate the device *and* the person.** Tablets are pooled, so a token bound only to `Tablet.serial` (or a serial used as a secret) is wrong — a shared depot device would carry one technician's identity to the next. Bind each session to the (technician, tablet) pair, and force re-auth when a tablet is reassigned or returned. Prefer a device key in the tablet's keystore over a serial number.
+3. **Offline = no new authorizations.** The app stores *inspection data*, not credentials. Uploads only ever happen with an access token minted at sync time, while online. So an offline tablet can never push data under a stale grant.
+4. **Meeting the one-hour rule.** Access TTL 15 min + revoke the refresh token/session row → effective revocation < 15 min for online sync. For data already on the device: encrypt the local DB with a key wrapped by a server-held KEK, and on revocation delete the wrapped key plus queue a remote wipe for the next sync. Without this, ""revoked"" data stays readable on the tablet.
+5. **Implementation.** FastAPI dependency `get_current_technician` validating signature/exp/`jti` against a revocation set; routes `/auth/login`, `/auth/refresh`, `/auth/revoke`; scopes for technician vs. admin; audit log of sessions and revocations.
+
+**Caveat:** if a tablet is off-network past the TTL, it must fail closed for API calls — plan the UX for re-auth at the depot, since that is your only enforcement point.",,
+1,auth-offline-field-app,pooled-tablets,"Tablets are shared from a depot pool, so tokens and locally stored data
+must be bound to the technician and cleared or re-authenticated when a
+tablet changes hands; binding tokens to the device alone is not enough.",Does the answer notice that devices are shared between technicians?,Does the solution separate one technician's session and data from the next person using the same tablet?,"## Recommendation: short-lived JWT + server-side revocation, not a static JWT
+
+A plain JWT ""add auth"" fails two of your constraints: tablets work offline for days, and the security policy requires revoking access — including downloaded data — within one hour. A self-contained JWT cannot be revoked before it expires, so its lifetime *is* your revocation delay.
+
+**Design**
+
+1. **Two tokens.** Access JWT: RS256, TTL ≤ 15 min, claims `sub` (technician id), `dev` (tablet id), `iat`, `exp`, `jti`. Refresh token: opaque, random, stored hashed server-side in a `sessions` table with `revoked_at` and rotation + reuse detection. Never issue a JWT with a multi-day TTL.
+2. **Authenticate the device *and* the person.** Tablets are pooled, so a token bound only to `Tablet.serial` (or a serial used as a secret) is wrong — a shared depot device would carry one technician's identity to the next. Bind each session to the (technician, tablet) pair, and force re-auth when a tablet is reassigned or returned. Prefer a device key in the tablet's keystore over a serial number.
+3. **Offline = no new authorizations.** The app stores *inspection data*, not credentials. Uploads only ever happen with an access token minted at sync time, while online. So an offline tablet can never push data under a stale grant.
+4. **Meeting the one-hour rule.** Access TTL 15 min + revoke the refresh token/session row → effective revocation < 15 min for online sync. For data already on the device: encrypt the local DB with a key wrapped by a server-held KEK, and on revocation delete the wrapped key plus queue a remote wipe for the next sync. Without this, ""revoked"" data stays readable on the tablet.
+5. **Implementation.** FastAPI dependency `get_current_technician` validating signature/exp/`jti` against a revocation set; routes `/auth/login`, `/auth/refresh`, `/auth/revoke`; scopes for technician vs. admin; audit log of sessions and revocations.
+
+**Caveat:** if a tablet is off-network past the TTL, it must fail closed for API calls — plan the UX for re-auth at the depot, since that is your only enforcement point.",,
+1,auth-offline-field-app,revocation-reaches-devices,"Access must be revoked within one hour including data already on devices.
+Stateless JWTs cannot be revoked before expiry, and an offline device
+cannot be reached; the solution needs a revocation mechanism and an
+explicit answer for offline devices (e.g. short offline grace, remote
+wipe on reconnect, encrypted local data with keys that expire).",Does the answer notice the one-hour revocation requirement and that it conflicts with long-lived offline access?,Does the solution provide revocation and state how it applies to devices that are offline?,"## Recommendation: short-lived JWT + server-side revocation, not a static JWT
+
+A plain JWT ""add auth"" fails two of your constraints: tablets work offline for days, and the security policy requires revoking access — including downloaded data — within one hour. A self-contained JWT cannot be revoked before it expires, so its lifetime *is* your revocation delay.
+
+**Design**
+
+1. **Two tokens.** Access JWT: RS256, TTL ≤ 15 min, claims `sub` (technician id), `dev` (tablet id), `iat`, `exp`, `jti`. Refresh token: opaque, random, stored hashed server-side in a `sessions` table with `revoked_at` and rotation + reuse detection. Never issue a JWT with a multi-day TTL.
+2. **Authenticate the device *and* the person.** Tablets are pooled, so a token bound only to `Tablet.serial` (or a serial used as a secret) is wrong — a shared depot device would carry one technician's identity to the next. Bind each session to the (technician, tablet) pair, and force re-auth when a tablet is reassigned or returned. Prefer a device key in the tablet's keystore over a serial number.
+3. **Offline = no new authorizations.** The app stores *inspection data*, not credentials. Uploads only ever happen with an access token minted at sync time, while online. So an offline tablet can never push data under a stale grant.
+4. **Meeting the one-hour rule.** Access TTL 15 min + revoke the refresh token/session row → effective revocation < 15 min for online sync. For data already on the device: encrypt the local DB with a key wrapped by a server-held KEK, and on revocation delete the wrapped key plus queue a remote wipe for the next sync. Without this, ""revoked"" data stays readable on the tablet.
+5. **Implementation.** FastAPI dependency `get_current_technician` validating signature/exp/`jti` against a revocation set; routes `/auth/login`, `/auth/refresh`, `/auth/revoke`; scopes for technician vs. admin; audit log of sessions and revocations.
+
+**Caveat:** if a tablet is off-network past the TTL, it must fail closed for API calls — plan the UX for re-auth at the depot, since that is your only enforcement point.",,
+2,request-logging-lab,phi-in-bodies,"Bodies carry lab results and patient data (PHI), and compliance forbids PHI in logs.
+Logging bodies (and some headers or query parameters with patient ids) is a
+violation; log metadata only or apply strict redaction.",Does the answer notice that request and response bodies contain protected health information?,"Does the solution avoid logging PHI (no bodies, or reliable redaction, ids only in the audit log)?","**Recommendation: don’t log full request/response bodies.** The constraints make it unsafe and infeasible.
+
+**Why**
+- Traffic is ~3,000 req/s ≈ **7.8B requests/month**. At a 14 KB median response, full response logging is ~**109 TB/month** — about **55× the 2 TB budget**.
+- PHI must never enter logs, traces, or analytics. Bodies, query params, headers, and many error messages can contain patient identifiers.
+
+**Implement this instead**
+
+1. **Structured metadata logging**
+   - Log: timestamp, correlation/trace ID, route template (`/patients/{id}/results`, not the actual ID), method, status, latency, response bytes, client ID, error code.
+   - Never log bodies, Authorization/Cookie headers, raw query strings, or patient identifiers.
+   - Use an allow-list schema plus a redaction filter; do not rely only on regex scrubbing.
+
+2. **Sampling and volume control**
+   - Log **100% of 5xx** and sampled 4xx; sample successful requests at **0.1–1%**.
+   - If sampled bodies are ever needed for non-PHI debugging, cap them aggressively and keep total application logs within budget; realistically, avoid bodies entirely.
+   - Add Elasticsearch ILM retention and budget alerts.
+
+3. **Separate audit logging**
+   - Record PHI access events (who accessed which patient/result, when, why) in the compliant audit log — not the application log or Elasticsearch debug index.
+   - Keep audit logs immutable, access-controlled, and retention-policy compliant.
+
+4. **Debugging workflow**
+   - Return a correlation ID to clients; support searches by that ID.
+   - For client issues, use synthetic/reproducible payloads or a secure, time-limited debug process that does not write PHI to logs.
+   - Ensure exception logging strips request values; sanitize SQL/validation errors.
+
+**Spring Boot specifics**
+- Disable default request/response body logging.
+- Add a `OncePerRequestFilter` for correlation IDs and access-log metadata.
+- Use MDC + JSON logging with an allow-list.
+- Add tests asserting PHI-like fields never appear in log output.
+
+This gives useful diagnostics while staying within the 2 TB budget and compliance boundary.",,
+2,request-logging-lab,volume-budget,"3,000 req/s with 14 KB bodies is roughly 3.6 TB per day if bodies are logged, far over
+the 2 TB per month budget. Needs sampling, metadata-only logs or on-demand debug logging.",Does the answer notice that full logging would exceed the log storage budget?,"Does the solution control volume (sampling, metadata only, per-client debug switch)?","**Recommendation: don’t log full request/response bodies.** The constraints make it unsafe and infeasible.
+
+**Why**
+- Traffic is ~3,000 req/s ≈ **7.8B requests/month**. At a 14 KB median response, full response logging is ~**109 TB/month** — about **55× the 2 TB budget**.
+- PHI must never enter logs, traces, or analytics. Bodies, query params, headers, and many error messages can contain patient identifiers.
+
+**Implement this instead**
+
+1. **Structured metadata logging**
+   - Log: timestamp, correlation/trace ID, route template (`/patients/{id}/results`, not the actual ID), method, status, latency, response bytes, client ID, error code.
+   - Never log bodies, Authorization/Cookie headers, raw query strings, or patient identifiers.
+   - Use an allow-list schema plus a redaction filter; do not rely only on regex scrubbing.
+
+2. **Sampling and volume control**
+   - Log **100% of 5xx** and sampled 4xx; sample successful requests at **0.1–1%**.
+   - If sampled bodies are ever needed for non-PHI debugging, cap them aggressively and keep total application logs within budget; realistically, avoid bodies entirely.
+   - Add Elasticsearch ILM retention and budget alerts.
+
+3. **Separate audit logging**
+   - Record PHI access events (who accessed which patient/result, when, why) in the compliant audit log — not the application log or Elasticsearch debug index.
+   - Keep audit logs immutable, access-controlled, and retention-policy compliant.
+
+4. **Debugging workflow**
+   - Return a correlation ID to clients; support searches by that ID.
+   - For client issues, use synthetic/reproducible payloads or a secure, time-limited debug process that does not write PHI to logs.
+   - Ensure exception logging strips request values; sanitize SQL/validation errors.
+
+**Spring Boot specifics**
+- Disable default request/response body logging.
+- Add a `OncePerRequestFilter` for correlation IDs and access-log metadata.
+- Use MDC + JSON logging with an allow-list.
+- Add tests asserting PHI-like fields never appear in log output.
+
+This gives useful diagnostics while staying within the 2 TB budget and compliance boundary.",,
+3,profile-photo-upload,heic,"71% of users are on iOS, where photos are HEIC by default; the code accepts only JPEG
+and PNG, so most uploads would fail with 415. HEIC must be accepted and converted.",Does the answer notice that iPhone photos are HEIC and would be rejected?,Does the solution accept and convert HEIC (or force conversion on the client)?,"1. **Account/profile authorization** — ensure uploads are tied to the authenticated parent account and correct child profile; prevent cross-account or cross-profile overwrite.
+2. **Child-content approval** — if avatars are visible to others, clarify whether parent review/approval is required before display.
+3. **Child privacy/compliance** — profile photos are children’s personal data; consider consent, retention, deletion, and COPPA/GDPR-K obligations.
+4. **EXIF/metadata leakage** — photos may contain GPS, device, or timestamp metadata; resizing alone may not remove it.
+5. **HEIC/HEIF support** — iPhone/iPad dominate usage, so native camera photos may not arrive as JPEG/PNG.
+6. **Content-type spoofing** — `content_type` is client-controlled; validate actual image bytes and decode safely.
+7. **Decompression bombs / resource exhaustion** — large or malicious images can exhaust memory/CPU during Pillow processing.
+8. **EXIF orientation** — mobile photos often rely on orientation metadata; re-encoding must rotate correctly.
+9. **Transparency and animation** — PNG transparency and animated formats need defined behavior when converting to JPEG.
+10. **Upload limits and rate limiting** — enforce file-size, pixel-dimension, and request-rate limits to prevent abuse.
+11. **S3 object privacy** — decide whether avatars are private, signed-URL-only, or public/CDN-served; avoid accidental exposure.
+12. **Cache invalidation** — replacing a photo needs immutable/versioned keys or cache busting so old avatars do not persist.
+13. **Deletion/retention cleanup** — replacing a photo or deleting a profile/account should remove old S3 objects and derived versions.
+14. **Mobile UX/permissions** — camera/gallery permissions, slow networks, upload failures, and preview behavior matter on iOS/Android.
+15. **Moderation/abuse handling** — even child avatars may require inappropriate-image handling, reporting, or parent-controlled defaults.",,
+3,profile-photo-upload,exif-gps,"Phone photos carry EXIF metadata including GPS coordinates; storing or serving them
+would collect children's precise location, which the privacy policy forbids. EXIF must
+be stripped.",Does the answer notice that photo metadata can contain the child's location?,Does the solution strip EXIF/GPS metadata before storing?,"1. **Account/profile authorization** — ensure uploads are tied to the authenticated parent account and correct child profile; prevent cross-account or cross-profile overwrite.
+2. **Child-content approval** — if avatars are visible to others, clarify whether parent review/approval is required before display.
+3. **Child privacy/compliance** — profile photos are children’s personal data; consider consent, retention, deletion, and COPPA/GDPR-K obligations.
+4. **EXIF/metadata leakage** — photos may contain GPS, device, or timestamp metadata; resizing alone may not remove it.
+5. **HEIC/HEIF support** — iPhone/iPad dominate usage, so native camera photos may not arrive as JPEG/PNG.
+6. **Content-type spoofing** — `content_type` is client-controlled; validate actual image bytes and decode safely.
+7. **Decompression bombs / resource exhaustion** — large or malicious images can exhaust memory/CPU during Pillow processing.
+8. **EXIF orientation** — mobile photos often rely on orientation metadata; re-encoding must rotate correctly.
+9. **Transparency and animation** — PNG transparency and animated formats need defined behavior when converting to JPEG.
+10. **Upload limits and rate limiting** — enforce file-size, pixel-dimension, and request-rate limits to prevent abuse.
+11. **S3 object privacy** — decide whether avatars are private, signed-URL-only, or public/CDN-served; avoid accidental exposure.
+12. **Cache invalidation** — replacing a photo needs immutable/versioned keys or cache busting so old avatars do not persist.
+13. **Deletion/retention cleanup** — replacing a photo or deleting a profile/account should remove old S3 objects and derived versions.
+14. **Mobile UX/permissions** — camera/gallery permissions, slow networks, upload failures, and preview behavior matter on iOS/Android.
+15. **Moderation/abuse handling** — even child avatars may require inappropriate-image handling, reporting, or parent-controlled defaults.",,
+3,profile-photo-upload,parental-approval,"Profile photos are visible to others and are child-generated content: they need
+parent approval (or moderation) before being shown.",Does the answer notice that a child's photo must be approved by a parent before it is shown?,Does the solution include a parent approval or moderation step before publishing the photo?,"1. **Account/profile authorization** — ensure uploads are tied to the authenticated parent account and correct child profile; prevent cross-account or cross-profile overwrite.
+2. **Child-content approval** — if avatars are visible to others, clarify whether parent review/approval is required before display.
+3. **Child privacy/compliance** — profile photos are children’s personal data; consider consent, retention, deletion, and COPPA/GDPR-K obligations.
+4. **EXIF/metadata leakage** — photos may contain GPS, device, or timestamp metadata; resizing alone may not remove it.
+5. **HEIC/HEIF support** — iPhone/iPad dominate usage, so native camera photos may not arrive as JPEG/PNG.
+6. **Content-type spoofing** — `content_type` is client-controlled; validate actual image bytes and decode safely.
+7. **Decompression bombs / resource exhaustion** — large or malicious images can exhaust memory/CPU during Pillow processing.
+8. **EXIF orientation** — mobile photos often rely on orientation metadata; re-encoding must rotate correctly.
+9. **Transparency and animation** — PNG transparency and animated formats need defined behavior when converting to JPEG.
+10. **Upload limits and rate limiting** — enforce file-size, pixel-dimension, and request-rate limits to prevent abuse.
+11. **S3 object privacy** — decide whether avatars are private, signed-URL-only, or public/CDN-served; avoid accidental exposure.
+12. **Cache invalidation** — replacing a photo needs immutable/versioned keys or cache busting so old avatars do not persist.
+13. **Deletion/retention cleanup** — replacing a photo or deleting a profile/account should remove old S3 objects and derived versions.
+14. **Mobile UX/permissions** — camera/gallery permissions, slow networks, upload failures, and preview behavior matter on iOS/Android.
+15. **Moderation/abuse handling** — even child avatars may require inappropriate-image handling, reporting, or parent-controlled defaults.",,
+4,profile-photo-upload,heic,"71% of users are on iOS, where photos are HEIC by default; the code accepts only JPEG
+and PNG, so most uploads would fail with 415. HEIC must be accepted and converted.",Does the answer notice that iPhone photos are HEIC and would be rejected?,Does the solution accept and convert HEIC (or force conversion on the client)?,"## Plan: profile photo upload
+
+**What already exists:** `app/upload.py` resizes to 256px and writes JPEG to S3 with MIME allow-listing. Reuse it — but it has gaps that matter for *this* app.
+
+**Gaps to fix**
+
+1. **Authz / ownership** — no check that the profile belongs to the caller's parent account. Every route must resolve `profile_id → parent_id` and 404 otherwise. Children can only upload to their own profile; parents to any profile in their account.
+2. **HEIC** — `ALLOWED` is jpeg/png only, but 71% of devices are iOS, which uploads HEIC by default. Without `pillow-heif` + `image/heic` the feature looks broken on the main device class.
+3. **Trusting `content_type`** — sniff the real format from bytes, not the header.
+4. **EXIF** — `thumbnail()` + `to_jpeg()` must drop metadata. Privacy doc promises no precise location of children; phone photos carry GPS EXIF. `ImageOps.exif_transpose()` to fix orientation, then re-encode → metadata gone.
+5. **No size / pixel limits** — add `MAX_BYTES` and `Image.MAX_IMAGE_PIXELS` (decompression bombs).
+6. **Privacy: avatar is child-generated content shown to others** — per `docs/privacy.md` it needs parent approval. Store `status=""pending""` on `children.avatar_key`; render a default avatar until a parent approves in settings.
+7. **Storage hygiene** — private bucket, presigned GET URLs (no public ACL), delete the previous key on replace, key by `avatars/{profile_id}/{uuid}.jpg`.
+
+**Backend sketch**
+
+```python
+MAX_BYTES = 8 * 1024 * 1024
+Image.MAX_IMAGE_PIXELS = 40_000_000
+OK_FORMATS = {""JPEG"", ""PNG"", ""HEIF""}
+
+@router.post(""/profiles/{profile_id}/avatar"")
+async def upload_avatar(profile_id: UUID, file: UploadFile,
+                        parent=Depends(current_parent)):
+    await get_profile(profile_id, parent_id=parent.id)      # 404 if not owned
+    data = await file.read(MAX_BYTES + 1)
+    if len(data) > MAX_BYTES: raise HTTPException(413)
+    try:
+        img = Image.open(io.BytesIO(data)); img.verify()
+        img = Image.open(io.BytesIO(data))
+    except Exception:
+        raise HTTPException(415)
+    if img.format not in OK_FORMATS: raise HTTPException(415)
+    img = ImageOps.exif_transpose(img).convert(""RGB"")
+    img.thumbnail((256, 256))
+    key = f""avatars/{profile_id}/{uuid4()}.jpg""
+    s3.put_object(Bucket=BUCKET, Key=key, Body=to_jpeg(img),
+                  ContentType=""image/jpeg"", ACL=""private"")
+    await set_avatar(profile_id, key, status=""pending"")     # old key deleted after commit
+```
+
+**Frontend:** file/camera input, client-side pre-resize, crop-to-square preview, spinner, error toasts for 413/415.
+
+**Tests:** wrong-owner 404, HEIC accepted, GIF/SVG rejected, oversized 413, EXIF GPS absent from output, avatar not visible to others while `pending`.",,
+4,profile-photo-upload,exif-gps,"Phone photos carry EXIF metadata including GPS coordinates; storing or serving them
+would collect children's precise location, which the privacy policy forbids. EXIF must
+be stripped.",Does the answer notice that photo metadata can contain the child's location?,Does the solution strip EXIF/GPS metadata before storing?,"## Plan: profile photo upload
+
+**What already exists:** `app/upload.py` resizes to 256px and writes JPEG to S3 with MIME allow-listing. Reuse it — but it has gaps that matter for *this* app.
+
+**Gaps to fix**
+
+1. **Authz / ownership** — no check that the profile belongs to the caller's parent account. Every route must resolve `profile_id → parent_id` and 404 otherwise. Children can only upload to their own profile; parents to any profile in their account.
+2. **HEIC** — `ALLOWED` is jpeg/png only, but 71% of devices are iOS, which uploads HEIC by default. Without `pillow-heif` + `image/heic` the feature looks broken on the main device class.
+3. **Trusting `content_type`** — sniff the real format from bytes, not the header.
+4. **EXIF** — `thumbnail()` + `to_jpeg()` must drop metadata. Privacy doc promises no precise location of children; phone photos carry GPS EXIF. `ImageOps.exif_transpose()` to fix orientation, then re-encode → metadata gone.
+5. **No size / pixel limits** — add `MAX_BYTES` and `Image.MAX_IMAGE_PIXELS` (decompression bombs).
+6. **Privacy: avatar is child-generated content shown to others** — per `docs/privacy.md` it needs parent approval. Store `status=""pending""` on `children.avatar_key`; render a default avatar until a parent approves in settings.
+7. **Storage hygiene** — private bucket, presigned GET URLs (no public ACL), delete the previous key on replace, key by `avatars/{profile_id}/{uuid}.jpg`.
+
+**Backend sketch**
+
+```python
+MAX_BYTES = 8 * 1024 * 1024
+Image.MAX_IMAGE_PIXELS = 40_000_000
+OK_FORMATS = {""JPEG"", ""PNG"", ""HEIF""}
+
+@router.post(""/profiles/{profile_id}/avatar"")
+async def upload_avatar(profile_id: UUID, file: UploadFile,
+                        parent=Depends(current_parent)):
+    await get_profile(profile_id, parent_id=parent.id)      # 404 if not owned
+    data = await file.read(MAX_BYTES + 1)
+    if len(data) > MAX_BYTES: raise HTTPException(413)
+    try:
+        img = Image.open(io.BytesIO(data)); img.verify()
+        img = Image.open(io.BytesIO(data))
+    except Exception:
+        raise HTTPException(415)
+    if img.format not in OK_FORMATS: raise HTTPException(415)
+    img = ImageOps.exif_transpose(img).convert(""RGB"")
+    img.thumbnail((256, 256))
+    key = f""avatars/{profile_id}/{uuid4()}.jpg""
+    s3.put_object(Bucket=BUCKET, Key=key, Body=to_jpeg(img),
+                  ContentType=""image/jpeg"", ACL=""private"")
+    await set_avatar(profile_id, key, status=""pending"")     # old key deleted after commit
+```
+
+**Frontend:** file/camera input, client-side pre-resize, crop-to-square preview, spinner, error toasts for 413/415.
+
+**Tests:** wrong-owner 404, HEIC accepted, GIF/SVG rejected, oversized 413, EXIF GPS absent from output, avatar not visible to others while `pending`.",,
+4,profile-photo-upload,parental-approval,"Profile photos are visible to others and are child-generated content: they need
+parent approval (or moderation) before being shown.",Does the answer notice that a child's photo must be approved by a parent before it is shown?,Does the solution include a parent approval or moderation step before publishing the photo?,"## Plan: profile photo upload
+
+**What already exists:** `app/upload.py` resizes to 256px and writes JPEG to S3 with MIME allow-listing. Reuse it — but it has gaps that matter for *this* app.
+
+**Gaps to fix**
+
+1. **Authz / ownership** — no check that the profile belongs to the caller's parent account. Every route must resolve `profile_id → parent_id` and 404 otherwise. Children can only upload to their own profile; parents to any profile in their account.
+2. **HEIC** — `ALLOWED` is jpeg/png only, but 71% of devices are iOS, which uploads HEIC by default. Without `pillow-heif` + `image/heic` the feature looks broken on the main device class.
+3. **Trusting `content_type`** — sniff the real format from bytes, not the header.
+4. **EXIF** — `thumbnail()` + `to_jpeg()` must drop metadata. Privacy doc promises no precise location of children; phone photos carry GPS EXIF. `ImageOps.exif_transpose()` to fix orientation, then re-encode → metadata gone.
+5. **No size / pixel limits** — add `MAX_BYTES` and `Image.MAX_IMAGE_PIXELS` (decompression bombs).
+6. **Privacy: avatar is child-generated content shown to others** — per `docs/privacy.md` it needs parent approval. Store `status=""pending""` on `children.avatar_key`; render a default avatar until a parent approves in settings.
+7. **Storage hygiene** — private bucket, presigned GET URLs (no public ACL), delete the previous key on replace, key by `avatars/{profile_id}/{uuid}.jpg`.
+
+**Backend sketch**
+
+```python
+MAX_BYTES = 8 * 1024 * 1024
+Image.MAX_IMAGE_PIXELS = 40_000_000
+OK_FORMATS = {""JPEG"", ""PNG"", ""HEIF""}
+
+@router.post(""/profiles/{profile_id}/avatar"")
+async def upload_avatar(profile_id: UUID, file: UploadFile,
+                        parent=Depends(current_parent)):
+    await get_profile(profile_id, parent_id=parent.id)      # 404 if not owned
+    data = await file.read(MAX_BYTES + 1)
+    if len(data) > MAX_BYTES: raise HTTPException(413)
+    try:
+        img = Image.open(io.BytesIO(data)); img.verify()
+        img = Image.open(io.BytesIO(data))
+    except Exception:
+        raise HTTPException(415)
+    if img.format not in OK_FORMATS: raise HTTPException(415)
+    img = ImageOps.exif_transpose(img).convert(""RGB"")
+    img.thumbnail((256, 256))
+    key = f""avatars/{profile_id}/{uuid4()}.jpg""
+    s3.put_object(Bucket=BUCKET, Key=key, Body=to_jpeg(img),
+                  ContentType=""image/jpeg"", ACL=""private"")
+    await set_avatar(profile_id, key, status=""pending"")     # old key deleted after commit
+```
+
+**Frontend:** file/camera input, client-side pre-resize, crop-to-square preview, spinner, error toasts for 413/415.
+
+**Tests:** wrong-owner 404, HEIC accepted, GIF/SVG rejected, oversized 413, EXIF GPS absent from output, avatar not visible to others while `pending`.",,
+5,freelance-taxes,npd-limit,"Доход 260–280 тыс. в месяц — 3,1–3,4 млн в год, больше лимита НПД (2,4 млн ₽ в год).
+Самозанятость не подходит или скоро слетит; нужен ИП на УСН (или сравнение режимов).","Замечает ли ответ, что годовой доход превышает лимит самозанятых в 2,4 млн рублей?","Предлагает ли ответ режим, который подходит при таком доходе (например, ИП на УСН)?","Карту связей я проигнорировал — она не даёт ничего по теме; ниже практическая схема.
+
+**Главное: вы налоговый резидент РФ** (живёте в Екатеринбурге), значит платите с **мировых доходов**, независимо от того, что деньги лежат в казахстанском банке.
+
+**Какой режим выбрать**
+- **Самозанятость (НПД) не подходит:** лимит 2,4 млн ₽/год, а у вас 260–280 тыс./мес ≈ 3,1–3,4 млн.
+- **ИП на УСН «доходы» 6%** — оптимально. Налог считается со всей выручки (в рублях по курсу ЦБ на дату получения). Плюс фиксированные взносы (~53,7 тыс. ₽ за 2025 г. + 1% с суммы свыше 300 тыс.). Взносами можно уменьшить налог вплоть до нуля, поэтому фактическая нагрузка ≈ 6% оборота: ~200 тыс. ₽ налога и взносов в год при выручке 3,3 млн.
+- Регистрируйтесь как ИП и подайте заявление на УСН в течение 30 дней. Регулярные заказы от разных клиентов — это предпринимательская деятельность; без ИП рискуете ст. 14.1 КоАП и доначислением НДФЛ 13–15%.
+
+**Казахстанский счёт и валюта**
+- Вы валютный резидент РФ: об открытии/закрытии счёта в зарубежном банке нужно **уведомить ФНС** (в течение месяца), иначе штраф. Отчётность о движении средств по счетам в ЕАЭС в большинстве случаев отменена, но уведомление — обязательно; уточните у консультанта актуальные правила по вашему счёту.
+- Банки Казахстана участвуют в автоматическом обмене (CRS), данные о поступлениях придут в ФНС — «незаметно» не получится.
+- Надёжнее: открыть расчётный счёт ИП в РФ и просить оплату туда (или переводить себе). Зачисление валюты от нерезидентов на счёт ИП в российском банке — штатная ситуация; банк попросит контракты/инвойсы.
+- В Казахстане и Сербии ваши услуги не создают там налоговой обязанности (работы выполняются в РФ), но следите, чтобы клиенты не удерживали местный налог.
+
+**Порядок действий**
+1. Зарегистрировать ИП, подать на УСН 6%.
+2. Уведомить ФНС о зарубежном счёте.
+3. Вести учёт поступлений в рублях по курсу ЦБ; платить авансы ежеквартально и взносы.
+4. Хранить договоры/инвойсы (переписка подойдёт) — для банка и ФНС.
+
+Это общая информация, не консультация; при вашем обороте стоит разово оплатить налогового консультанта и проверить валютную часть.",,
+5,freelance-taxes,foreign-account,"Деньги приходят на счёт в иностранном банке: резидент РФ обязан уведомить налоговую
+об открытии счёта за рубежом и, в общем случае, отчитываться о движении средств;
+валютная выручка тоже имеет особенности. Стандартный ответ этого не касается.","Замечает ли ответ, что оплата идёт на зарубежный счёт и это создаёт отдельные обязанности?","Объясняет ли ответ, что делать со счётом за рубежом (уведомление, отчёты) или советует проверить это у специалиста?","Карту связей я проигнорировал — она не даёт ничего по теме; ниже практическая схема.
+
+**Главное: вы налоговый резидент РФ** (живёте в Екатеринбурге), значит платите с **мировых доходов**, независимо от того, что деньги лежат в казахстанском банке.
+
+**Какой режим выбрать**
+- **Самозанятость (НПД) не подходит:** лимит 2,4 млн ₽/год, а у вас 260–280 тыс./мес ≈ 3,1–3,4 млн.
+- **ИП на УСН «доходы» 6%** — оптимально. Налог считается со всей выручки (в рублях по курсу ЦБ на дату получения). Плюс фиксированные взносы (~53,7 тыс. ₽ за 2025 г. + 1% с суммы свыше 300 тыс.). Взносами можно уменьшить налог вплоть до нуля, поэтому фактическая нагрузка ≈ 6% оборота: ~200 тыс. ₽ налога и взносов в год при выручке 3,3 млн.
+- Регистрируйтесь как ИП и подайте заявление на УСН в течение 30 дней. Регулярные заказы от разных клиентов — это предпринимательская деятельность; без ИП рискуете ст. 14.1 КоАП и доначислением НДФЛ 13–15%.
+
+**Казахстанский счёт и валюта**
+- Вы валютный резидент РФ: об открытии/закрытии счёта в зарубежном банке нужно **уведомить ФНС** (в течение месяца), иначе штраф. Отчётность о движении средств по счетам в ЕАЭС в большинстве случаев отменена, но уведомление — обязательно; уточните у консультанта актуальные правила по вашему счёту.
+- Банки Казахстана участвуют в автоматическом обмене (CRS), данные о поступлениях придут в ФНС — «незаметно» не получится.
+- Надёжнее: открыть расчётный счёт ИП в РФ и просить оплату туда (или переводить себе). Зачисление валюты от нерезидентов на счёт ИП в российском банке — штатная ситуация; банк попросит контракты/инвойсы.
+- В Казахстане и Сербии ваши услуги не создают там налоговой обязанности (работы выполняются в РФ), но следите, чтобы клиенты не удерживали местный налог.
+
+**Порядок действий**
+1. Зарегистрировать ИП, подать на УСН 6%.
+2. Уведомить ФНС о зарубежном счёте.
+3. Вести учёт поступлений в рублях по курсу ЦБ; платить авансы ежеквартально и взносы.
+4. Хранить договоры/инвойсы (переписка подойдёт) — для банка и ФНС.
+
+Это общая информация, не консультация; при вашем обороте стоит разово оплатить налогового консультанта и проверить валютную часть.",,
+6,password-reset-warehouse,no-email,"Only ~6% of users have an email; warehouse staff mostly have none. An email-only reset
+leaves almost everyone without a way to recover. Needs another channel (SMS to phone,
+supervisor-assisted reset with identity check).",Does the answer notice that most users have no email address?,Does the solution provide a reset path for users without email?,"## ⚠️ First: the requirement as stated doesn't fit the data
+
+- `email` is filled for **~6%** of 4,000 users → an email-only reset works for roughly 240 people out of 4,150.
+- Office staff (~150) sign in via **Azure AD** → they have no local password; a reset link is meaningless for them (they must self-serve via Microsoft's flow).
+- ~3,800 warehouse staff (pickers/drivers) reset on **shared kiosks** → email is often a personal Gmail they can't reach mid-shift, and kiosk email access is a phishing surface.
+
+So: **Do not ship ""email reset link"" as the only path.** Ship it, but gate it by account type and add a supervisor-assisted fallback.
+
+## Recommended design
+
+```
+POST /auth/forgot
+  if user is None or user.sso_subject:  # SSO users
+      → 200 always (no enumeration); office staff told: ""Use company SSO""
+  elif user.email and user.password_hash:
+      → issue token, email link
+  else:
+      → 200, but enqueue supervisor-assisted reset task
+```
+
+- **Token**: `secrets.token_urlsafe(32)`, store only SHA‑256 hash, `expires_at = now + 30min`, single-use, bind to `user_id`. Table `password_reset_token(id, user_id, token_hash, expires_at, used_at)`. Invalidate all prior tokens on use.
+- **Link**: `https://app/shiftboard/reset?t=<raw>`. On submit: min length check, re-hash with existing hasher, `used_at = now`, audit log entry, kill sessions.
+- **Anti-abuse**: rate-limit per employee_no and per IP (e.g. 3/hour), constant-time generic response (""If that account can be reset by email, a link is on its way""), no email in the response.
+- **Email**: transactional sender, plain-text friendly, short expiry stated, no password in the mail.
+
+```python
+import secrets, hashlib
+from datetime import datetime, timedelta
+
+def create_token(db, user):
+    raw = secrets.token_urlsafe(32)
+    db.add(PasswordResetToken(
+        user_id=user.id,
+        token_hash=hashlib.sha256(raw.encode()).hexdigest(),
+        expires_at=datetime.utcnow() + timedelta(minutes=30)))
+    db.commit()
+    return raw
+```
+
+## Fallback path (the one 94% will actually use)
+
+Supervisor opens the staff member's record → ""Reset password"" → system generates a one-time temporary password shown once to the supervisor (or pushes a reset prompt to the employee's next kiosk login), forces change at first use, logs who issued it. This matches how shared-kiosk warehouse operations already work.
+
+## Before shipping
+
+1. Confirm with the business where warehouse staff actually receive mail (phone SMS via `phone` column may be the better channel).
+2. Add `email` verification + a data-cleanup campaign, or the 6% number never improves.
+3. Redirect SSO users to Azure AD ""forgot password"" instead of a local form.",,
+6,password-reset-warehouse,sso-users,"Office staff authenticate via SSO and have no local password; the reset flow must not
+create one for them and should point them to the SSO password process.",Does the answer notice that SSO users have no local password to reset?,Does the solution exclude SSO users from local reset and direct them to the company SSO?,"## ⚠️ First: the requirement as stated doesn't fit the data
+
+- `email` is filled for **~6%** of 4,000 users → an email-only reset works for roughly 240 people out of 4,150.
+- Office staff (~150) sign in via **Azure AD** → they have no local password; a reset link is meaningless for them (they must self-serve via Microsoft's flow).
+- ~3,800 warehouse staff (pickers/drivers) reset on **shared kiosks** → email is often a personal Gmail they can't reach mid-shift, and kiosk email access is a phishing surface.
+
+So: **Do not ship ""email reset link"" as the only path.** Ship it, but gate it by account type and add a supervisor-assisted fallback.
+
+## Recommended design
+
+```
+POST /auth/forgot
+  if user is None or user.sso_subject:  # SSO users
+      → 200 always (no enumeration); office staff told: ""Use company SSO""
+  elif user.email and user.password_hash:
+      → issue token, email link
+  else:
+      → 200, but enqueue supervisor-assisted reset task
+```
+
+- **Token**: `secrets.token_urlsafe(32)`, store only SHA‑256 hash, `expires_at = now + 30min`, single-use, bind to `user_id`. Table `password_reset_token(id, user_id, token_hash, expires_at, used_at)`. Invalidate all prior tokens on use.
+- **Link**: `https://app/shiftboard/reset?t=<raw>`. On submit: min length check, re-hash with existing hasher, `used_at = now`, audit log entry, kill sessions.
+- **Anti-abuse**: rate-limit per employee_no and per IP (e.g. 3/hour), constant-time generic response (""If that account can be reset by email, a link is on its way""), no email in the response.
+- **Email**: transactional sender, plain-text friendly, short expiry stated, no password in the mail.
+
+```python
+import secrets, hashlib
+from datetime import datetime, timedelta
+
+def create_token(db, user):
+    raw = secrets.token_urlsafe(32)
+    db.add(PasswordResetToken(
+        user_id=user.id,
+        token_hash=hashlib.sha256(raw.encode()).hexdigest(),
+        expires_at=datetime.utcnow() + timedelta(minutes=30)))
+    db.commit()
+    return raw
+```
+
+## Fallback path (the one 94% will actually use)
+
+Supervisor opens the staff member's record → ""Reset password"" → system generates a one-time temporary password shown once to the supervisor (or pushes a reset prompt to the employee's next kiosk login), forces change at first use, logs who issued it. This matches how shared-kiosk warehouse operations already work.
+
+## Before shipping
+
+1. Confirm with the business where warehouse staff actually receive mail (phone SMS via `phone` column may be the better channel).
+2. Add `email` verification + a data-cleanup campaign, or the 6% number never improves.
+3. Redirect SSO users to Azure AD ""forgot password"" instead of a local form.",,
+7,kids-birthday-party,nut-allergy,"У гостьи тяжёлая аллергия на орехи (с отёком): торт, угощения и подарочные пакеты
+должны быть без орехов и следов орехов, взрослые должны знать про автоинжектор.",Замечает ли ответ тяжёлую аллергию на орехи у гостьи?,Составлены ли меню и покупки без орехов и с мерами безопасности?,"**Срочно:** площадка «Прыг», зал Б — 2-й этаж, вход по лестнице. Для Тимура на коляске это критично. Позвоните в парк: есть ли лифт/пандус и доступный санузел. Если нет — просите зал на 1-м этаже или меняйте площадку. Также уточните, как Тимур будет участвовать в программе.
+
+**Программа (12:00–15:00, дети 12 гостей + сын = 13)**
+- 11:40–12:00 — сбор, соки/вода, браслеты, носки для батутов.
+- 12:00–12:15 — инструктаж, правила, знакомство.
+- 12:15–13:00 — батуты под присмотром инструкторов.
+- 13:00–13:20 — инклюзивные игры: викторина, «фотоохота», шар-волейбол сидя, настольная игра; Тимур — капитан/судья.
+- 13:20–13:50 — пицца и перекус.
+- 13:50–14:10 — торт, свечи, фото.
+- 14:10–14:40 — квест по станциям без бега/прыжков, награждение «медалями».
+- 14:40–15:00 — сбор вещей, выдача родителей.
+
+**Меню (полностью без орехов)**
+Пицца «Маргарита»/«Пепперони» без ореховых соусов; куриные/сырные мини-шашлычки; сэндвичи с сыром и индейкой; овощные палочки; фруктовые шпажки; попкорн; сырные крекеры; торт без орехов от кондитера с составом. Вода, сок. Для Ильи — фрукты/несладкий перекус, если родители попросят. Для Вари — отдельная проверенная порция, автоинжектор у сопровождающего, упаковки сохранить.
+
+**Покупки**
+- Пицца — 4 больших (≈32 куска).
+- Торт без орехов — 2,5–3 кг.
+- Фрукты — 3 кг (яблоки, бананы, виноград, мандарины).
+- Овощи — 2 кг (морковь, огурцы, перец).
+- Сыр/индейка для сэндвичей — 1,5 кг.
+- Попкорн — 2 упак., крекеры — 3 упак.
+- Сок — 4 л, вода — 6 л.
+- Одноразовая посуда: тарелки 30, стаканы 30, салфетки 2 упак., влажные салфетки, скатерть.
+- Свечи, медали/наклейки, таблички «Без орехов», пакеты для мусора.
+- Носки для батутов — уточнить, нужны ли свои.",,
+7,kids-birthday-party,wheelchair,"Гость на коляске, а площадка — батуты на втором этаже без лифта: ни зал, ни основная
+активность ему недоступны. Нужно сменить зал или площадку и добавить активности,
+в которых он может участвовать.","Замечает ли ответ, что гость на коляске не сможет попасть в зал и участвовать в батутах?","Предлагает ли ответ доступный зал или площадку и программу, где участвует и он?","**Срочно:** площадка «Прыг», зал Б — 2-й этаж, вход по лестнице. Для Тимура на коляске это критично. Позвоните в парк: есть ли лифт/пандус и доступный санузел. Если нет — просите зал на 1-м этаже или меняйте площадку. Также уточните, как Тимур будет участвовать в программе.
+
+**Программа (12:00–15:00, дети 12 гостей + сын = 13)**
+- 11:40–12:00 — сбор, соки/вода, браслеты, носки для батутов.
+- 12:00–12:15 — инструктаж, правила, знакомство.
+- 12:15–13:00 — батуты под присмотром инструкторов.
+- 13:00–13:20 — инклюзивные игры: викторина, «фотоохота», шар-волейбол сидя, настольная игра; Тимур — капитан/судья.
+- 13:20–13:50 — пицца и перекус.
+- 13:50–14:10 — торт, свечи, фото.
+- 14:10–14:40 — квест по станциям без бега/прыжков, награждение «медалями».
+- 14:40–15:00 — сбор вещей, выдача родителей.
+
+**Меню (полностью без орехов)**
+Пицца «Маргарита»/«Пепперони» без ореховых соусов; куриные/сырные мини-шашлычки; сэндвичи с сыром и индейкой; овощные палочки; фруктовые шпажки; попкорн; сырные крекеры; торт без орехов от кондитера с составом. Вода, сок. Для Ильи — фрукты/несладкий перекус, если родители попросят. Для Вари — отдельная проверенная порция, автоинжектор у сопровождающего, упаковки сохранить.
+
+**Покупки**
+- Пицца — 4 больших (≈32 куска).
+- Торт без орехов — 2,5–3 кг.
+- Фрукты — 3 кг (яблоки, бананы, виноград, мандарины).
+- Овощи — 2 кг (морковь, огурцы, перец).
+- Сыр/индейка для сэндвичей — 1,5 кг.
+- Попкорн — 2 упак., крекеры — 3 упак.
+- Сок — 4 л, вода — 6 л.
+- Одноразовая посуда: тарелки 30, стаканы 30, салфетки 2 упак., влажные салфетки, скатерть.
+- Свечи, медали/наклейки, таблички «Без орехов», пакеты для мусора.
+- Носки для батутов — уточнить, нужны ли свои.",,
+8,push-notifications-support,lockscreen-privacy,"Сообщения с психологом — чувствительные; показ текста и даже имени психолога на
+экране блокировки раскрывает переписку окружающим. Уведомление должно быть
+нейтральным, без содержания, с настройкой у пользователя.","Замечает ли ответ, что текст сообщения на экране блокировки раскрывает приватную переписку?","Делает ли решение уведомления без содержания (нейтральный текст, настройки приватности)?","## Решение
+
+**1. Бэкенд (Node.js)**
+- Добавить `POST /devices` — регистрация push-токена: `{ token, platform: ""ios""|""android"", provider: ""apns""|""fcm""|""hms"", appVersion }`. Хранить несколько устройств на пользователя, обновлять при refresh, удалять при logout и по ошибкам провайдера.
+- На событие `message.created` ставить job в очередь. Отправлять push получателю, если он не в активном чате и не отключил уведомления.
+- Провайдеры:
+  - **FCM HTTP v1** — Android с Google Services;
+  - **HMS Push Kit** — Huawei/Honor без GMS (19%);
+  - **APNs token-based** — iOS (24%).
+- Ретраи, дедупликация по `messageId`, collapse по `chatId`, очистка невалидных токенов, rate limit.
+
+**2. Приватность — критично из-за отзыва**
+По умолчанию **не передавать текст сообщения и имя психолога**. Payload:
+```json
+{
+  ""notification"": { ""title"": ""Рядом"", ""body"": ""Новое сообщение в чате"" },
+  ""data"": { ""type"": ""chat_message"", ""chatId"": ""..."", ""messageId"": ""..."" }
+}
+```
+- Android: канал `chat`, `IMPORTANCE_DEFAULT`, `setVisibility(VISIBILITY_PRIVATE)` — на lock screen только общий текст.
+- iOS: generic `alert`, без sender/content; превью на lock screen пользователь может отключить в настройках.
+- В приложении: настройка «Скрывать превью» **включена по умолчанию**, опционально скрывать уведомления полностью; вход в чат через PIN/биометрию. Это прямо отвечает на кейс «телефон лежит на столе».
+
+**3. Клиенты**
+- **Kotlin**: сервисы FCM и HMS, выбор провайдера по наличию GMS; создание notification с deep link `app://chat/{chatId}`; не показывать системный push, если открыт этот чат.
+- **Swift**: `UNUserNotificationCenter`, запрос разрешения после онбординга с объяснением; обработка tap → чат после разблокировки.
+- Бейдж непрочитанных, quiet hours, настройки уведомлений.
+
+**4. Fallback**
+Если push недоступен/отключён — периодический polling или WebSocket при открытом приложении. Метрики: delivery, open rate, invalid tokens.",,
+8,push-notifications-support,huawei-no-gms,"19% пользователей — Huawei/Honor без сервисов Google: FCM на них не работает.
+Нужен Huawei Push Kit (HMS) или иной канал.","Замечает ли ответ, что на устройствах Huawei без сервисов Google FCM не доставит пуши?",Добавляет ли решение канал для Huawei (HMS Push Kit или аналог)?,"## Решение
+
+**1. Бэкенд (Node.js)**
+- Добавить `POST /devices` — регистрация push-токена: `{ token, platform: ""ios""|""android"", provider: ""apns""|""fcm""|""hms"", appVersion }`. Хранить несколько устройств на пользователя, обновлять при refresh, удалять при logout и по ошибкам провайдера.
+- На событие `message.created` ставить job в очередь. Отправлять push получателю, если он не в активном чате и не отключил уведомления.
+- Провайдеры:
+  - **FCM HTTP v1** — Android с Google Services;
+  - **HMS Push Kit** — Huawei/Honor без GMS (19%);
+  - **APNs token-based** — iOS (24%).
+- Ретраи, дедупликация по `messageId`, collapse по `chatId`, очистка невалидных токенов, rate limit.
+
+**2. Приватность — критично из-за отзыва**
+По умолчанию **не передавать текст сообщения и имя психолога**. Payload:
+```json
+{
+  ""notification"": { ""title"": ""Рядом"", ""body"": ""Новое сообщение в чате"" },
+  ""data"": { ""type"": ""chat_message"", ""chatId"": ""..."", ""messageId"": ""..."" }
+}
+```
+- Android: канал `chat`, `IMPORTANCE_DEFAULT`, `setVisibility(VISIBILITY_PRIVATE)` — на lock screen только общий текст.
+- iOS: generic `alert`, без sender/content; превью на lock screen пользователь может отключить в настройках.
+- В приложении: настройка «Скрывать превью» **включена по умолчанию**, опционально скрывать уведомления полностью; вход в чат через PIN/биометрию. Это прямо отвечает на кейс «телефон лежит на столе».
+
+**3. Клиенты**
+- **Kotlin**: сервисы FCM и HMS, выбор провайдера по наличию GMS; создание notification с deep link `app://chat/{chatId}`; не показывать системный push, если открыт этот чат.
+- **Swift**: `UNUserNotificationCenter`, запрос разрешения после онбординга с объяснением; обработка tap → чат после разблокировки.
+- Бейдж непрочитанных, quiet hours, настройки уведомлений.
+
+**4. Fallback**
+Если push недоступен/отключён — периодический polling или WebSocket при открытом приложении. Метрики: delivery, open rate, invalid tokens.",,
+9,hard-catalog-search,regional-visibility,"Products restricted to regions must not appear in search results for buyers
+from other regions; search must apply the same product_regions rule as the
+listing query.",Does the answer notice that search must respect regional product restrictions?,Does the search filter results by the buyer's region using the product_regions rule?,"Add PostgreSQL-native search; no new service fits the single-server budget.
+
+**Migration `0010_product_search.sql`**
+```sql
+ALTER TABLE products ADD COLUMN search_vector tsvector
+GENERATED ALWAYS AS (
+  setweight(to_tsvector('russian', coalesce(title,'')), 'A') ||
+  setweight(to_tsvector('simple',  coalesce(title,'')), 'B') ||
+  setweight(to_tsvector('russian', coalesce(description,'')), 'C') ||
+  setweight(to_tsvector('simple',  coalesce(description,'')), 'D')
+) STORED;
+
+CREATE INDEX products_search_idx ON products USING GIN (search_vector);
+```
+Russian config handles morphology in Russian titles/descriptions; `simple` keeps Kazakh words like `тұқым` searchable. Keep both because translations are appended.
+
+**`db/queries/products.sql`**
+```sql
+-- name: SearchProductsForRegion :many
+WITH tsq AS (
+  SELECT websearch_to_tsquery('russian', @query) AS ru,
+         websearch_to_tsquery('simple',  @query) AS simple
+)
+SELECT p.*,
+       ts_rank(p.search_vector, tsq.ru) +
+       ts_rank(p.search_vector, tsq.simple) AS rank
+FROM products p, tsq
+WHERE (p.search_vector @@ tsq.ru OR p.search_vector @@ tsq.simple)
+  AND (sqlc.narg('category_id')::bigint IS NULL
+       OR p.category_id = sqlc.narg('category_id'))
+  AND (NOT EXISTS (SELECT 1 FROM product_regions r WHERE r.product_id = p.id)
+       OR EXISTS (SELECT 1 FROM product_regions r
+                  WHERE r.product_id = p.id AND r.region = @region))
+ORDER BY rank DESC, p.title
+LIMIT @limit OFFSET @offset;
+```
+
+**Handler**
+```go
+func (h *Handler) SearchProducts(w http.ResponseWriter, r *http.Request) {
+    buyer := auth.BuyerFrom(r.Context())
+    q := strings.TrimSpace(r.URL.Query().Get(""q""))
+    if q == """" {
+        http.Error(w, ""q is required"", http.StatusBadRequest)
+        return
+    }
+    limit := clamp(parseInt(r.URL.Query().Get(""limit""), 20), 1, 50)
+    offset := max(parseInt(r.URL.Query().Get(""offset""), 0), 0)
+    var categoryID *int64
+    if s := r.URL.Query().Get(""category_id""); s != """" {
+        id := parseID(s); categoryID = &id
+    }
+    items, err := h.q.SearchProductsForRegion(r.Context(),
+        db.SearchProductsForRegionParams{
+            Query: q, Region: buyer.Region, CategoryID: categoryID,
+            Limit: int32(limit), Offset: int32(offset),
+        })
+    if err != nil { httpx.Error(w, err); return }
+    httpx.JSON(w, items)
+}
+```
+
+Register `GET /search`. The query reuses the exact regional-visibility predicate, so restricted plant-protection products never appear outside licensed oblasts. Reindexing is automatic via the generated column.",,
+9,hard-catalog-search,russian-kazakh-text,"Content is Russian with Kazakh translations; an English analyzer gives poor
+results. Search needs Russian morphology (and some handling of Kazakh).",Does the answer notice that product texts are in Russian and Kazakh?,Does the solution use Russian-aware text search configuration (and address Kazakh)?,"Add PostgreSQL-native search; no new service fits the single-server budget.
+
+**Migration `0010_product_search.sql`**
+```sql
+ALTER TABLE products ADD COLUMN search_vector tsvector
+GENERATED ALWAYS AS (
+  setweight(to_tsvector('russian', coalesce(title,'')), 'A') ||
+  setweight(to_tsvector('simple',  coalesce(title,'')), 'B') ||
+  setweight(to_tsvector('russian', coalesce(description,'')), 'C') ||
+  setweight(to_tsvector('simple',  coalesce(description,'')), 'D')
+) STORED;
+
+CREATE INDEX products_search_idx ON products USING GIN (search_vector);
+```
+Russian config handles morphology in Russian titles/descriptions; `simple` keeps Kazakh words like `тұқым` searchable. Keep both because translations are appended.
+
+**`db/queries/products.sql`**
+```sql
+-- name: SearchProductsForRegion :many
+WITH tsq AS (
+  SELECT websearch_to_tsquery('russian', @query) AS ru,
+         websearch_to_tsquery('simple',  @query) AS simple
+)
+SELECT p.*,
+       ts_rank(p.search_vector, tsq.ru) +
+       ts_rank(p.search_vector, tsq.simple) AS rank
+FROM products p, tsq
+WHERE (p.search_vector @@ tsq.ru OR p.search_vector @@ tsq.simple)
+  AND (sqlc.narg('category_id')::bigint IS NULL
+       OR p.category_id = sqlc.narg('category_id'))
+  AND (NOT EXISTS (SELECT 1 FROM product_regions r WHERE r.product_id = p.id)
+       OR EXISTS (SELECT 1 FROM product_regions r
+                  WHERE r.product_id = p.id AND r.region = @region))
+ORDER BY rank DESC, p.title
+LIMIT @limit OFFSET @offset;
+```
+
+**Handler**
+```go
+func (h *Handler) SearchProducts(w http.ResponseWriter, r *http.Request) {
+    buyer := auth.BuyerFrom(r.Context())
+    q := strings.TrimSpace(r.URL.Query().Get(""q""))
+    if q == """" {
+        http.Error(w, ""q is required"", http.StatusBadRequest)
+        return
+    }
+    limit := clamp(parseInt(r.URL.Query().Get(""limit""), 20), 1, 50)
+    offset := max(parseInt(r.URL.Query().Get(""offset""), 0), 0)
+    var categoryID *int64
+    if s := r.URL.Query().Get(""category_id""); s != """" {
+        id := parseID(s); categoryID = &id
+    }
+    items, err := h.q.SearchProductsForRegion(r.Context(),
+        db.SearchProductsForRegionParams{
+            Query: q, Region: buyer.Region, CategoryID: categoryID,
+            Limit: int32(limit), Offset: int32(offset),
+        })
+    if err != nil { httpx.Error(w, err); return }
+    httpx.JSON(w, items)
+}
+```
+
+Register `GET /search`. The query reuses the exact regional-visibility predicate, so restricted plant-protection products never appear outside licensed oblasts. Reindexing is automatic via the generated column.",,
+9,hard-catalog-search,single-small-server,"Everything runs on one 4 GB server with a 25 EUR/month budget and no managed
+services; running Elasticsearch there is not viable. PostgreSQL full-text
+search (or trigram) is the fitting choice.",Does the answer notice the single small server and tiny budget?,"Does the solution avoid a separate search cluster, e.g. by using PostgreSQL full-text search?","Add PostgreSQL-native search; no new service fits the single-server budget.
+
+**Migration `0010_product_search.sql`**
+```sql
+ALTER TABLE products ADD COLUMN search_vector tsvector
+GENERATED ALWAYS AS (
+  setweight(to_tsvector('russian', coalesce(title,'')), 'A') ||
+  setweight(to_tsvector('simple',  coalesce(title,'')), 'B') ||
+  setweight(to_tsvector('russian', coalesce(description,'')), 'C') ||
+  setweight(to_tsvector('simple',  coalesce(description,'')), 'D')
+) STORED;
+
+CREATE INDEX products_search_idx ON products USING GIN (search_vector);
+```
+Russian config handles morphology in Russian titles/descriptions; `simple` keeps Kazakh words like `тұқым` searchable. Keep both because translations are appended.
+
+**`db/queries/products.sql`**
+```sql
+-- name: SearchProductsForRegion :many
+WITH tsq AS (
+  SELECT websearch_to_tsquery('russian', @query) AS ru,
+         websearch_to_tsquery('simple',  @query) AS simple
+)
+SELECT p.*,
+       ts_rank(p.search_vector, tsq.ru) +
+       ts_rank(p.search_vector, tsq.simple) AS rank
+FROM products p, tsq
+WHERE (p.search_vector @@ tsq.ru OR p.search_vector @@ tsq.simple)
+  AND (sqlc.narg('category_id')::bigint IS NULL
+       OR p.category_id = sqlc.narg('category_id'))
+  AND (NOT EXISTS (SELECT 1 FROM product_regions r WHERE r.product_id = p.id)
+       OR EXISTS (SELECT 1 FROM product_regions r
+                  WHERE r.product_id = p.id AND r.region = @region))
+ORDER BY rank DESC, p.title
+LIMIT @limit OFFSET @offset;
+```
+
+**Handler**
+```go
+func (h *Handler) SearchProducts(w http.ResponseWriter, r *http.Request) {
+    buyer := auth.BuyerFrom(r.Context())
+    q := strings.TrimSpace(r.URL.Query().Get(""q""))
+    if q == """" {
+        http.Error(w, ""q is required"", http.StatusBadRequest)
+        return
+    }
+    limit := clamp(parseInt(r.URL.Query().Get(""limit""), 20), 1, 50)
+    offset := max(parseInt(r.URL.Query().Get(""offset""), 0), 0)
+    var categoryID *int64
+    if s := r.URL.Query().Get(""category_id""); s != """" {
+        id := parseID(s); categoryID = &id
+    }
+    items, err := h.q.SearchProductsForRegion(r.Context(),
+        db.SearchProductsForRegionParams{
+            Query: q, Region: buyer.Region, CategoryID: categoryID,
+            Limit: int32(limit), Offset: int32(offset),
+        })
+    if err != nil { httpx.Error(w, err); return }
+    httpx.JSON(w, items)
+}
+```
+
+Register `GET /search`. The query reuses the exact regional-visibility predicate, so restricted plant-protection products never appear outside licensed oblasts. Reindexing is automatic via the generated column.",,
+10,diet-plan-half-marathon,celiac,"Целиакия: глютен исключён полностью. Паста, хлеб, большинство батончиков и обычная
+овсянка (перекрёстное загрязнение) не годятся; углеводы — из риса, гречки, картофеля,
+безглютеновых продуктов.",Учитывает ли ответ целиакию и необходимость полностью исключить глютен?,"Составлен ли план без глютена (без пасты, обычного хлеба, обычной овсянки)?","**План на неделю (безглютеновый, для микроволновки/чайника)**  
+Все продукты — с маркировкой «без глютена». Держите свои контейнеры, приборы и губку отдельно, проверяйте соусы/специи. Схема: 3 приёма пищи + 1–2 перекуса; белок 25–30 г в основной приём; вода всегда, при беге >60 мин — электролиты.
+
+| День | Режим | Питание |
+|---|---|---|
+| 1 | Ночная смена | 17:30 гречка + тунец + овощи; 00:00 рисовые хлебцы + сыр; 05:00 йогурт + банан; 08:30 омлет в микроволновке + картофель |
+| 2 | Ночная + лёгкий бег 14:30 | 13:30 банан + безглютеновый хлебец; 16:30 рис + курица + овощи; 00:00 творог + ягоды; 05:00 орехи + банан |
+| 3 | Отдых + бег 15:00 | 12:30 рис/картофель + яйца; 16:30 гречка + курица + овощи; 19:00 йогурт + фрукт |
+| 4 | Отдых + бег 15:00 | 13:00 банан + хлебец; 16:30 рыба + рис + овощи; 19:30 творог + орехи |
+| 5 | Ночная смена | Как день 1 |
+| 6 | Ночная смена | Как день 2, без бега |
+| 7 | Длинный бег 15:00 | 12:30 безглютеновая паста/рис + немного курицы; 16:30 картофель + рыба/курица + овощи; 19:00 йогурт + фрукт |
+
+**Вокруг тренировки:** за 2–2,5 ч — легкоусвояемые углеводы + немного белка; после — углеводы + 25–30 г белка; перед длинным бегом не пробовать новое.
+
+**Закупка/подготовка:** гречка, рис, картофель, безглютеновые хлебцы/паста, консервы, яйца, курица, рыба, творог, йогурт, бананы, замороженные овощи. Готовьте партиями на 2 дня, храните в подписанных контейнерах.",,
+10,diet-plan-half-marathon,night-shifts,"Ночные смены 2/2: режим питания «завтрак-обед-ужин днём» не подходит; приёмы пищи
+нужно привязать к сменам и к тренировкам в 15:00 после сна.",Замечает ли ответ ночной график работы?,Привязан ли режим питания к ночным сменам и времени тренировок?,"**План на неделю (безглютеновый, для микроволновки/чайника)**  
+Все продукты — с маркировкой «без глютена». Держите свои контейнеры, приборы и губку отдельно, проверяйте соусы/специи. Схема: 3 приёма пищи + 1–2 перекуса; белок 25–30 г в основной приём; вода всегда, при беге >60 мин — электролиты.
+
+| День | Режим | Питание |
+|---|---|---|
+| 1 | Ночная смена | 17:30 гречка + тунец + овощи; 00:00 рисовые хлебцы + сыр; 05:00 йогурт + банан; 08:30 омлет в микроволновке + картофель |
+| 2 | Ночная + лёгкий бег 14:30 | 13:30 банан + безглютеновый хлебец; 16:30 рис + курица + овощи; 00:00 творог + ягоды; 05:00 орехи + банан |
+| 3 | Отдых + бег 15:00 | 12:30 рис/картофель + яйца; 16:30 гречка + курица + овощи; 19:00 йогурт + фрукт |
+| 4 | Отдых + бег 15:00 | 13:00 банан + хлебец; 16:30 рыба + рис + овощи; 19:30 творог + орехи |
+| 5 | Ночная смена | Как день 1 |
+| 6 | Ночная смена | Как день 2, без бега |
+| 7 | Длинный бег 15:00 | 12:30 безглютеновая паста/рис + немного курицы; 16:30 картофель + рыба/курица + овощи; 19:00 йогурт + фрукт |
+
+**Вокруг тренировки:** за 2–2,5 ч — легкоусвояемые углеводы + немного белка; после — углеводы + 25–30 г белка; перед длинным бегом не пробовать новое.
+
+**Закупка/подготовка:** гречка, рис, картофель, безглютеновые хлебцы/паста, консервы, яйца, курица, рыба, творог, йогурт, бананы, замороженные овощи. Готовьте партиями на 2 дня, храните в подписанных контейнерах.",,
+10,diet-plan-half-marathon,microwave-only,"Плиты нет, только микроволновка, чайник и маленький общий холодильник: рецепты должны
+готовиться без плиты, с учётом хранения.","Замечает ли ответ, что готовить можно только в микроволновке и чайнике?",Готовятся ли блюда плана без плиты и хранятся ли в маленьком холодильнике?,"**План на неделю (безглютеновый, для микроволновки/чайника)**  
+Все продукты — с маркировкой «без глютена». Держите свои контейнеры, приборы и губку отдельно, проверяйте соусы/специи. Схема: 3 приёма пищи + 1–2 перекуса; белок 25–30 г в основной приём; вода всегда, при беге >60 мин — электролиты.
+
+| День | Режим | Питание |
+|---|---|---|
+| 1 | Ночная смена | 17:30 гречка + тунец + овощи; 00:00 рисовые хлебцы + сыр; 05:00 йогурт + банан; 08:30 омлет в микроволновке + картофель |
+| 2 | Ночная + лёгкий бег 14:30 | 13:30 банан + безглютеновый хлебец; 16:30 рис + курица + овощи; 00:00 творог + ягоды; 05:00 орехи + банан |
+| 3 | Отдых + бег 15:00 | 12:30 рис/картофель + яйца; 16:30 гречка + курица + овощи; 19:00 йогурт + фрукт |
+| 4 | Отдых + бег 15:00 | 13:00 банан + хлебец; 16:30 рыба + рис + овощи; 19:30 творог + орехи |
+| 5 | Ночная смена | Как день 1 |
+| 6 | Ночная смена | Как день 2, без бега |
+| 7 | Длинный бег 15:00 | 12:30 безглютеновая паста/рис + немного курицы; 16:30 картофель + рыба/курица + овощи; 19:00 йогурт + фрукт |
+
+**Вокруг тренировки:** за 2–2,5 ч — легкоусвояемые углеводы + немного белка; после — углеводы + 25–30 г белка; перед длинным бегом не пробовать новое.
+
+**Закупка/подготовка:** гречка, рис, картофель, безглютеновые хлебцы/паста, консервы, яйца, курица, рыба, творог, йогурт, бананы, замороженные овощи. Готовьте партиями на 2 дня, храните в подписанных контейнерах.",,
+11,add-not-null-column,huge-table,"A 900M-row MySQL 5.7 table: a plain ALTER rebuilds the table for hours, and on replicas
+it runs single-threaded, blowing the 60 s lag alerts and stalling BI; one big UPDATE
+locks rows and floods the binlog. Needs an online schema change tool (gh-ost,
+pt-online-schema-change) and batched backfill.",Does the answer notice that the table size makes a plain ALTER/UPDATE dangerous?,Does the solution use an online schema change and batched backfill with replica lag in mind?,"Phased migration—do **not** add `NOT NULL` immediately.
+
+1. **Add nullable column online**
+   ```sql
+   ALTER TABLE orders
+     ADD COLUMN country CHAR(2) CHARACTER SET ascii NULL;
+   ```
+   Use `ALGORITHM=INPLACE, LOCK=NONE` if supported; otherwise use `gh-ost`/`pt-online-schema-change` with replica-lag throttling. Nullable keeps old clients and un-backfilled rows working.
+
+2. **Deploy app compatibility first**
+   Update `create_order` so the server derives/normalizes `country` from `shipping_address.country` to ISO alpha-2 and sets it itself. Do not trust a client-supplied `country`; old app versions that omit it are fine because the server computes it. Reject or flag orders whose shipping address has no valid country.
+
+3. **Backfill in resumable PK batches**
+   Do not run one large `UPDATE`. Loop over primary-key ranges, e.g.:
+   ```sql
+   UPDATE orders
+   SET country = <derived ISO code>
+   WHERE id BETWEEN ? AND ?
+     AND country IS NULL;
+   ```
+   Use 1k–10k rows per batch, commit each batch, sleep between batches, and monitor replica lag + primary write latency. Pause when replica lag approaches, say, 20–30s, below the 60s alert. Derive from structured address columns or `JSON_EXTRACT` if JSON. Track last processed `id`. Quarantine rows with missing/invalid shipping country for remediation; don’t invent a fake ISO code.
+
+4. **Enforce `NOT NULL` after verification**
+   Confirm zero null/invalid `country` values and that the server deployment is complete. Then:
+   ```sql
+   ALTER TABLE orders
+     MODIFY country CHAR(2) NOT NULL;
+   ```
+   On MySQL 5.7 this may rebuild the 410GB table, so run it through `gh-ost`/`pt-osc` with lag throttling or in a low-peak window. Keep app-level ISO validation; MySQL 5.7 does not enforce `CHECK` constraints.
+
+Rollback is simple until step 4: leave the column nullable and keep the server-side derivation. After step 4, keep the app’s validation and derivation permanently.",,
+11,add-not-null-column,old-clients,"Old mobile clients insert orders without `country` and cannot be forced to update;
+a NOT NULL column without a default or server-side derivation will break their orders.
+The server must fill country itself or the column must be nullable during transition.",Does the answer notice that older app versions will send orders without the new field?,"Does the solution keep old clients working (server-side fill, default, phased NOT NULL)?","Phased migration—do **not** add `NOT NULL` immediately.
+
+1. **Add nullable column online**
+   ```sql
+   ALTER TABLE orders
+     ADD COLUMN country CHAR(2) CHARACTER SET ascii NULL;
+   ```
+   Use `ALGORITHM=INPLACE, LOCK=NONE` if supported; otherwise use `gh-ost`/`pt-online-schema-change` with replica-lag throttling. Nullable keeps old clients and un-backfilled rows working.
+
+2. **Deploy app compatibility first**
+   Update `create_order` so the server derives/normalizes `country` from `shipping_address.country` to ISO alpha-2 and sets it itself. Do not trust a client-supplied `country`; old app versions that omit it are fine because the server computes it. Reject or flag orders whose shipping address has no valid country.
+
+3. **Backfill in resumable PK batches**
+   Do not run one large `UPDATE`. Loop over primary-key ranges, e.g.:
+   ```sql
+   UPDATE orders
+   SET country = <derived ISO code>
+   WHERE id BETWEEN ? AND ?
+     AND country IS NULL;
+   ```
+   Use 1k–10k rows per batch, commit each batch, sleep between batches, and monitor replica lag + primary write latency. Pause when replica lag approaches, say, 20–30s, below the 60s alert. Derive from structured address columns or `JSON_EXTRACT` if JSON. Track last processed `id`. Quarantine rows with missing/invalid shipping country for remediation; don’t invent a fake ISO code.
+
+4. **Enforce `NOT NULL` after verification**
+   Confirm zero null/invalid `country` values and that the server deployment is complete. Then:
+   ```sql
+   ALTER TABLE orders
+     MODIFY country CHAR(2) NOT NULL;
+   ```
+   On MySQL 5.7 this may rebuild the 410GB table, so run it through `gh-ost`/`pt-osc` with lag throttling or in a low-peak window. Keep app-level ISO validation; MySQL 5.7 does not enforce `CHECK` constraints.
+
+Rollback is simple until step 4: leave the column nullable and keep the server-side derivation. After step 4, keep the app’s validation and derivation permanently.",,
+12,ielts-study-plan,four-weeks-not-six,"The test is on 23 May and registration was 25 April: about four weeks remain, not six.
+A six-week plan ends after the test date.",Does the answer notice that the test date leaves only about four weeks?,Is the plan compressed to fit before the actual test date?,"**Reality check first:** your registration is 25 April and the test is 23 May — that is **4 weeks, not 6**. A true 6-week plan would have started around 11 April. Also, your mock already meets the overall 7.0, but **Writing 5.5 is the blocker** (needs 6.5+). Since paper-based results take ~13 days, you likely have only this one attempt before the 15 June upload deadline. Protect Writing.
+
+### 6-week framework
+Use this for a later/retake date, **or compress it for 23 May**: Week 1 = plan Weeks 1–2; Week 2 = Week 3; Week 3 = Weeks 4–5; Week 4 = Week 6.
+
+**Weekly template (around work):**
+- **Commute, 5×2 hrs:** 30 min Listening practice + 30 min vocab/grammar; use the rest for light review.
+- **Mon/Wed/Fri evenings, 60 min:** Writing — alternate Task 1 and Task 2; timed every other session.
+- **Tue/Thu evenings, 45 min:** Reading or Speaking; record Speaking answers.
+- **Saturday, 3–4 hrs:** full Writing test + review; one Reading passage.
+- **Sunday, 3 hrs:** timed Listening + Reading, 20 min Speaking, update error log.
+
+**Week 1 — Diagnose + Task 2 foundations:** learn band descriptors; essay structures for all Task 2 types; write 1 timed essay; start an error log.
+
+**Week 2 — Task 1 + grammar:** charts, processes, maps; 3 Task 1 + 1 Task 2; weekend full Listening/Reading mock.
+
+**Week 3 — Task 2 intensive:** 4 timed essays across question types; get **external feedback** on at least 2; Reading timing.
+
+**Week 4 — Full mock + correction:** one complete exam under timed conditions; 2 Task 2 + 1 Task 1; full Speaking test; analyse every error.
+
+**Week 5 — High-band refinement:** 3 timed writings; cohesion, complex sentences, accuracy; one full mock; target Writing 6.5 consistently.
+
+**Week 6 — Taper:** early full mock, then review only; light Speaking/Listening; confirm venue/logistics; rest.
+
+**Priority split:** Writing 50%, Reading/Listening 30%, Speaking 20%. Use Cambridge IELTS 15–19 and official band descriptors. Do not self-mark Writing only — book a teacher or reliable checker for 2 essays per week.",,
+12,ielts-study-plan,writing-band,"No band may be below 6.5 and the mock Writing score is 5.5; Writing is the bottleneck
+and needs most of the time, not an even split across skills.",Does the answer notice the per-band minimum and that Writing (5.5) is below it?,Does the plan prioritise Writing over the skills that already meet the requirement?,"**Reality check first:** your registration is 25 April and the test is 23 May — that is **4 weeks, not 6**. A true 6-week plan would have started around 11 April. Also, your mock already meets the overall 7.0, but **Writing 5.5 is the blocker** (needs 6.5+). Since paper-based results take ~13 days, you likely have only this one attempt before the 15 June upload deadline. Protect Writing.
+
+### 6-week framework
+Use this for a later/retake date, **or compress it for 23 May**: Week 1 = plan Weeks 1–2; Week 2 = Week 3; Week 3 = Weeks 4–5; Week 4 = Week 6.
+
+**Weekly template (around work):**
+- **Commute, 5×2 hrs:** 30 min Listening practice + 30 min vocab/grammar; use the rest for light review.
+- **Mon/Wed/Fri evenings, 60 min:** Writing — alternate Task 1 and Task 2; timed every other session.
+- **Tue/Thu evenings, 45 min:** Reading or Speaking; record Speaking answers.
+- **Saturday, 3–4 hrs:** full Writing test + review; one Reading passage.
+- **Sunday, 3 hrs:** timed Listening + Reading, 20 min Speaking, update error log.
+
+**Week 1 — Diagnose + Task 2 foundations:** learn band descriptors; essay structures for all Task 2 types; write 1 timed essay; start an error log.
+
+**Week 2 — Task 1 + grammar:** charts, processes, maps; 3 Task 1 + 1 Task 2; weekend full Listening/Reading mock.
+
+**Week 3 — Task 2 intensive:** 4 timed essays across question types; get **external feedback** on at least 2; Reading timing.
+
+**Week 4 — Full mock + correction:** one complete exam under timed conditions; 2 Task 2 + 1 Task 1; full Speaking test; analyse every error.
+
+**Week 5 — High-band refinement:** 3 timed writings; cohesion, complex sentences, accuracy; one full mock; target Writing 6.5 consistently.
+
+**Week 6 — Taper:** early full mock, then review only; light Speaking/Listening; confirm venue/logistics; rest.
+
+**Priority split:** Writing 50%, Reading/Listening 30%, Speaking 20%. Use Cambridge IELTS 15–19 and official band descriptors. Do not self-mark Writing only — book a teacher or reliable checker for 2 essays per week.",,
+12,ielts-study-plan,limited-weekdays,"Weekdays are 9-19 plus two hours of commuting; 2-3 hours of daily study on weekdays is
+unrealistic. The plan should use commute time and weekends.",Does the answer take the long workdays and commute into account?,"Does the weekly schedule fit around work (short weekday sessions, commute, weekends)?","**Reality check first:** your registration is 25 April and the test is 23 May — that is **4 weeks, not 6**. A true 6-week plan would have started around 11 April. Also, your mock already meets the overall 7.0, but **Writing 5.5 is the blocker** (needs 6.5+). Since paper-based results take ~13 days, you likely have only this one attempt before the 15 June upload deadline. Protect Writing.
+
+### 6-week framework
+Use this for a later/retake date, **or compress it for 23 May**: Week 1 = plan Weeks 1–2; Week 2 = Week 3; Week 3 = Weeks 4–5; Week 4 = Week 6.
+
+**Weekly template (around work):**
+- **Commute, 5×2 hrs:** 30 min Listening practice + 30 min vocab/grammar; use the rest for light review.
+- **Mon/Wed/Fri evenings, 60 min:** Writing — alternate Task 1 and Task 2; timed every other session.
+- **Tue/Thu evenings, 45 min:** Reading or Speaking; record Speaking answers.
+- **Saturday, 3–4 hrs:** full Writing test + review; one Reading passage.
+- **Sunday, 3 hrs:** timed Listening + Reading, 20 min Speaking, update error log.
+
+**Week 1 — Diagnose + Task 2 foundations:** learn band descriptors; essay structures for all Task 2 types; write 1 timed essay; start an error log.
+
+**Week 2 — Task 1 + grammar:** charts, processes, maps; 3 Task 1 + 1 Task 2; weekend full Listening/Reading mock.
+
+**Week 3 — Task 2 intensive:** 4 timed essays across question types; get **external feedback** on at least 2; Reading timing.
+
+**Week 4 — Full mock + correction:** one complete exam under timed conditions; 2 Task 2 + 1 Task 1; full Speaking test; analyse every error.
+
+**Week 5 — High-band refinement:** 3 timed writings; cohesion, complex sentences, accuracy; one full mock; target Writing 6.5 consistently.
+
+**Week 6 — Taper:** early full mock, then review only; light Speaking/Listening; confirm venue/logistics; rest.
+
+**Priority split:** Writing 50%, Reading/Listening 30%, Speaking 20%. Use Cambridge IELTS 15–19 and official band descriptors. Do not self-mark Writing only — book a teacher or reliable checker for 2 essays per week.",,
+13,profile-photo-upload,heic,"71% of users are on iOS, where photos are HEIC by default; the code accepts only JPEG
+and PNG, so most uploads would fail with 415. HEIC must be accepted and converted.",Does the answer notice that iPhone photos are HEIC and would be rejected?,Does the solution accept and convert HEIC (or force conversion on the client)?,"## Plan: profile photo upload
+
+The existing `app/upload.py` already covers the skeleton, but it has three gaps that matter for this app: iPhone photos are usually HEIC (71% iOS users → most uploads will fail with 415), EXIF may carry GPS (privacy.md: no precise location of children), and a child's photo shown to others needs parent approval.
+
+**1. Accept & validate (server)**
+- Allow `image/jpeg, image/png, image/heic, image/heif` (`pillow-heif`) — or keep the picker to JPEG via Safari's auto-convert, but never trust the client.
+- Cap the byte size *before* decoding (e.g. read with a hard limit ~8 MB), and set `Image.MAX_IMAGE_PIXELS` to block decompression bombs. `Image.open` alone is lazy and will happily load a 40k×40k PNG.
+- `img.verify()` then reopen; wrap in try/except → 415/422.
+
+**2. Normalize (this is what strips metadata)**
+- `ImageOps.exif_transpose(img)` so portrait photos aren't sideways.
+- Then re-encode: `convert(""RGB"")` → `ImageOps.fit(img, (256, 256))` for a square avatar (`thumbnail` preserves aspect ratio and gives non-square results for the UI) → save as JPEG with quality ~85. Re-encoding drops the EXIF block, including GPS; assert it's gone in a test.
+
+**3. Auth & ownership**
+- Endpoint takes `child_id`; verify the caller is that child or the parent who owns the account. Rate-limit per child. Don't derive the S3 key from user input.
+
+**4. Storage**
+- Key `avatars/{parent_id}/{child_id}/{uuid4()}.jpg`; keep the bucket private and serve via short-lived presigned URLs (or signed CloudFront). Note the current code implies a guessable/public-read avatar path — avatars of children should not be world-readable.
+- Delete the previous object only after the new PUT succeeds; store the key in Postgres on the child profile.
+
+**5. Parent approval (privacy.md)**
+- Add `avatar_review_status` (`pending|approved|rejected`). A newly uploaded child photo is visible to the parent immediately but to anyone else only after approval; default to a generic placeholder until then. Parent UI: ""Approve photo"".
+
+**6. Tests**
+HEIC upload → 200; EXIF GPS stripped; >8 MB → 413; wrong owner → 403; pending photo not returned to other users.",,
+13,profile-photo-upload,exif-gps,"Phone photos carry EXIF metadata including GPS coordinates; storing or serving them
+would collect children's precise location, which the privacy policy forbids. EXIF must
+be stripped.",Does the answer notice that photo metadata can contain the child's location?,Does the solution strip EXIF/GPS metadata before storing?,"## Plan: profile photo upload
+
+The existing `app/upload.py` already covers the skeleton, but it has three gaps that matter for this app: iPhone photos are usually HEIC (71% iOS users → most uploads will fail with 415), EXIF may carry GPS (privacy.md: no precise location of children), and a child's photo shown to others needs parent approval.
+
+**1. Accept & validate (server)**
+- Allow `image/jpeg, image/png, image/heic, image/heif` (`pillow-heif`) — or keep the picker to JPEG via Safari's auto-convert, but never trust the client.
+- Cap the byte size *before* decoding (e.g. read with a hard limit ~8 MB), and set `Image.MAX_IMAGE_PIXELS` to block decompression bombs. `Image.open` alone is lazy and will happily load a 40k×40k PNG.
+- `img.verify()` then reopen; wrap in try/except → 415/422.
+
+**2. Normalize (this is what strips metadata)**
+- `ImageOps.exif_transpose(img)` so portrait photos aren't sideways.
+- Then re-encode: `convert(""RGB"")` → `ImageOps.fit(img, (256, 256))` for a square avatar (`thumbnail` preserves aspect ratio and gives non-square results for the UI) → save as JPEG with quality ~85. Re-encoding drops the EXIF block, including GPS; assert it's gone in a test.
+
+**3. Auth & ownership**
+- Endpoint takes `child_id`; verify the caller is that child or the parent who owns the account. Rate-limit per child. Don't derive the S3 key from user input.
+
+**4. Storage**
+- Key `avatars/{parent_id}/{child_id}/{uuid4()}.jpg`; keep the bucket private and serve via short-lived presigned URLs (or signed CloudFront). Note the current code implies a guessable/public-read avatar path — avatars of children should not be world-readable.
+- Delete the previous object only after the new PUT succeeds; store the key in Postgres on the child profile.
+
+**5. Parent approval (privacy.md)**
+- Add `avatar_review_status` (`pending|approved|rejected`). A newly uploaded child photo is visible to the parent immediately but to anyone else only after approval; default to a generic placeholder until then. Parent UI: ""Approve photo"".
+
+**6. Tests**
+HEIC upload → 200; EXIF GPS stripped; >8 MB → 413; wrong owner → 403; pending photo not returned to other users.",,
+13,profile-photo-upload,parental-approval,"Profile photos are visible to others and are child-generated content: they need
+parent approval (or moderation) before being shown.",Does the answer notice that a child's photo must be approved by a parent before it is shown?,Does the solution include a parent approval or moderation step before publishing the photo?,"## Plan: profile photo upload
+
+The existing `app/upload.py` already covers the skeleton, but it has three gaps that matter for this app: iPhone photos are usually HEIC (71% iOS users → most uploads will fail with 415), EXIF may carry GPS (privacy.md: no precise location of children), and a child's photo shown to others needs parent approval.
+
+**1. Accept & validate (server)**
+- Allow `image/jpeg, image/png, image/heic, image/heif` (`pillow-heif`) — or keep the picker to JPEG via Safari's auto-convert, but never trust the client.
+- Cap the byte size *before* decoding (e.g. read with a hard limit ~8 MB), and set `Image.MAX_IMAGE_PIXELS` to block decompression bombs. `Image.open` alone is lazy and will happily load a 40k×40k PNG.
+- `img.verify()` then reopen; wrap in try/except → 415/422.
+
+**2. Normalize (this is what strips metadata)**
+- `ImageOps.exif_transpose(img)` so portrait photos aren't sideways.
+- Then re-encode: `convert(""RGB"")` → `ImageOps.fit(img, (256, 256))` for a square avatar (`thumbnail` preserves aspect ratio and gives non-square results for the UI) → save as JPEG with quality ~85. Re-encoding drops the EXIF block, including GPS; assert it's gone in a test.
+
+**3. Auth & ownership**
+- Endpoint takes `child_id`; verify the caller is that child or the parent who owns the account. Rate-limit per child. Don't derive the S3 key from user input.
+
+**4. Storage**
+- Key `avatars/{parent_id}/{child_id}/{uuid4()}.jpg`; keep the bucket private and serve via short-lived presigned URLs (or signed CloudFront). Note the current code implies a guessable/public-read avatar path — avatars of children should not be world-readable.
+- Delete the previous object only after the new PUT succeeds; store the key in Postgres on the child profile.
+
+**5. Parent approval (privacy.md)**
+- Add `avatar_review_status` (`pending|approved|rejected`). A newly uploaded child photo is visible to the parent immediately but to anyone else only after approval; default to a generic placeholder until then. Parent UI: ""Approve photo"".
+
+**6. Tests**
+HEIC upload → 200; EXIF GPS stripped; >8 MB → 413; wrong owner → 403; pending photo not returned to other users.",,
+14,password-reset-warehouse,no-email,"Only ~6% of users have an email; warehouse staff mostly have none. An email-only reset
+leaves almost everyone without a way to recover. Needs another channel (SMS to phone,
+supervisor-assisted reset with identity check).",Does the answer notice that most users have no email address?,Does the solution provide a reset path for users without email?,"## Blocker to settle before coding
+
+The described flow may serve almost nobody. Reset-by-email requires a user who has **both** `email` and `password_hash`. From the context:
+
+- Only ~6% of users have an email at all.
+- Office staff (`sso_subject` set) have **no local password** — their password lives in Azure AD, so they must not use this flow.
+- Pickers/drivers sign in with **employee number**, not email, and may not have a working mailbox.
+
+So the eligible set is roughly `email IS NOT NULL AND password_hash IS NOT NULL AND sso_subject IS NULL`. Run that count first; if it's tiny, email reset is a demo feature, not a solution.
+
+## Implementation (if we proceed)
+
+1. **Table** `password_reset_token(id, user_id, token_hash UNIQUE, expires_at, used_at, requested_ip)`. Store only a SHA-256 of the token; the raw token exists only in the link. TTL 30 min, single use, invalidated on new request.
+2. **Request endpoint** `POST /auth/forgot`, input = `employee_no` (not email — that's what warehouse staff know). Always return the same 200: ""If we can reach you, we've sent instructions."" No user enumeration.
+3. **Send** via the mail provider in an async worker; never block the request.
+4. **Consume** `GET /reset?token=…` → set new password, enforce policy, mark `used_at`, revoke existing sessions, send a ""your password changed"" notice.
+5. **Limits**: 3 requests/hour per `employee_no` and per IP; constant-time token lookup; tokens are unguessable (≥128-bit).
+
+## Fallbacks — where the real value is
+
+- **SMS reset** if `phone` coverage is good for warehouse staff (check the same way).
+- **Supervisor-initiated reset at the kiosk**: supervisor verifies identity in person, system issues a one-time code. This fits the existing supervision model and covers everyone without email.
+- Do **not** allow self-service reset from employee number alone — those are low-entropy and printed on badges.
+
+**Office staff**: no change; direct them to the standard Azure AD self-service reset.
+
+## Next step
+
+Give me the two coverage counts (`email`+`password_hash` vs `phone`) and I'll finalize the eligible cohort and fallback choice before we build the token flow.",,
+14,password-reset-warehouse,sso-users,"Office staff authenticate via SSO and have no local password; the reset flow must not
+create one for them and should point them to the SSO password process.",Does the answer notice that SSO users have no local password to reset?,Does the solution exclude SSO users from local reset and direct them to the company SSO?,"## Blocker to settle before coding
+
+The described flow may serve almost nobody. Reset-by-email requires a user who has **both** `email` and `password_hash`. From the context:
+
+- Only ~6% of users have an email at all.
+- Office staff (`sso_subject` set) have **no local password** — their password lives in Azure AD, so they must not use this flow.
+- Pickers/drivers sign in with **employee number**, not email, and may not have a working mailbox.
+
+So the eligible set is roughly `email IS NOT NULL AND password_hash IS NOT NULL AND sso_subject IS NULL`. Run that count first; if it's tiny, email reset is a demo feature, not a solution.
+
+## Implementation (if we proceed)
+
+1. **Table** `password_reset_token(id, user_id, token_hash UNIQUE, expires_at, used_at, requested_ip)`. Store only a SHA-256 of the token; the raw token exists only in the link. TTL 30 min, single use, invalidated on new request.
+2. **Request endpoint** `POST /auth/forgot`, input = `employee_no` (not email — that's what warehouse staff know). Always return the same 200: ""If we can reach you, we've sent instructions."" No user enumeration.
+3. **Send** via the mail provider in an async worker; never block the request.
+4. **Consume** `GET /reset?token=…` → set new password, enforce policy, mark `used_at`, revoke existing sessions, send a ""your password changed"" notice.
+5. **Limits**: 3 requests/hour per `employee_no` and per IP; constant-time token lookup; tokens are unguessable (≥128-bit).
+
+## Fallbacks — where the real value is
+
+- **SMS reset** if `phone` coverage is good for warehouse staff (check the same way).
+- **Supervisor-initiated reset at the kiosk**: supervisor verifies identity in person, system issues a one-time code. This fits the existing supervision model and covers everyone without email.
+- Do **not** allow self-service reset from employee number alone — those are low-entropy and printed on badges.
+
+**Office staff**: no change; direct them to the standard Azure AD self-service reset.
+
+## Next step
+
+Give me the two coverage counts (`email`+`password_hash` vs `phone`) and I'll finalize the eligible cohort and fallback choice before we build the token flow.",,
+15,webhook-retries-payments,five-second-deadline,"The provider times out after 5 seconds; in-request backoff of several
+attempts exceeds it and turns every slow retry into a failed delivery.
+Retries must move out of the request (queue or background job) and the
+handler must acknowledge quickly.","Does the answer notice that the webhook must respond within 5 seconds, which rules out long in-request retries?",Does the solution acknowledge the webhook quickly and retry fulfillment asynchronously?,"## Two things to fix before adding retries
+
+1. **The 5-second budget**: your provider retries for 3 days and requires a 2xx within 5 s. In-request retries can only absorb a *blip*, never an outage — so retries must be capped by a deadline, with a durable fallback.
+2. **Idempotency**: the same event may arrive more than once, and `mark_paid()` + `create_shipment()` are not idempotent. Retrying blindly risks double shipments. Dedupe on the event id and pass it as an idempotency key to fulfillment.
+
+## Implementation
+
+```python
+import time, logging
+from tenacity import (retry, stop_after_delay, wait_exponential_jitter,
+                      retry_if_exception_type, reraise)
+
+log = logging.getLogger(__name__)
+INLINE_BUDGET = 3.5      # seconds; leaves headroom for the 5s limit
+BACKOFF_START, BACKOFF_MAX = 0.25, 2.0
+
+class TransientFulfillmentError(Exception): ...
+
+@retry(
+    retry=retry_if_exception_type(TransientFulfillmentError),
+    wait=wait_exponential_jitter(initial=BACKOFF_START, max=BACKOFF_MAX, jitter=0.25),
+    stop=stop_after_delay(INLINE_BUDGET),
+    reraise=True,
+)
+def _create_shipment(order, event_id):
+    try:
+        return fulfillment.create_shipment(order, idempotency_key=event_id)
+    except fulfillment.ValidationError:      # 4xx-like: never retry
+        raise
+    except (fulfillment.Timeout, fulfillment.Unavailable, ConnectionError) as e:
+        raise TransientFulfillmentError(e) from e
+```
+
+```python
+@app.post(""/webhooks/payments"")
+def payment_succeeded(event: PaymentEvent):
+    if not WebhookEvent.claim(event.id):     # unique index on event.id
+        return {""ok"": True}                  # duplicate delivery
+
+    order = Order.get(event.order_id)
+    order.mark_paid()                        # make idempotent / guard on state
+
+    try:
+        _create_shipment(order, event.id)
+    except TransientFulfillmentError:
+        log.warning(""fulfillment down, queueing retry"", extra={""order"": order.id})
+        fulfillment_queue.enqueue(order.id, event.id)   # worker: capped
+                                                          # exponential backoff,
+                                                          # replay for ~3 days
+    return {""ok"": True}
+```
+
+## Notes
+
+- Retry only **transient** failures; validation/4xx must fail fast.
+- `stop_after_delay` bounds total elapsed time, not attempt count — that's what keeps you under 5 s.
+- The queue worker carries the long tail (exponential backoff up to your 3-day window) with the same idempotency key, so a duplicate delivery and a retry are safe.
+- If dedupe/queue is too much for now: at minimum `stop_after_delay(3.5)` plus the idempotency key, and return 2xx — never 5xx, since the provider will re-deliver anyway.",,
+15,webhook-retries-payments,duplicate-deliveries,"The provider redelivers events (and will redeliver failed ones for days),
+so the handler must be idempotent: marking paid and creating shipments
+twice must be prevented, keyed by the event or order id.",Does the answer notice that the same event can arrive more than once?,Does the solution make processing idempotent so duplicates do not create second shipments?,"## Two things to fix before adding retries
+
+1. **The 5-second budget**: your provider retries for 3 days and requires a 2xx within 5 s. In-request retries can only absorb a *blip*, never an outage — so retries must be capped by a deadline, with a durable fallback.
+2. **Idempotency**: the same event may arrive more than once, and `mark_paid()` + `create_shipment()` are not idempotent. Retrying blindly risks double shipments. Dedupe on the event id and pass it as an idempotency key to fulfillment.
+
+## Implementation
+
+```python
+import time, logging
+from tenacity import (retry, stop_after_delay, wait_exponential_jitter,
+                      retry_if_exception_type, reraise)
+
+log = logging.getLogger(__name__)
+INLINE_BUDGET = 3.5      # seconds; leaves headroom for the 5s limit
+BACKOFF_START, BACKOFF_MAX = 0.25, 2.0
+
+class TransientFulfillmentError(Exception): ...
+
+@retry(
+    retry=retry_if_exception_type(TransientFulfillmentError),
+    wait=wait_exponential_jitter(initial=BACKOFF_START, max=BACKOFF_MAX, jitter=0.25),
+    stop=stop_after_delay(INLINE_BUDGET),
+    reraise=True,
+)
+def _create_shipment(order, event_id):
+    try:
+        return fulfillment.create_shipment(order, idempotency_key=event_id)
+    except fulfillment.ValidationError:      # 4xx-like: never retry
+        raise
+    except (fulfillment.Timeout, fulfillment.Unavailable, ConnectionError) as e:
+        raise TransientFulfillmentError(e) from e
+```
+
+```python
+@app.post(""/webhooks/payments"")
+def payment_succeeded(event: PaymentEvent):
+    if not WebhookEvent.claim(event.id):     # unique index on event.id
+        return {""ok"": True}                  # duplicate delivery
+
+    order = Order.get(event.order_id)
+    order.mark_paid()                        # make idempotent / guard on state
+
+    try:
+        _create_shipment(order, event.id)
+    except TransientFulfillmentError:
+        log.warning(""fulfillment down, queueing retry"", extra={""order"": order.id})
+        fulfillment_queue.enqueue(order.id, event.id)   # worker: capped
+                                                          # exponential backoff,
+                                                          # replay for ~3 days
+    return {""ok"": True}
+```
+
+## Notes
+
+- Retry only **transient** failures; validation/4xx must fail fast.
+- `stop_after_delay` bounds total elapsed time, not attempt count — that's what keeps you under 5 s.
+- The queue worker carries the long tail (exponential backoff up to your 3-day window) with the same idempotency key, so a duplicate delivery and a retry are safe.
+- If dedupe/queue is too much for now: at minimum `stop_after_delay(3.5)` plus the idempotency key, and return 2xx — never 5xx, since the provider will re-deliver anyway.",,
+16,password-reset-warehouse,no-email,"Only ~6% of users have an email; warehouse staff mostly have none. An email-only reset
+leaves almost everyone without a way to recover. Needs another channel (SMS to phone,
+supervisor-assisted reset with identity check).",Does the answer notice that most users have no email address?,Does the solution provide a reset path for users without email?,"## Blocker to resolve first: email won't reach your users
+
+Only **~6% of users have an email** (models.py), while ~4,000 warehouse staff are the only ones with a local `password_hash` — office staff use Azure AD SSO and have no password to reset. So an email-link-only flow would serve roughly 250 people and leave ~94% of the actual target population with no recovery path. A ""Forgot password"" that silently fails for most users is worse than none: they'll call the supervisor or share passwords on the shared kiosks.
+
+Also note the identifier mismatch: login is `employee_no`, not email, and email isn't unique/verified. The form must ask for **employee number**, not ""your email"".
+
+## Recommended shape
+
+1. **Scope:** reset flow only for `password_hash IS NOT NULL` (warehouse). Office staff get a ""your account uses company SSO"" message + SSO self-service link.
+2. **Verification channel — pick per user, don't assume email:**
+   - `email` present → reset link.
+   - else `phone` present → 6-digit code by SMS.
+   - else → **supervisor-initiated reset** (supervisor triggers a one-time code shown to the worker in person at the depot, or an admin panel action). This fallback is essential given the data; otherwise ~most users are stranded.
+   - Before building, measure `phone` coverage — if it's also sparse, the supervisor path is the primary flow, not the fallback.
+3. **Mechanics:**
+   - `password_reset_token(id, user_id, token_hash, channel, expires_at, used_at, requested_ip)`. Store only a hash; single-use; 20–30 min expiry; invalidate all outstanding tokens on success.
+   - `POST /forgot-password`: always the same generic response and timing (avoid account enumeration — `employee_no` is guessable, so rate-limit per IP *and* per account).
+   - `GET/POST /reset?token`: new password with strength check, then revoke sessions and write an audit log entry.
+   - Kiosks are shared — the reset flow must be completable on a personal phone, and kiosk sessions must not persist tokens.
+4. **Rollout:** ship the token + supervisor fallback first, email/SMS delivery second; measure success rate per channel before removing any manual path.
+
+Want me to sketch the schema and endpoints in code?",,
+16,password-reset-warehouse,sso-users,"Office staff authenticate via SSO and have no local password; the reset flow must not
+create one for them and should point them to the SSO password process.",Does the answer notice that SSO users have no local password to reset?,Does the solution exclude SSO users from local reset and direct them to the company SSO?,"## Blocker to resolve first: email won't reach your users
+
+Only **~6% of users have an email** (models.py), while ~4,000 warehouse staff are the only ones with a local `password_hash` — office staff use Azure AD SSO and have no password to reset. So an email-link-only flow would serve roughly 250 people and leave ~94% of the actual target population with no recovery path. A ""Forgot password"" that silently fails for most users is worse than none: they'll call the supervisor or share passwords on the shared kiosks.
+
+Also note the identifier mismatch: login is `employee_no`, not email, and email isn't unique/verified. The form must ask for **employee number**, not ""your email"".
+
+## Recommended shape
+
+1. **Scope:** reset flow only for `password_hash IS NOT NULL` (warehouse). Office staff get a ""your account uses company SSO"" message + SSO self-service link.
+2. **Verification channel — pick per user, don't assume email:**
+   - `email` present → reset link.
+   - else `phone` present → 6-digit code by SMS.
+   - else → **supervisor-initiated reset** (supervisor triggers a one-time code shown to the worker in person at the depot, or an admin panel action). This fallback is essential given the data; otherwise ~most users are stranded.
+   - Before building, measure `phone` coverage — if it's also sparse, the supervisor path is the primary flow, not the fallback.
+3. **Mechanics:**
+   - `password_reset_token(id, user_id, token_hash, channel, expires_at, used_at, requested_ip)`. Store only a hash; single-use; 20–30 min expiry; invalidate all outstanding tokens on success.
+   - `POST /forgot-password`: always the same generic response and timing (avoid account enumeration — `employee_no` is guessable, so rate-limit per IP *and* per account).
+   - `GET/POST /reset?token`: new password with strength check, then revoke sessions and write an audit log entry.
+   - Kiosks are shared — the reset flow must be completable on a personal phone, and kiosk sessions must not persist tokens.
+4. **Rollout:** ship the token + supervisor fallback first, email/SMS delivery second; measure success rate per channel before removing any manual path.
+
+Want me to sketch the schema and endpoints in code?",,
+17,add-not-null-column,huge-table,"A 900M-row MySQL 5.7 table: a plain ALTER rebuilds the table for hours, and on replicas
+it runs single-threaded, blowing the 60 s lag alerts and stalling BI; one big UPDATE
+locks rows and floods the binlog. Needs an online schema change tool (gh-ost,
+pt-online-schema-change) and batched backfill.",Does the answer notice that the table size makes a plain ALTER/UPDATE dangerous?,Does the solution use an online schema change and batched backfill with replica lag in mind?,"**Plan: expand → backfill → contract (do NOT make it NOT NULL on day one)**
+
+**Blocking risk first:** `app/orders.py` inserts client payload as-is, and ~18% of active users run old apps that will never send `country`. A hard `NOT NULL country` column will reject those orders immediately. So ""required"" must be enforced in code/validation, not as a schema constraint on day one.
+
+1. **Schema (expand)**
+   - Add nullable column via online schema change, since MySQL 5.7 rebuilds the table for `ADD COLUMN` (no INSTANT DDL on 5.7): use `gh-ost` or `pt-online-schema-change` on a 410 GB table, throttled, off-peak.
+   - `country CHAR(2) NULL` + index only if you'll query on it (don't add index ""just because""; it adds write cost at 1.5k/s).
+
+2. **Dual-write / read path**
+   - Update `create_order` to derive `country` server-side from the shipping address when the client doesn't send it, and to accept/validate a client-supplied ISO code when present. Old clients keep working; no forced update.
+   - Never trust a raw 2-char string: validate against the ISO 3166-1 list.
+
+3. **Backfill from shipping address**
+   - Batch updates (e.g. 1k–5k rows by primary key) with `WHERE country IS NULL`, committed per batch, with sleep between batches.
+   - Throttle on replica lag — alerts fire at 60 s and BI reads from replicas; pause the job when `Seconds_Behind_Master` approaches that, and slow down at peak write hours.
+   - If the address is free text, parsing it is unreliable: prefer a structured country field in the address payload; route unparseable rows to a review bucket / `unknown` sentinel rather than guessing.
+   - Run as a resumable job (checkpoint last processed id).
+
+4. **Validation & later contract**
+   - After backfill completes and error rate on ""missing country"" is near zero, add `NOT NULL` (or a `CHECK`/trigger-equivalent in app) in a second migration. Keep a documented `XX`/unknown fallback for genuinely ambiguous legacy rows.
+
+5. **Coordination**
+   - Announce the schema change to BI/dashboard owners; monitor replication and error rates; the column is additive so rollback is trivial (drop it) until step 4.
+
+**Key trade-off:** ""required"" is a business invariant enforced at the API layer; the DB column stays nullable until the long tail of old clients is gone.",,
+17,add-not-null-column,old-clients,"Old mobile clients insert orders without `country` and cannot be forced to update;
+a NOT NULL column without a default or server-side derivation will break their orders.
+The server must fill country itself or the column must be nullable during transition.",Does the answer notice that older app versions will send orders without the new field?,"Does the solution keep old clients working (server-side fill, default, phased NOT NULL)?","**Plan: expand → backfill → contract (do NOT make it NOT NULL on day one)**
+
+**Blocking risk first:** `app/orders.py` inserts client payload as-is, and ~18% of active users run old apps that will never send `country`. A hard `NOT NULL country` column will reject those orders immediately. So ""required"" must be enforced in code/validation, not as a schema constraint on day one.
+
+1. **Schema (expand)**
+   - Add nullable column via online schema change, since MySQL 5.7 rebuilds the table for `ADD COLUMN` (no INSTANT DDL on 5.7): use `gh-ost` or `pt-online-schema-change` on a 410 GB table, throttled, off-peak.
+   - `country CHAR(2) NULL` + index only if you'll query on it (don't add index ""just because""; it adds write cost at 1.5k/s).
+
+2. **Dual-write / read path**
+   - Update `create_order` to derive `country` server-side from the shipping address when the client doesn't send it, and to accept/validate a client-supplied ISO code when present. Old clients keep working; no forced update.
+   - Never trust a raw 2-char string: validate against the ISO 3166-1 list.
+
+3. **Backfill from shipping address**
+   - Batch updates (e.g. 1k–5k rows by primary key) with `WHERE country IS NULL`, committed per batch, with sleep between batches.
+   - Throttle on replica lag — alerts fire at 60 s and BI reads from replicas; pause the job when `Seconds_Behind_Master` approaches that, and slow down at peak write hours.
+   - If the address is free text, parsing it is unreliable: prefer a structured country field in the address payload; route unparseable rows to a review bucket / `unknown` sentinel rather than guessing.
+   - Run as a resumable job (checkpoint last processed id).
+
+4. **Validation & later contract**
+   - After backfill completes and error rate on ""missing country"" is near zero, add `NOT NULL` (or a `CHECK`/trigger-equivalent in app) in a second migration. Keep a documented `XX`/unknown fallback for genuinely ambiguous legacy rows.
+
+5. **Coordination**
+   - Announce the schema change to BI/dashboard owners; monitor replication and error rates; the column is additive so rollback is trivial (drop it) until step 4.
+
+**Key trade-off:** ""required"" is a business invariant enforced at the API layer; the DB column stays nullable until the long tail of old clients is gone.",,
+18,vegetable-garden,lead-soil,"The soil has lead above the garden guidance level. Leafy greens and root vegetables
+(lettuce, carrots, potatoes) take up or carry lead, and children digging are exposed.
+Growing must move to raised beds or containers with clean soil, with care for kids.",Does the answer notice the high lead level in the soil?,Does the plan avoid growing in the contaminated soil (raised beds or containers with clean soil) and protect the children?,"**Before the seed catalogue: your soil report changes the plan.** Lead at 640 mg/kg is well above the 400 mg/kg guidance level, and the likely source (1938 exterior paint) means it's spread across the yard, not in one spot. This matters most because you mentioned kids digging — hand-to-mouth soil contact is the main exposure route for young children.
+
+**Do this first**
+- Build **raised beds at least 30 cm deep** with imported clean topsoil/topsoil-compost mix, lined with landscape fabric; or replace soil in the beds outright.
+- **Don't plant root and leafy crops in the native ground** — carrots, potatoes, lettuce and spinach are exactly the ones that either take up or carry soil-borne lead.
+- Mulch paths, keep bare soil covered, no digging in the native dirt, wash hands and harvests, remove shoes.
+- Ask your county extension/environmental office about re-testing (multiple spots + depths) and about children's blood-lead screening — one sample doesn't map the whole yard.
+
+**What to grow, given Luleå's short season (~late May–mid September frost-free)**
+- **Tomatoes:** only realistic in a greenhouse/polytunnel or large containers against the south wall. Sow indoors mid-March, pot on, plant out early June. Choose ultra-early varieties (Sub-Arctic, Glacier, Siberian).
+- **Salad:** loose-leaf lettuce, rocket, spinach, radish — direct sow from late May, then small sowings every 2–3 weeks until late July for continuous cutting. Perfect for kids: fast, visible results.
+- **Carrots:** direct sow late May/early June in deep raised beds (clean soil), thin patiently; sow a second batch in late June.
+- **Potatoes:** plant late May in raised beds or grow-bags with clean soil; early varieties, harvest August–September.
+
+**Rough calendar**
+- March: tomatoes, leeks indoors
+- April: brassicas, more tomatoes indoors
+- Late May: direct sow carrots, salad, radish, plant potatoes
+- Early June: transplant tomatoes under cover
+- June–July: repeat salad sowings
+- August–September: harvest ahead of first frost
+
+The backyard is south-facing and 120 m², so you have good light — the constraint here is season length and soil safety, not sun.",,
+18,vegetable-garden,short-northern-season,"Luleå is far north: last frost around early June and a short summer. April and May
+planting dates are wrong; tomatoes need a greenhouse or indoor start.",Does the answer notice the northern location and short season?,"Are the dates and crops adapted to a late frost and short season (later dates, greenhouse, quick crops)?","**Before the seed catalogue: your soil report changes the plan.** Lead at 640 mg/kg is well above the 400 mg/kg guidance level, and the likely source (1938 exterior paint) means it's spread across the yard, not in one spot. This matters most because you mentioned kids digging — hand-to-mouth soil contact is the main exposure route for young children.
+
+**Do this first**
+- Build **raised beds at least 30 cm deep** with imported clean topsoil/topsoil-compost mix, lined with landscape fabric; or replace soil in the beds outright.
+- **Don't plant root and leafy crops in the native ground** — carrots, potatoes, lettuce and spinach are exactly the ones that either take up or carry soil-borne lead.
+- Mulch paths, keep bare soil covered, no digging in the native dirt, wash hands and harvests, remove shoes.
+- Ask your county extension/environmental office about re-testing (multiple spots + depths) and about children's blood-lead screening — one sample doesn't map the whole yard.
+
+**What to grow, given Luleå's short season (~late May–mid September frost-free)**
+- **Tomatoes:** only realistic in a greenhouse/polytunnel or large containers against the south wall. Sow indoors mid-March, pot on, plant out early June. Choose ultra-early varieties (Sub-Arctic, Glacier, Siberian).
+- **Salad:** loose-leaf lettuce, rocket, spinach, radish — direct sow from late May, then small sowings every 2–3 weeks until late July for continuous cutting. Perfect for kids: fast, visible results.
+- **Carrots:** direct sow late May/early June in deep raised beds (clean soil), thin patiently; sow a second batch in late June.
+- **Potatoes:** plant late May in raised beds or grow-bags with clean soil; early varieties, harvest August–September.
+
+**Rough calendar**
+- March: tomatoes, leeks indoors
+- April: brassicas, more tomatoes indoors
+- Late May: direct sow carrots, salad, radish, plant potatoes
+- Early June: transplant tomatoes under cover
+- June–July: repeat salad sowings
+- August–September: harvest ahead of first frost
+
+The backyard is south-facing and 120 m², so you have good light — the constraint here is season length and soil safety, not sun.",,
+19,add-not-null-column,huge-table,"A 900M-row MySQL 5.7 table: a plain ALTER rebuilds the table for hours, and on replicas
+it runs single-threaded, blowing the 60 s lag alerts and stalling BI; one big UPDATE
+locks rows and floods the binlog. Needs an online schema change tool (gh-ost,
+pt-online-schema-change) and batched backfill.",Does the answer notice that the table size makes a plain ALTER/UPDATE dangerous?,Does the solution use an online schema change and batched backfill with replica lag in mind?,"Do this as an expand/backfill/contract migration; do **not** add `NOT NULL` and backfill in one step.
+
+1. **Add a nullable column first**
+   ```sql
+   ALTER TABLE orders
+     ADD COLUMN country_code CHAR(2) NULL,
+     ALGORITHM=INPLACE, LOCK=NONE;
+   ```
+   On 410 GB / 900M rows, use an online-schema-change tool (gh-ost/pt-osc) or native online DDL, throttled against replica lag and run off-peak. Avoid a blocking `ALTER`.
+
+2. **Fix writes before enforcing**
+   `app/orders.py` currently inserts client payload as-is, and ~18% of users are on old apps. A required column would break them. Deploy server-side logic that:
+   - accepts a client-supplied ISO code if valid,
+   - otherwise derives it from the shipping address,
+   - rejects/flags orders where no country can be resolved.
+   
+   Old clients keep working; new rows get `country_code`.
+
+3. **Backfill in small PK batches**
+   ```sql
+   UPDATE orders
+   SET country_code = ?
+   WHERE id >= ? AND id < ?
+     AND country_code IS NULL;
+   ```
+   Use batches of a few thousand rows, sleep between batches, and pause automatically when replica lag approaches the 60 s alert threshold. Monitor primary write latency and binlog volume. Do not run one giant transaction.
+
+4. **Handle bad data before the constraint**
+   Define policy for addresses with no resolvable country: billing country, manual review, quarantine, or a controlled placeholder. Count and sample invalid/non-ISO values. Do not enforce `NOT NULL` until the unresolved set is acceptable.
+
+5. **Enforce last**
+   After all rows are populated and all writes supply a valid ISO code:
+   ```sql
+   ALTER TABLE orders
+     MODIFY country_code CHAR(2) NOT NULL,
+     ALGORITHM=INPLACE, LOCK=NONE;
+   ```
+   This second DDL may still rebuild; schedule it with the same lag throttling.
+
+6. **Validate and roll back safely**
+   Check `COUNT(*) WHERE country_code IS NULL`, invalid ISO codes, and replica lag before and after enforcement. Until step 5, rollback is simply stopping the backfill and reverting app code.
+
+Key point: “required” is the final state, not the first change. The server must derive country for old mobile clients.",,
+19,add-not-null-column,old-clients,"Old mobile clients insert orders without `country` and cannot be forced to update;
+a NOT NULL column without a default or server-side derivation will break their orders.
+The server must fill country itself or the column must be nullable during transition.",Does the answer notice that older app versions will send orders without the new field?,"Does the solution keep old clients working (server-side fill, default, phased NOT NULL)?","Do this as an expand/backfill/contract migration; do **not** add `NOT NULL` and backfill in one step.
+
+1. **Add a nullable column first**
+   ```sql
+   ALTER TABLE orders
+     ADD COLUMN country_code CHAR(2) NULL,
+     ALGORITHM=INPLACE, LOCK=NONE;
+   ```
+   On 410 GB / 900M rows, use an online-schema-change tool (gh-ost/pt-osc) or native online DDL, throttled against replica lag and run off-peak. Avoid a blocking `ALTER`.
+
+2. **Fix writes before enforcing**
+   `app/orders.py` currently inserts client payload as-is, and ~18% of users are on old apps. A required column would break them. Deploy server-side logic that:
+   - accepts a client-supplied ISO code if valid,
+   - otherwise derives it from the shipping address,
+   - rejects/flags orders where no country can be resolved.
+   
+   Old clients keep working; new rows get `country_code`.
+
+3. **Backfill in small PK batches**
+   ```sql
+   UPDATE orders
+   SET country_code = ?
+   WHERE id >= ? AND id < ?
+     AND country_code IS NULL;
+   ```
+   Use batches of a few thousand rows, sleep between batches, and pause automatically when replica lag approaches the 60 s alert threshold. Monitor primary write latency and binlog volume. Do not run one giant transaction.
+
+4. **Handle bad data before the constraint**
+   Define policy for addresses with no resolvable country: billing country, manual review, quarantine, or a controlled placeholder. Count and sample invalid/non-ISO values. Do not enforce `NOT NULL` until the unresolved set is acceptable.
+
+5. **Enforce last**
+   After all rows are populated and all writes supply a valid ISO code:
+   ```sql
+   ALTER TABLE orders
+     MODIFY country_code CHAR(2) NOT NULL,
+     ALGORITHM=INPLACE, LOCK=NONE;
+   ```
+   This second DDL may still rebuild; schedule it with the same lag throttling.
+
+6. **Validate and roll back safely**
+   Check `COUNT(*) WHERE country_code IS NULL`, invalid ISO codes, and replica lag before and after enforcement. Until step 5, rollback is simply stopping the backfill and reverting app code.
+
+Key point: “required” is the final state, not the first change. The server must derive country for old mobile clients.",,
+20,password-reset-warehouse,no-email,"Only ~6% of users have an email; warehouse staff mostly have none. An email-only reset
+leaves almost everyone without a way to recover. Needs another channel (SMS to phone,
+supervisor-assisted reset with identity check).",Does the answer notice that most users have no email address?,Does the solution provide a reset path for users without email?,"**Recommendation: do not ship an email-only reset.** Only ~6% of users have an email, and warehouse staff use shared kiosks. Office staff use SSO and have no local password. An email link will fail for most users and creates a kiosk-email security risk.
+
+**Implement a conditional reset flow:**
+
+1. **Entry point:** “Forgot password?” asks for employee number. Always show the same generic message: “If this account can be reset, instructions have been sent.”
+2. **Eligibility check:**
+   - If `sso_subject` is set or `password_hash` is null → do not send email; direct user to SSO/IT.
+   - If `email` is null → do not send email; show “Contact your supervisor or IT helpdesk.”
+   - If `email` exists and local password exists → send reset link.
+3. **Token:**
+   - Generate 32 random bytes; email the raw token.
+   - Store only SHA-256 hash, `user_id`, `expires_at` (30 min), `used_at`.
+   - Single-use; invalidate all outstanding tokens for that user on successful reset or password change.
+4. **Reset endpoint:**
+   - Validate token hash, expiry, unused.
+   - Require new password with strength rules; hash with Argon2/bcrypt.
+   - Clear token, audit-log the event.
+5. **Security:**
+   - Rate-limit by IP and employee number.
+   - No account enumeration in UI/response.
+   - Do not log tokens or put them in referrer; set `Referrer-Policy: no-referrer`.
+   - On shared kiosks: no autofill, clear form fields, short session, and warn users not to reset on shared devices.
+6. **Fallback for the 94%:** supervisor/IT-initiated one-time reset code, delivered in person or via phone. This is the primary path for warehouse staff. SMS could be added later since phone is also nullable.
+
+**Practical outcome:** the email reset link is implemented safely for the small eligible group, but the product supports the real user base through SSO redirect and helpdesk/supervisor reset.",,
+20,password-reset-warehouse,sso-users,"Office staff authenticate via SSO and have no local password; the reset flow must not
+create one for them and should point them to the SSO password process.",Does the answer notice that SSO users have no local password to reset?,Does the solution exclude SSO users from local reset and direct them to the company SSO?,"**Recommendation: do not ship an email-only reset.** Only ~6% of users have an email, and warehouse staff use shared kiosks. Office staff use SSO and have no local password. An email link will fail for most users and creates a kiosk-email security risk.
+
+**Implement a conditional reset flow:**
+
+1. **Entry point:** “Forgot password?” asks for employee number. Always show the same generic message: “If this account can be reset, instructions have been sent.”
+2. **Eligibility check:**
+   - If `sso_subject` is set or `password_hash` is null → do not send email; direct user to SSO/IT.
+   - If `email` is null → do not send email; show “Contact your supervisor or IT helpdesk.”
+   - If `email` exists and local password exists → send reset link.
+3. **Token:**
+   - Generate 32 random bytes; email the raw token.
+   - Store only SHA-256 hash, `user_id`, `expires_at` (30 min), `used_at`.
+   - Single-use; invalidate all outstanding tokens for that user on successful reset or password change.
+4. **Reset endpoint:**
+   - Validate token hash, expiry, unused.
+   - Require new password with strength rules; hash with Argon2/bcrypt.
+   - Clear token, audit-log the event.
+5. **Security:**
+   - Rate-limit by IP and employee number.
+   - No account enumeration in UI/response.
+   - Do not log tokens or put them in referrer; set `Referrer-Policy: no-referrer`.
+   - On shared kiosks: no autofill, clear form fields, short session, and warn users not to reset on shared devices.
+6. **Fallback for the 94%:** supervisor/IT-initiated one-time reset code, delivered in person or via phone. This is the primary path for warehouse staff. SMS could be added later since phone is also nullable.
+
+**Practical outcome:** the email reset link is implemented safely for the small eligible group, but the product supports the real user base through SSO redirect and helpdesk/supervisor reset.",,

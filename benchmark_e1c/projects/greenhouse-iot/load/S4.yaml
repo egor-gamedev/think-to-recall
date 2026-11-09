@@ -1,0 +1,197 @@
+segment: S4
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [G18]
+    text: |
+      Фильтр и правда был забит, промыл. Теперь хочу смотреть всё из города, со смены. Порт пробросить не выйдет — IP серый. Сделаем удалённый доступ к Raspberry Pi через Tailscale, портов наружу не открываем вообще. Как поставить?
+  - role: assistant
+    facts: []
+    text: |
+      Tailscale как раз под это: он сам пробивается через NAT оператора, никаких входящих портов не нужно.
+
+      На Pi:
+
+      ```bash
+      curl -fsSL https://tailscale.com/install.sh | sh
+      sudo tailscale up --ssh
+      ```
+
+      Команда выдаст ссылку — откройте её, войдите в аккаунт, Pi появится в вашей сети (tailnet) с адресом вида `100.x.y.z` и именем, например, `teplica-pi`. Флаг `--ssh` включает SSH через Tailscale — пароли и ключи на Pi не нужны, доступ по аккаунту.
+
+      На телефон — приложение Tailscale, тот же аккаунт. После этого с телефона откроются:
+
+      - `http://teplica-pi:3000` — Grafana (когда поставим);
+      - `ssh pi@teplica-pi` — из любого SSH-клиента.
+
+      Трафик: сам Tailscale в простое тратит единицы мегабайт в сутки; основной расход — то, что вы смотрите. Grafana с десятком графиков — сотни килобайт на открытие, лимит 20 ГБ этим не съесть.
+
+      Одно замечание: брокер у нас слушает только адрес локальной сети, так что через Tailscale MQTT снаружи недоступен — это правильно, пусть так и остаётся.
+  - role: user
+    facts: [G18r]
+    text: |
+      Поставил, с телефона захожу. Знакомый с работы говорит: зачем городить, переноси всё в облако — Yandex IoT Core или AWS IoT, надёжнее. Я подумал и отказываюсь от облачных IoT-платформ: 4G у нас с лимитом и пропадает, а полив должен работать локально, даже когда связи нет.
+  - role: assistant
+    facts: []
+    text: |
+      Согласен с вашей логикой. Облачная платформа даёт удобства, но делает интернет обязательным звеном: при пропаже 4G вы теряете и данные, и, если логика там, управление. Для полива это недопустимо. Локальная схема с Tailscale для просмотра закрывает вашу задачу: всё критичное работает в доме, а интернет нужен только чтобы *смотреть*.
+
+      Если когда-нибудь захочется копию данных вне хозяйства — проще раз в неделю отправлять сжатую выгрузку куда-нибудь, чем гнать поток в облако.
+  - role: user
+    facts: []
+    text: |
+      Ок. Ставлю Grafana. База пока SQLite — она умеет?
+  - role: assistant
+    facts: []
+    text: |
+      Умеет через плагин. Установка:
+
+      ```bash
+      sudo apt install -y apt-transport-https software-properties-common
+      wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | sudo tee /usr/share/keyrings/grafana.gpg >/dev/null
+      echo "deb [signed-by=/usr/share/keyrings/grafana.gpg] https://apt.grafana.com stable main" | sudo tee /etc/apt/sources.list.d/grafana.list
+      sudo apt update && sudo apt install -y grafana
+      sudo grafana-cli plugins install frser-sqlite-datasource
+      sudo systemctl enable --now grafana-server
+      ```
+
+      Пользователю `grafana` нужен доступ на чтение к файлу базы: `sudo usermod -aG pi grafana` и права 640 на `teplica.db`.
+
+      Запрос для панели температуры:
+
+      ```sql
+      SELECT ts AS time, v AS "Теплица 1"
+      FROM readings
+      WHERE teplica = 1 AND place = 'air' AND sensor = 'temp'
+        AND ts BETWEEN $__unixEpochFrom() AND $__unixEpochTo()
+      ORDER BY ts
+      ```
+
+      В настройках поля укажите, что `time` — unix-секунды. На Pi 4 с вашим объёмом запросы будут отрабатывать быстро, индекс по `ts` у нас уже есть.
+  - role: user
+    facts: [G19]
+    text: |
+      Графики есть, красота. Теперь тревоги. Нужна тревога по жаре: в первой теплице выше 35 °C, во второй — выше 32 °C, огурцы нежнее. Форточки у нас открываются только вручную, приводов нет, так что тревога — это единственный способ узнать вовремя. Себе хочу в Telegram.
+  - role: assistant
+    facts: []
+    text: |
+      Сделаем отдельным модулем в poliv.py — данные о температуре он и так получает. Основные моменты:
+
+      - **Гистерезис**: тревога при пересечении порога, «отбой» — когда опустится на 2 °C ниже. Иначе на границе будет сыпать сообщениями.
+      - **Подтверждение**: тревога, если порог превышен два замера подряд, — один выброс SHT31 на солнце не должен будить.
+      - **Повтор**: если жара держится, напоминание раз в 30 минут, не чаще.
+
+      Бот: напишите `@BotFather` → `/newbot`, получите токен; свой `chat_id` узнаете, написав боту и открыв `https://api.telegram.org/bot<TOKEN>/getUpdates`.
+
+      ```python
+      import requests
+
+      LIMITS = {1: 35.0, 2: 32.0}
+      HYST, REPEAT = 2.0, 30 * 60
+      alarm = {1: {"on": False, "cnt": 0, "sent": 0}, 2: {"on": False, "cnt": 0, "sent": 0}}
+
+      def tg(text):
+          try:
+              requests.post(f"https://api.telegram.org/bot{TG_TOKEN}/sendMessage",
+                            json={"chat_id": TG_CHAT, "text": text}, timeout=10)
+          except requests.RequestException:
+              log.warning("telegram недоступен")
+
+      def check_heat(n, t):
+          a, now = alarm[n], time.time()
+          if t > LIMITS[n]:
+              a["cnt"] += 1
+              if a["cnt"] >= 2 and (not a["on"] or now - a["sent"] > REPEAT):
+                  tg(f"🔥 Теплица {n}: {t:.1f} °C (порог {LIMITS[n]:.0f}) — открыть форточки")
+                  a["on"], a["sent"] = True, now
+          else:
+              a["cnt"] = 0
+              if a["on"] and t < LIMITS[n] - HYST:
+                  tg(f"✅ Теплица {n}: {t:.1f} °C, отбой")
+                  a["on"] = False
+      ```
+
+      Telegram требует интернета: при пропаже 4G сообщение не уйдёт, `tg()` просто запишет предупреждение в лог. Трафика это почти не тратит.
+  - role: user
+    facts: []
+    text: |
+      Работает, первая тревога уже пришла — во второй 33,5 в обед. Но тут вылезла другая беда.
+  - role: assistant
+    facts: []
+    text: |
+      Рассказывайте, что случилось.
+  - role: user
+    facts: [G12b]
+    text: |
+      Вторая теплица: Wi-Fi туда не добивает. RSSI −90, половина пакетов теряется, на графиках дыры по часу. Роутер в доме, до второй метров 75 через первую. Думаю так: переводим узлы второй теплицы с Wi-Fi на ESP-NOW — они шлют на шлюз-ESP32 в первой теплице, а шлюз уже публикует в MQTT. В первой сигнал нормальный, −65.
+  - role: assistant
+    facts: []
+    text: |
+      ESP-NOW подходит: пакеты короткие, без ассоциации с точкой доступа, дальность между двумя ESP32 заметно больше, чем у Wi-Fi до роутера. Важная тонкость — **канал**. Шлюз одновременно подключён к роутеру по Wi-Fi и принимает ESP-NOW, а радио у ESP32 одно, поэтому ESP-NOW работает на канале роутера. Зафиксируйте канал в настройках роутера (не «авто»), например 6, и пропишите его в узлах.
+
+      Узел второй теплицы (передатчик):
+
+      ```cpp
+      #include <esp_now.h>
+      #include <WiFi.h>
+      #include <esp_wifi.h>
+
+      uint8_t GW_MAC[] = {0x24, 0x6F, 0x28, 0xAA, 0xBB, 0xCC};  // MAC шлюза
+      const uint8_t CHANNEL = 6;
+
+      struct __attribute__((packed)) Pkt {
+        uint8_t teplica, zoneA, zoneB;
+        float temp, hum, soilA, soilB;
+      };
+
+      void setup() {
+        WiFi.mode(WIFI_STA);
+        esp_wifi_set_channel(CHANNEL, WIFI_SECOND_CHAN_NONE);
+        esp_now_init();
+        esp_now_peer_info_t peer = {};
+        memcpy(peer.peer_addr, GW_MAC, 6);
+        peer.channel = CHANNEL;
+        esp_now_add_peer(&peer);
+        sht.begin(0x44);
+      }
+
+      void loop() {
+        Pkt p = {2, 3, 4, sht.readTemperature(), sht.readHumidity(),
+                 soilPercent(readSoilRaw(34)), soilPercent(readSoilRaw(35))};
+        esp_now_send(GW_MAC, (uint8_t*)&p, sizeof p);
+        delay(30000);
+      }
+      ```
+
+      Шлюз в первой теплице:
+
+      ```cpp
+      void onRecv(const esp_now_recv_info_t* info, const uint8_t* data, int len) {
+        if (len != sizeof(Pkt)) return;
+        memcpy((void*)&last, data, sizeof(Pkt));
+        fresh = true;                         // публикуем из loop(), не из колбэка
+      }
+
+      void loop() {
+        ensureMqtt(); mqtt.loop();
+        if (!fresh) return;
+        fresh = false;
+        char t[40];
+        snprintf(t, sizeof t, "teplica/%d/air/temp", last.teplica);       publish(t, last.temp);
+        snprintf(t, sizeof t, "teplica/%d/air/hum", last.teplica);        publish(t, last.hum);
+        snprintf(t, sizeof t, "teplica/%d/z%d/soil", last.teplica, last.zoneA); publish(t, last.soilA);
+        snprintf(t, sizeof t, "teplica/%d/z%d/soil", last.teplica, last.zoneB); publish(t, last.soilB);
+      }
+      ```
+
+      `ts` ставит шлюз в `publish()` — у передатчика времени нет, и оно ему не нужно. Публиковать из колбэка нельзя: он выполняется в задаче Wi-Fi, и вызов PubSubClient оттуда приводит к зависаниям.
+  - role: user
+    facts: []
+    text: |
+      Прошил оба. Канал на роутере поставил шестой. Потерь почти нет, RSSI ESP-NOW −72. Шлюз повесил рядом с узлом полива, в ту же коробку, — там уже есть питание.
+  - role: assistant
+    facts: []
+    text: |
+      Отличный результат. Раз шлюз в одной коробке с узлом полива — разведите их антенны хотя бы на 10–15 см и не кладите плату вплотную к трансформатору 24 В: его поле и коммутация реле дают помехи, которые на ESP-NOW проявятся пропусками пакетов.
+
+      И добавьте в Grafana панель «последнее сообщение от теплицы 2» — `max(ts)` и разница с текущим временем. Если шлюз зависнет, вы увидите это сразу, а не по дырам на графиках через день.

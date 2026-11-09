@@ -1,0 +1,54 @@
+{"corpus": "user00", "stage": "graph", "build_s": 14.44731092453003, "sentences": 716, "search_s": {"A": 4.136845350265503, "B": 4.147514820098877, "C": 8.088704586029053}, "n_q": 226}
+{"corpus": "user01", "stage": "graph", "build_s": 12.196339845657349, "sentences": 803, "search_s": {"A": 1.7216713428497314, "B": 1.4965100288391113, "C": 3.263516902923584}, "n_q": 98}
+{"corpus": "user02", "stage": "graph", "build_s": 9.736771583557129, "sentences": 661, "search_s": {"A": 1.2851026058197021, "B": 1.0697946548461914, "C": 2.400186777114868}, "n_q": 73}
+{"corpus": "user03", "stage": "graph", "build_s": 10.978037595748901, "sentences": 776, "search_s": {"A": 1.1731197834014893, "B": 0.964881420135498, "C": 2.202578544616699}, "n_q": 64}
+{"corpus": "user04", "stage": "graph", "build_s": 10.053695678710938, "sentences": 718, "search_s": {"A": 1.374356746673584, "B": 1.1487147808074951, "C": 2.5862107276916504}, "n_q": 79}
+{"corpus": "user05", "stage": "graph", "build_s": 10.171640634536743, "sentences": 723, "search_s": {"A": 1.478107213973999, "B": 1.1908318996429443, "C": 2.7533202171325684}, "n_q": 82}
+{"corpus": "user06", "stage": "graph", "build_s": 11.588051080703735, "sentences": 836, "search_s": {"A": 1.5357272624969482, "B": 1.2997682094573975, "C": 2.8854334354400635}, "n_q": 85}
+{"corpus": "user07", "stage": "graph", "build_s": 10.82105278968811, "sentences": 766, "search_s": {"A": 2.3922388553619385, "B": 1.8846442699432373, "C": 4.478626012802124}, "n_q": 134}
+{"corpus": "user08", "stage": "graph", "build_s": 8.595146179199219, "sentences": 612, "search_s": {"A": 1.268355131149292, "B": 0.9141592979431152, "C": 2.4063754081726074}, "n_q": 75}
+{"corpus": "user09", "stage": "graph", "build_s": 10.02230429649353, "sentences": 765, "search_s": {"A": 2.619380474090576, "B": 2.015385866165161, "C": 4.975359916687012}, "n_q": 145}
+{"corpus": "user10", "stage": "graph", "build_s": 8.925546646118164, "sentences": 676, "search_s": {"A": 2.276414632797241, "B": 1.7287347316741943, "C": 4.208383560180664}, "n_q": 128}
+{"corpus": "user11", "stage": "graph", "build_s": 11.703295946121216, "sentences": 816, "search_s": {"A": 2.215212345123291, "B": 1.6447162628173828, "C": 4.297350168228149}, "n_q": 121}
+{"corpus": "user14", "stage": "graph", "build_s": 9.167236566543579, "sentences": 708, "search_s": {"A": 1.1437757015228271, "B": 0.9426584243774414, "C": 2.1444995403289795}, "n_q": 64}
+{"corpus": "user15", "stage": "graph", "build_s": 9.142127513885498, "sentences": 679, "search_s": {"A": 1.3822312355041504, "B": 1.0268237590789795, "C": 2.5883922576904297}, "n_q": 77}
+{"corpus": "user16", "stage": "graph", "build_s": 11.301703453063965, "sentences": 854, "search_s": {"A": 1.776735782623291, "B": 1.4617705345153809, "C": 3.3772263526916504}, "n_q": 100}
+{"corpus": "user17", "stage": "graph", "build_s": 10.185725688934326, "sentences": 759, "search_s": {"A": 2.9962289333343506, "B": 2.318413496017456, "C": 5.578948020935059}, "n_q": 166}
+{"corpus": "user18", "stage": "graph", "build_s": 11.36448884010315, "sentences": 877, "search_s": {"A": 2.1276018619537354, "B": 2.372523546218872, "C": 3.9745798110961914}, "n_q": 117}
+{"corpus": "user19", "stage": "graph", "build_s": 10.24540662765503, "sentences": 776, "search_s": {"A": 1.7380552291870117, "B": 1.340013027191162, "C": 3.212315559387207}, "n_q": 97}
+{"corpus": "user00", "stage": "embed", "build_s": 25.914043188095093, "facts": 715}
+{"corpus": "user01", "stage": "embed", "build_s": 19.46811056137085, "facts": 803}
+{"corpus": "user02", "stage": "embed", "build_s": 14.952887296676636, "facts": 658}
+{"corpus": "user03", "stage": "embed", "build_s": 16.96708393096924, "facts": 775}
+{"corpus": "user04", "stage": "embed", "build_s": 17.200231313705444, "facts": 718}
+{"corpus": "user05", "stage": "embed", "build_s": 17.969947814941406, "facts": 717}
+{"corpus": "user06", "stage": "embed", "build_s": 19.268641471862793, "facts": 836}
+{"corpus": "user07", "stage": "embed", "build_s": 21.295015573501587, "facts": 762}
+{"corpus": "user08", "stage": "embed", "build_s": 14.972473859786987, "facts": 609}
+{"corpus": "user09", "stage": "embed", "build_s": 21.50229787826538, "facts": 764}
+{"corpus": "user10", "stage": "embed", "build_s": 19.274590730667114, "facts": 669}
+{"corpus": "user11", "stage": "embed", "build_s": 20.858262062072754, "facts": 814}
+{"corpus": "user14", "stage": "embed", "build_s": 16.700383186340332, "facts": 707}
+{"corpus": "user15", "stage": "embed", "build_s": 17.988956928253174, "facts": 655}
+{"corpus": "user16", "stage": "embed", "build_s": 21.6243953704834, "facts": 854}
+{"corpus": "user17", "stage": "embed", "build_s": 22.409849405288696, "facts": 755}
+{"corpus": "user18", "stage": "embed", "build_s": 21.861766576766968, "facts": 874}
+{"corpus": "user19", "stage": "embed", "build_s": 18.742676258087158, "facts": 746}
+{"corpus": "user00", "stage": "stack", "build_s": 1.0106401443481445, "clusters": 125, "search_s": {"D0": 1313.9713773727417, "D": 1325.3978016376495}, "n_q": 226}
+{"corpus": "user01", "stage": "stack", "build_s": 0.3505668640136719, "clusters": 228, "search_s": {"D0": 434.2610640525818, "D": 438.01850390434265}, "n_q": 98}
+{"corpus": "user02", "stage": "stack", "build_s": 0.27329230308532715, "clusters": 112, "search_s": {"D0": 398.32905864715576, "D": 401.10185837745667}, "n_q": 73}
+{"corpus": "user03", "stage": "stack", "build_s": 0.3095982074737549, "clusters": 119, "search_s": {"D0": 380.1176435947418, "D": 382.5185251235962}, "n_q": 64}
+{"corpus": "user04", "stage": "stack", "build_s": 0.30991268157958984, "clusters": 110, "search_s": {"D0": 540.0526916980743, "D": 542.9224693775177}, "n_q": 79}
+{"corpus": "user05", "stage": "stack", "build_s": 0.3481180667877197, "clusters": 187, "search_s": {"D0": 390.25059485435486, "D": 393.26018738746643}, "n_q": 82}
+{"corpus": "user06", "stage": "stack", "build_s": 0.3611891269683838, "clusters": 170, "search_s": {"D0": 445.02326822280884, "D": 448.2404046058655}, "n_q": 85}
+{"corpus": "user07", "stage": "stack", "build_s": 0.30774521827697754, "clusters": 93, "search_s": {"D0": 977.2441906929016, "D": 982.1605734825134}, "n_q": 134}
+{"corpus": "user08", "stage": "stack", "build_s": 0.2672743797302246, "clusters": 114, "search_s": {"D0": 419.9938962459564, "D": 422.60204315185547}, "n_q": 75}
+{"corpus": "user09", "stage": "stack", "build_s": 0.31174516677856445, "clusters": 116, "search_s": {"D0": 897.8924791812897, "D": 903.2076966762543}, "n_q": 145}
+{"corpus": "user10", "stage": "stack", "build_s": 0.3241868019104004, "clusters": 150, "search_s": {"D0": 684.1033666133881, "D": 688.6788868904114}, "n_q": 128}
+{"corpus": "user11", "stage": "stack", "build_s": 0.3525409698486328, "clusters": 132, "search_s": {"D0": 730.8488502502441, "D": 735.4569237232208}, "n_q": 121}
+{"corpus": "user14", "stage": "stack", "build_s": 0.3121907711029053, "clusters": 130, "search_s": {"D0": 372.4397428035736, "D": 374.8358006477356}, "n_q": 64}
+{"corpus": "user15", "stage": "stack", "build_s": 0.26891541481018066, "clusters": 97, "search_s": {"D0": 570.1884126663208, "D": 572.9556975364685}, "n_q": 77}
+{"corpus": "user16", "stage": "stack", "build_s": 0.37429046630859375, "clusters": 200, "search_s": {"D0": 531.8348271846771, "D": 535.705409526825}, "n_q": 100}
+{"corpus": "user17", "stage": "stack", "build_s": 0.33063507080078125, "clusters": 160, "search_s": {"D0": 826.4009783267975, "D": 832.5311758518219}, "n_q": 166}
+{"corpus": "user18", "stage": "stack", "build_s": 0.3678934574127197, "clusters": 178, "search_s": {"D0": 633.9535436630249, "D": 638.3483238220215}, "n_q": 117}
+{"corpus": "user19", "stage": "stack", "build_s": 0.31362080574035645, "clusters": 163, "search_s": {"D0": 539.7260594367981, "D": 543.2393198013306}, "n_q": 97}

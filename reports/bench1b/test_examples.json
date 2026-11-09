@@ -1,0 +1,135 @@
+{
+ "wins": [
+  {
+   "q": "What month did the Tripartite discussions begin between Britain, France, and the country where, despite being headquartered in the nation called the nobilities commonwealth, the top-ranking Warsaw Pact operatives originated?",
+   "added": [
+    "Szlachta",
+    "Southern Europe"
+   ],
+   "gold_added": [
+    "Szlachta"
+   ],
+   "gold_lost": [
+    "Warsaw Pact"
+   ],
+   "starts": {
+    "Szlachta": [
+     "a4970",
+     "c:country",
+     "c:nobility commonwealth"
+    ],
+    "Southern Europe": [
+     "a31",
+     "a4970",
+     "c:country",
+     "c:warsaw pact"
+    ]
+   }
+  },
+  {
+   "q": "What county is Erik Hort's birthplace a part of?",
+   "added": [
+    "Montebello, New York",
+    "Biłgoraj County"
+   ],
+   "gold_added": [
+    "Montebello, New York"
+   ],
+   "gold_lost": [],
+   "starts": {
+    "Montebello, New York": [
+     "a59",
+     "a8390"
+    ],
+    "Biłgoraj County": [
+     "a8390",
+     "c:county"
+    ]
+   }
+  },
+  {
+   "q": "What is the Till dom ensamma performer's birth date?",
+   "added": [
+    "Mauro Scocco",
+    "Burning Heart Records"
+   ],
+   "gold_added": [
+    "Mauro Scocco"
+   ],
+   "gold_lost": [],
+   "starts": {
+    "Mauro Scocco": [
+     "a182",
+     "a184",
+     "a2095"
+    ],
+    "Burning Heart Records": [
+     "a182",
+     "a2095"
+    ]
+   }
+  }
+ ],
+ "losses": [
+  {
+   "q": "Who is the child of the president who suffered a major defeat when the body which approves members of the American cabinet refused to ratify the Versailles treaty?",
+   "added": [
+    "Felipe Berriozábal",
+    "Green Party (Czech Republic)"
+   ],
+   "gold_added": [],
+   "gold_lost": [
+    "Cabinet of the United States"
+   ],
+   "starts": {
+    "Felipe Berriozábal": [
+     "a3846",
+     "a8073",
+     "c:member"
+    ],
+    "Green Party (Czech Republic)": [
+     "a3846",
+     "a8073"
+    ]
+   }
+  },
+  {
+   "q": "When did the political party that favored harsh punishment of southern states after the Civil War, gain control of the House?",
+   "added": [
+    "North Carolina",
+    "North Carolina"
+   ],
+   "gold_added": [],
+   "gold_lost": [
+    "2010 United States House of Representatives elections"
+   ],
+   "starts": {
+    "North Carolina": [
+     "a2641",
+     "c:southern state"
+    ]
+   }
+  },
+  {
+   "q": "what is meaning of the word that is a majority religion of the area that became India when the country origin of Mizraab was created in Arabic dictionary?",
+   "added": [
+    "Szlachta",
+    "Theodor Lipps"
+   ],
+   "gold_added": [],
+   "gold_lost": [
+    "Hindus"
+   ],
+   "starts": {
+    "Szlachta": [
+     "a870",
+     "c:majority religion"
+    ],
+    "Theodor Lipps": [
+     "a876",
+     "c:meaning"
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,101 @@
+﻿source_type,from,relation,to,from_id,to_id,shown_in_menu,context_set,provenance,meaningful,comment,borderline
+link,rate limiting,привязка,rate limiting,ent:rate limiting,wd:Q121366924,1,seen,msg:0:user:0,1,,0
+link,account,привязка,бухгалтерский счёт,ent:account,wd:Q508295,1,seen,msg:0:user:0,0,"account здесь — учётная запись, а не бухгалтерский счёт",0
+link,вес,привязка,сила веса,ent:вес,rwn:149475-N,1,heldout,text:0,1,"вес ребёнка → «сила веса»: смысл общий, физически это масса",1
+wordnet,satisfaction,подвид,complacency,wn:satisfaction.n.01,wn:complacency.n.01,1,seen,,1,,0
+experience,api,встречалось вместе (2×),resource,exp:api,exp:resource,0,seen,,1,REST-ресурс; слабо,0
+wordnet,artifact,брат (общий родитель),sum,wn:artifact.n.01,wn:sum.n.05,0,seen,wn:whole.n.02,0,бессмыслица через общего родителя whole,0
+wordnet,standing,подвид,importance,wn:standing.n.01,wn:importance.n.02,0,seen,,1,,0
+ruwordnet,причина явления,подвид,первопричина (основная причина),rwn:106474-N,rwn:138236-N,1,seen,,1,,0
+experience,product,встречалось вместе (2×),company,exp:product,exp:company,1,seen,,1,слабо,0
+link,status,привязка,status,ent:status,wn:status.n.01,1,seen,item:docs/payment-provider.md,0,status платежа ≠ социальный статус,0
+wikidata,region,экземпляр,Израиль,wd:Q82794,wd:Q801,0,seen,,0,Израиль как «экземпляр региона» — вводит в заблуждение,0
+wikidata,точка,подкласс,изолированная точка,wd:Q44946,wd:Q1142889,1,seen,,1,,0
+link,давление,привязка,давление,ent:давление,wd:Q39552,1,seen,text:0,1,"давление крови → физическая величина «давление»: верно, но общее",1
+experience,payment,встречалось вместе (2×),redis,exp:payment,exp:redis,0,seen,,0,случайное совпадение,0
+link,page,привязка,page,ent:page,exp:page,1,seen,item:docs/privacy.md,1,,0
+wikidata,вес,подкласс,normal takeoff weight,wd:Q25288,wd:Q1434070,1,heldout,,1,"верно, но к контексту не относится",0
+wordnet,standing,подвид,obscurity,wn:standing.n.01,wn:obscurity.n.02,0,seen,,1,,0
+wikidata,SFTPPlus,применяется для,передача файлов,wd:Q138496395,wd:Q534400,1,seen,,1,,0
+ruwordnet,календарь (таблица),брат (общий родитель),репринтное издание,rwn:142064-N,rwn:143244-N,0,seen,rwn:4142-N,1,,0
+wordnet,beginning,брат (общий родитель),moment,wn:beginning.n.02,wn:moment.n.01,0,seen,wn:point.n.06,1,,0
+ruwordnet,политическая реформа,обобщение,государственная политика,rwn:1473-N,rwn:601-N,1,heldout,,1,,0
+ruwordnet,водное животное,брат (общий родитель),альбинос (живое существо),rwn:5060-N,rwn:124849-N,0,seen,rwn:144174-N,0,бессмыслица,0
+experience,login,встречалось вместе (3×),message,exp:login,exp:message,1,heldout,,0,не связано по смыслу,0
+wordnet,note,подвид,marginalia,wn:note.n.01,wn:marginalia.n.01,1,seen,,1,,0
+experience,created at,встречалось вместе (3×),key,exp:created at,exp:key,0,seen,,0,key — слишком общее,0
+ruwordnet,"тело человека, животного",брат (общий родитель),ткань организма,rwn:107728-N,rwn:7281-N,0,heldout,rwn:150414-N,1,,0
+wikidata,маршрутизатор,подкласс,Cisco 2500 series,wd:Q5318,wd:Q5122134,0,seen,,1,,0
+wikidata,бухгалтерский учёт,служит для этого,USALI,wd:Q4116214,wd:Q5476216,1,seen,,1,,0
+experience,api,встречалось вместе (3×),run,exp:api,exp:run,0,seen,,0,run — глагол/общее,0
+ruwordnet,наехать (оказывать давление),обобщение,"давить, оказывать давление",rwn:138424-N,rwn:127111-N,1,seen,,1,,0
+link,router,привязка,маршрутизатор,ent:router,wd:Q5318,1,seen,item:app/main.py,0,router в FastAPI ≠ сетевой маршрутизатор,0
+link,температура,привязка,температура,ent:температура,wd:Q11466,1,heldout,text:0,1,"температура при лихорадке → физическая величина: верно, но общее",1
+wordnet,excavation,подвид,working,wn:excavation.n.03,wn:working.n.01,1,seen,,1,,0
+ruwordnet,медицинский термометр,брат (общий родитель),медицинский шприц,rwn:136990-N,rwn:4797-N,1,heldout,rwn:126891-N,1,,0
+wikidata,техник,подкласс,сметчик,wd:Q5352191,wd:Q2067634,1,seen,,0,сметчик — не вид техника,0
+wikidata,хранение,подкласс,ship storage,wd:Q2534289,wd:Q11962795,1,heldout,,1,"верно, но к контексту не относится",0
+wikidata,киоск,экземпляр,Mundial Kiosk,wd:Q693369,wd:Q124749964,0,seen,,1,"верно, но очень узко",0
+link,pg dump,привязка,pg_dump,ent:pg dump,wd:Q135225175,1,heldout,text:0,1,,0
+ruwordnet,предельный допуск,брат (общий родитель),квота,rwn:141595-N,rwn:1699-N,1,heldout,rwn:121031-N,1,,0
+experience,api,встречалось вместе (2×),endpoint,exp:api,exp:endpoint,1,seen,,1,,0
+experience,product,"встречалось вместе (2×), идентификатор",contract_prices,exp:product,exp:contract price,1,seen,,1,,0
+wikidata,Wikimedia REST API,подкласс,Vitam Program,wd:Q42722531,wd:Q65130365,1,seen,,0,мусор,0
+ruwordnet,"сообщить, уведомить",связано,"обучение, учебная деятельность",rwn:106542-N,rwn:1604-N,1,heldout,,0,бессмыслица,0
+wikidata,печь,аспект,oven furniture,wd:Q36539,wd:Q111547244,1,heldout,,1,,0
+ruwordnet,биология,подвид,гистология,rwn:32-N,rwn:117262-N,0,seen,,1,,0
+wordnet,written record,брат (общий родитель),file,wn:written_record.n.01,wn:file.n.01,0,seen,wn:record.n.01,1,,0
+link,nginx,привязка,nginx,ent:nginx,exp:nginx,1,heldout,item:deploy/docker-compose.yml,1,,0
+experience,api,встречалось вместе (2×),probe,exp:api,exp:probe,1,seen,,1,,0
+link,django rest,привязка,django-rest-framework,ent:django rest,wd:Q107383674,1,seen,item:docs/architecture.md,1,,0
+wikidata,canopy kiosk,брат (общий родитель),снек-бар,wd:Q18660589,wd:Q1318768,0,seen,wd:Q693369,1,,0
+ruwordnet,лимитировать,брат (общий родитель),ограничение прав граждан,rwn:115176-N,rwn:7638-N,0,heldout,rwn:111943-N,0,бессмыслица,0
+link,health data,привязка,медицинские данные,ent:health data,wd:Q18745135,1,seen,item:docs/compliance.md,1,,0
+wordnet,end,подвид,termination,wn:end.n.02,wn:termination.n.01,1,seen,,1,,0
+experience,status,встречалось вместе (2×),pending,exp:status,exp:pending,0,seen,,1,,0
+ruwordnet,туризм,брат (общий родитель),любительское рыболовство,rwn:1633-N,rwn:9794-N,1,heldout,rwn:152303-N,1,,0
+ruwordnet,туристическая палатка,обобщение,туристское снаряжение,rwn:129645-N,rwn:138657-N,1,heldout,,1,,0
+wordnet,minute,брат (общий родитель),jotting,wn:minute.n.05,wn:jotting.n.01,1,seen,wn:note.n.01,1,,0
+link,runbook,привязка,runbook,ent:runbook,wd:Q133916,1,seen,item:docs/runbooks/smsbridge.md,1,,0
+experience,api,встречалось вместе (4×),Add,exp:api,exp:add,0,seen,,0,мусор,0
+wikidata,отмена рабства,обобщение,реформа,wd:Q2966922,wd:Q900406,0,heldout,,1,,0
+link,rest api,привязка,Wikimedia REST API,ent:rest api,wd:Q42722531,1,seen,item:README.md,0,rest api → конкретный Wikimedia REST API,0
+link,api,привязка,api,ent:api,exp:api,1,seen,item:api/keys.py,1,,0
+link,хранение,привязка,хранение,ent:хранение,wd:Q2534289,1,heldout,text:0,1,описание включает хранение данных,0
+wikidata,pg_dump,входит в,PostgreSQL,wd:Q135225175,wd:Q192490,0,heldout,,1,,0
+link,water utility,привязка,water utility,ent:water utility,wd:Q7258040,1,seen,item:README.md,1,,0
+experience,api,встречалось вместе (2×),memory,exp:api,exp:memory,1,seen,,0,случайное совпадение,0
+link,endpoint,привязка,endpoint,ent:endpoint,wd:Q132444435,1,seen,msg:0:user:0,0,endpoint API → конец отрезка (геометрия),0
+wordnet,memo,подвид,aide-memoire,wn:memo.n.01,wn:aide-memoire.n.01,1,seen,,1,,0
+wordnet,note,брат (общий родитель),register,wn:note.n.01,wn:register.n.01,1,seen,wn:written_record.n.01,1,,0
+ruwordnet,экономика,подвид,национальная экономика,rwn:49-N,rwn:137895-N,1,heldout,,1,,0
+link,крымская война,привязка,Крымская война,ent:крымская война,wd:Q254106,1,seen,text:0,1,,0
+wikidata,таблица,брат (общий родитель),таблица сопряжённости,wd:Q278425,wd:Q1541178,0,seen,wd:Q496946,1,,0
+wikidata,хранение монет,брат (общий родитель),yarn ball,wd:Q65090264,wd:Q3374531,0,heldout,wd:Q2534289,0,бессмыслица,0
+wordnet,status,подвид,social station,wn:status.n.01,wn:social_station.n.01,0,seen,,1,,0
+wikidata,рыбы,подкласс,лососёвые,wd:Q152,wd:Q2796766,0,seen,,1,,0
+wordnet,artifact,подвид,way,wn:artifact.n.01,wn:way.n.06,0,seen,,0,way как артефакт — неочевидно,0
+ruwordnet,таблица,брат (общий родитель),видеозапись,rwn:117703-N,rwn:153905-N,0,seen,rwn:112114-N,0,бессмыслица,0
+wikidata,компьютерный пользователь,обобщение,пользователь,wd:Q278368,wd:Q613354,1,seen,,1,,0
+wordnet,status,подвид,command,wn:status.n.01,wn:command.n.05,0,seen,,0,редкий смысл,0
+experience,status,встречалось вместе (3×),date,exp:status,exp:date,1,seen,,0,date — слишком общее,0
+wikidata,реформа,служит для этого,тюрьма,wd:Q900406,wd:Q40357,0,heldout,,0,реформа → тюрьма — вводит в заблуждение,0
+experience,status,встречалось вместе (3×),shipped,exp:status,exp:shipped,1,seen,,1,,0
+wordnet,point,подвид,moment,wn:point.n.06,wn:moment.n.01,0,seen,,1,,0
+wordnet,footing,брат (общий родитель),social station,wn:footing.n.01,wn:social_station.n.01,0,seen,wn:status.n.01,1,,0
+ruwordnet,туристское снаряжение,подвид,спальный мешок,rwn:138657-N,rwn:126883-N,0,heldout,,1,,0
+link,лимит,привязка,"лимит, предельная норма",ent:лимит,rwn:121031-N,1,heldout,text:0,1,,0
+experience,payment,встречалось вместе (2×),django,exp:payment,exp:django,0,seen,,0,случайное совпадение,0
+wikidata,таблица,подкласс,таблица маршрутизации,wd:Q278425,wd:Q290066,1,seen,,1,,0
+wordnet,working,обобщение,excavation,wn:working.n.01,wn:excavation.n.03,1,seen,,1,,0
+experience,created at,встречалось вместе (4×),default,exp:created at,exp:default,0,seen,,0,default — фрагмент кода,0
+experience,product,встречалось вместе (2×),price,exp:product,exp:price,0,seen,,1,,0
+ruwordnet,морская рыба,подвид,сайра,rwn:9144-N,rwn:108296-N,0,seen,,1,,0
+ruwordnet,водное животное,подвид,морское животное,rwn:5060-N,rwn:9355-N,0,seen,,1,,0
+wordnet,guidebook,подвид,travel guidebook,wn:guidebook.n.01,wn:travel_guidebook.n.01,1,seen,,1,,0
+experience,nginx,встречалось вместе (2×),api,exp:nginx,exp:api,1,heldout,,1,,0
+ruwordnet,температура тела,брат (общий родитель),температура воздуха,rwn:121341-N,rwn:6307-N,1,heldout,rwn:3192-N,1,,0
+ruwordnet,"лимит, предельная норма",брат (общий родитель),"стык (предел, граница)",rwn:121031-N,rwn:144006-N,0,heldout,rwn:106514-N,0,лимит и стык — не родственны,0
+wordnet,note,подвид,memo,wn:note.n.01,wn:memo.n.01,1,seen,,1,,0
+experience,created at,встречалось вместе (3×),auto,exp:created at,exp:auto,1,seen,,0,auto — фрагмент кода,0
+experience,payment,встречалось вместе (2×),backend,exp:payment,exp:backend,0,seen,,0,случайное совпадение,0

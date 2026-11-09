@@ -1,0 +1,46 @@
+{
+ "project": "crypto-wallet",
+ "kind": "load",
+ "compressions": [
+  {
+   "after_turn": "S1.9",
+   "turns": 10,
+   "tokens_out": 2055,
+   "summary_tokens": 217
+  },
+  {
+   "after_turn": "S2.1",
+   "turns": 11,
+   "tokens_out": 1689,
+   "summary_tokens": 324
+  },
+  {
+   "after_turn": "S2.12",
+   "turns": 11,
+   "tokens_out": 1847,
+   "summary_tokens": 412
+  },
+  {
+   "after_turn": "S3.6",
+   "turns": 11,
+   "tokens_out": 1869,
+   "summary_tokens": 500
+  },
+  {
+   "after_turn": "S3.15",
+   "turns": 9,
+   "tokens_out": 1724,
+   "summary_tokens": 500
+  },
+  {
+   "after_turn": "S4.9",
+   "turns": 11,
+   "tokens_out": 1827,
+   "summary_tokens": 500
+  }
+ ],
+ "summary": "- **Project**: Кошелек «Кладезь» для iOS и Android.\n- **Technology**: React Native без Expo.\n- **Navigation**: React Navigation.\n- **Typing**: Глобальные типы и `NativeStackScreenProps`.\n- **Secrets**: `react-native-keychain` для хранения секретов.\n- **Networks**: Ethereum и Polygon; Solana исключена.\n- **Tools**: pnpm workspaces, Turborepo, Metro, линтер с правилом для запрета логирования секретов.\n- **Back-end**: NestJS для курсов валют и пуш-уведомлений; эндпоинты без подписи запросов.\n- **Database**: SQLite для истории цен; Prisma для ORM.\n- **Icons**: `react-native-vector-icons`.\n- **Onboarding**: Экраны создания кошелька и бумажной копии.\n- **Secrets Storage**: `react-native-keychain` с правильными флагами.\n- **Push Notifications**: Push-токены отправляются на сервер, который подписывается на входящие переводы и шлет уведомления через FCM и APNs.\n- **Currency Rates**: Курсы валют тянутся раз в 5 минут и хранятся в памяти; история записывается в SQLite; HTTP-кэш для уменьшения частоты запросов.\n- **SQLite**: Используется вместо PostgreSQL; Prisma поддерживает SQLite.\n- **CORS**: Используется `10.0.2.2` вместо `localhost` на Android.\n- **Deployment**: Хостимся на одном сервере с Compose: обратный прокси (Caddy или Traefik) перед API и выкатка новой версии рядом со старой.\n- **Back-end**: SQLite бэкап: копия файла с правильным методом.\n- **Node**: Используем Alchemy с бесплатным тарифом и лимитом запросов.\n- **Balances**: Локальный кэш с обновлением по требованию; показ балансов без сети из кэша.\n- **Storage**: MMKV для хранения кэша балансов.\n- **Logs**: NestJS на",
+ "window_tokens": 2793,
+ "archive_turns": 63,
+ "seconds": 192.4
+}

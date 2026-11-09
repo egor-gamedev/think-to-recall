@@ -1,0 +1,25 @@
+{
+ "backend": "nvidia",
+ "model": "nvidia/nemotron-3-ultra-550b-a55b",
+ "encoder": "e5:intfloat/multilingual-e5-base",
+ "limits": {
+  "context": 6600,
+  "answer": 1500,
+  "memory": 600,
+  "summary": 500,
+  "system": 250,
+  "window": 3750
+ },
+ "variants": [
+  1
+ ],
+ "questions": [
+  "Q17",
+  "Q34",
+  "Q35"
+ ],
+ "projects": [
+  "clinic-bot"
+ ],
+ "started": "2026-10-23 09:56:06"
+}

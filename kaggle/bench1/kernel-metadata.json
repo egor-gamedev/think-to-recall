@@ -1,0 +1,13 @@
+{
+  "id": "egor123hhh/ctxgraph-bench1-run",
+  "title": "ctxgraph-bench1-run",
+  "code_file": "run.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_internet": true,
+  "dataset_sources": ["egor123hhh/ctxgraph-bench1"],
+  "competition_sources": [],
+  "kernel_sources": []
+}

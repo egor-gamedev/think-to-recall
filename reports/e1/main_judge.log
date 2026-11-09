@@ -1,0 +1,197 @@
+судья: ответов 480, потрачено 209.39 ₽
+[1/480] password-reset-warehouse|v5|r1 
+Traceback (most recent call last):
+  File "<repo>\ctxgraph\e1\llm.py", line 81, in chat
+    data = self._post(body)
+  File "<repo>\ctxgraph\e1\llm.py", line 61, in _post
+    with urllib.request.urlopen(req, timeout=self.timeout) as r:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\urllib\request.py", line 189, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\urllib\request.py", line 495, in open
+    response = meth(req, response)
+  File "C:\Python313\Lib\urllib\request.py", line 604, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "C:\Python313\Lib\urllib\request.py", line 533, in error
+    return self._call_chain(*args)
+           ~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Python313\Lib\urllib\request.py", line 466, in _call_chain
+    result = func(*args)
+  File "C:\Python313\Lib\urllib\request.py", line 613, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 402: Payment Required
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<repo>\scripts\run_e1.py", line 313, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "<repo>\scripts\run_e1.py", line 306, in main
+    judge(args.phase)
+    ~~~~~^^^^^^^^^^^^
+  File "<repo>\scripts\run_e1.py", line 212, in judge
+    v = grade(client, tasks[a["task"]], a["answer"], run_id=a["run_id"])
+  File "<repo>\ctxgraph\e1\judge.py", line 111, in grade
+    r = client.chat(
+        messages,
+    ...<2 lines>...
+        extra={"response_format": {"type": "json_object"}},
+    )
+  File "<repo>\ctxgraph\e1\llm.py", line 89, in chat
+    raise last from e
+ctxgraph.e1.llm.ApiError: HTTP 402: {"error":{"message":"Something went wrong. Please try again later.","type":"None","param":"None","code":"402"}}
+судья: ответов 479, потрачено 209.45 ₽
+[1/479] kids-birthday-party|v5|r1 
+[2/479] bathroom-renovation|v7|r1 
+[3/479] control-meal-prep-student|v8|r2 
+[4/479] cache-b2b-catalog|v6|r1 
+[5/479] bathroom-renovation|v3|r1 
+[6/479] control-http-retries|v7|r2 
+[7/479] control-home-office|v8|r3 
+[8/479] diet-plan-half-marathon|v1|r2 
+[9/479] search-autocomplete-arabic|v2|r1 
+[10/479] trip-japan-itinerary|v7|r3 
+[11/479] control-scifi-reading|v1|r3 
+[12/479] request-logging-lab|v6|r1 
+[13/479] control-hard-healthcheck|v1|r1 
+[14/479] freelance-taxes|v1|r1 
+[15/479] push-notifications-support|v3|r3 
+[16/479] add-not-null-column|v3|r3 
+[17/479] vegetable-garden|v7|r1 
+[18/479] control-hard-healthcheck|v1|r2 
+[19/479] hard-daily-orders-export|v8|r2 
+[20/479] cache-b2b-catalog|v1|r2 
+[21/479] add-not-null-column|v3|r1 
+[22/479] cache-b2b-catalog|v5|r1 
+[23/479] ielts-study-plan|v8|r3 
+[24/479] request-logging-lab|v7|r1 
+[25/479] request-logging-lab|v1|r1 
+[26/479] webhook-retries-payments|v3|r3 
+[27/479] auth-offline-field-app|v7|r2 
+[28/479] add-not-null-column|v8|r2 
+[29/479] add-not-null-column|v3|r2 
+[30/479] kids-birthday-party|v8|r1 
+[31/479] soft-delete-gdpr|v7|r2 
+[32/479] bathroom-renovation|v1|r2 
+[33/479] control-weekend-kazan|v8|r1 
+[34/479] search-autocomplete-arabic|v7|r3 
+[35/479] request-logging-lab|v1|r2 
+[36/479] diet-plan-half-marathon|v3|r1 
+[37/479] hard-shipping-sms|v7|r2 
+[38/479] dog-adoption|v3|r2 
+[39/479] profile-photo-upload|v3|r3 
+[40/479] dog-adoption|v8|r2 
+[41/479] search-autocomplete-arabic|v1|r1 
+[42/479] search-autocomplete-arabic|v4|r1 
+[43/479] diet-plan-half-marathon|v8|r1 
+[44/479] vegetable-garden|v8|r3 
+[45/479] control-meal-prep-student|v3|r3 
+[46/479] trip-japan-itinerary|v7|r2 
+[47/479] control-scifi-reading|v4|r1 
+[48/479] control-meal-prep-student|v8|r3 
+[49/479] auth-offline-field-app|v3|r2 
+[50/479] auth-offline-field-app|v7|r3 
+[51/479] control-articles-pagination|v4|r1 
+[52/479] control-home-office|v7|r3 
+[53/479] password-reset-warehouse|v1|r2 
+[54/479] soft-delete-gdpr|v7|r1 
+[55/479] control-scifi-reading|v3|r1 
+[56/479] control-articles-pagination|v8|r1 
+[57/479] kids-birthday-party|v7|r2 
+[58/479] control-hard-healthcheck|v3|r1 
+[59/479] control-email-validation|v7|r1 
+[60/479] request-logging-lab|v1|r3 
+[61/479] control-hard-healthcheck|v4|r1 
+[62/479] vegetable-garden|v8|r1 
+[63/479] control-http-retries|v3|r2 
+[64/479] cache-b2b-catalog|v8|r3 
+[65/479] freelance-taxes|v3|r3 
+[66/479] control-home-office|v7|r1 
+[67/479] control-rate-limit-public-api|v4|r1 
+[68/479] password-reset-warehouse|v3|r2 
+[69/479] kids-birthday-party|v3|r1 
+[70/479] control-hard-healthcheck|v6|r1 
+[71/479] control-email-validation|v1|r2 
+[72/479] control-scifi-reading|v7|r2 
+[73/479] control-articles-pagination|v8|r3 
+[74/479] trip-japan-itinerary|v8|r2 
+[75/479] profile-photo-upload|v6|r1 
+[76/479] auth-offline-field-app|v7|r1 
+[77/479] control-email-validation|v1|r1 
+[78/479] add-not-null-column|v1|r2 
+[79/479] control-articles-pagination|v3|r2 
+[80/479] push-notifications-support|v7|r2 
+[81/479] dog-adoption|v5|r1 
+[82/479] vegetable-garden|v1|r3 
+[83/479] control-rate-limit-public-api|v3|r1 
+[84/479] kids-birthday-party|v8|r3 
+[85/479] freelance-taxes|v3|r2 
+[86/479] freelance-taxes|v1|r2 
+[87/479] control-articles-pagination|v6|r1 
+[88/479] kids-birthday-party|v1|r2 
+[89/479] control-rate-limit-public-api|v8|r3 
+[90/479] trip-japan-itinerary|v8|r1 
+[91/479] control-articles-pagination|v1|r1 
+[92/479] control-scifi-reading|v1|r1 
+[93/479] diet-plan-half-marathon|v7|r2 
+[94/479] push-notifications-support|v5|r1 
+[95/479] control-hard-healthcheck|v7|r2 
+[96/479] hard-daily-orders-export|v7|r3 
+[97/479] soft-delete-gdpr|v1|r2 
+[98/479] kids-birthday-party|v2|r1 
+[99/479] control-email-validation|v1|r3 
+[100/479] profile-photo-upload|v3|r2 
+[101/479] kids-birthday-party|v7|r3 
+[102/479] trip-japan-itinerary|v4|r1 
+[103/479] search-autocomplete-arabic|v8|r3 
+[104/479] webhook-retries-payments|v8|r1 
+[105/479] add-not-null-column|v7|r3 
+[106/479] bathroom-renovation|v7|r3 
+[107/479] push-notifications-support|v6|r1 
+[108/479] dog-adoption|v4|r1 
+Traceback (most recent call last):
+  File "<repo>\ctxgraph\e1\llm.py", line 81, in chat
+    data = self._post(body)
+  File "<repo>\ctxgraph\e1\llm.py", line 61, in _post
+    with urllib.request.urlopen(req, timeout=self.timeout) as r:
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\urllib\request.py", line 189, in urlopen
+    return opener.open(url, data, timeout)
+           ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python313\Lib\urllib\request.py", line 495, in open
+    response = meth(req, response)
+  File "C:\Python313\Lib\urllib\request.py", line 604, in http_response
+    response = self.parent.error(
+        'http', request, response, code, msg, hdrs)
+  File "C:\Python313\Lib\urllib\request.py", line 533, in error
+    return self._call_chain(*args)
+           ~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Python313\Lib\urllib\request.py", line 466, in _call_chain
+    result = func(*args)
+  File "C:\Python313\Lib\urllib\request.py", line 613, in http_error_default
+    raise HTTPError(req.full_url, code, msg, hdrs, fp)
+urllib.error.HTTPError: HTTP Error 402: Payment Required
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "<repo>\scripts\run_e1.py", line 313, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "<repo>\scripts\run_e1.py", line 306, in main
+    judge(args.phase)
+    ~~~~~^^^^^^^^^^^^
+  File "<repo>\scripts\run_e1.py", line 212, in judge
+    v = grade(client, tasks[a["task"]], a["answer"], run_id=a["run_id"])
+  File "<repo>\ctxgraph\e1\judge.py", line 111, in grade
+    r = client.chat(
+        messages,
+    ...<2 lines>...
+        extra={"response_format": {"type": "json_object"}},
+    )
+  File "<repo>\ctxgraph\e1\llm.py", line 89, in chat
+    raise last from e
+ctxgraph.e1.llm.ApiError: HTTP 402: {"error":{"message":"Something went wrong. Please try again later.","type":"None","param":"None","code":"402"}}

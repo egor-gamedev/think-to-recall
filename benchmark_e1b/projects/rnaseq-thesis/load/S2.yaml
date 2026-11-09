@@ -1,0 +1,128 @@
+segment: S2
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [B07]
+    text: |
+      Привет. Сверила: у образца F3 RIN 4,1, и на gene body coverage сильный перекос. Исключаем F3 после контроля качества. Значит, в голодании остаётся 11. Это нормально для анализа?
+  - role: assistant
+    facts: []
+    text: |
+      Да. Исключение образца по заранее понятному критерию качества (низкий RIN, деградация видна в покрытии) — стандартная и обоснованная практика. 12 против 11 — несбалансированный дизайн, но DE-методы с этим спокойно работают.
+
+      Чтобы это не выглядело подгонкой:
+      - Зафиксируйте критерий в методах: «образцы с RIN < 6 и признаками деградации исключались до анализа экспрессии».
+      - Исключайте до DE-анализа, а не после того, как посмотрели результаты.
+      - Сохраните в репозитории таблицу QC со всеми 24 образцами и колонкой `excluded` с причиной.
+
+      ```python
+      meta.loc[meta["sample"] == "F3", ["excluded", "reason"]] = [True, "RIN 4.1, 3' bias"]
+      ```
+  - role: user
+    facts: [B04, B04r]
+    text: |
+      Сделала колонку. Дифференциальную экспрессию будем делать в DESeq2 на R. Я предлагала limma-voom, но руководитель настаивает на DESeq2, решили не спорить. Как загрузить результаты Salmon в DESeq2?
+  - role: assistant
+    facts: []
+    text: |
+      Через `tximport` — он правильно переносит оценки Salmon на уровень генов с учётом длины транскриптов:
+
+      ```r
+      library(tximport); library(DESeq2); library(readr)
+
+      meta  <- read_csv("metadata.csv") |> dplyr::filter(!excluded)
+      files <- file.path("results/salmon", meta$sample, "quant.sf")
+      names(files) <- meta$sample
+
+      tx2gene <- read_tsv("results/salmon/tx2gene.tsv", col_names = c("tx", "gene", "symbol"))
+      txi <- tximport(files, type = "salmon", tx2gene = tx2gene[, 1:2])
+
+      dds <- DESeqDataSetFromTximport(txi, colData = as.data.frame(meta), design = ~ condition)
+      ```
+
+      `tx2gene.tsv` nf-core кладёт в результаты Salmon — берите его, чтобы версии аннотации гарантированно совпадали. Отфильтруйте малоэкспрессируемые гены перед `DESeq()`: `keep <- rowSums(counts(dds) >= 10) >= 6`.
+  - role: user
+    facts: [B05]
+    text: |
+      Загрузилось. Только ещё вспомнила: образцы секвенировали в двух запусках, половину в марте, половину в мае. Это батч. Его надо учитывать?
+  - role: assistant
+    facts: []
+    text: |
+      Да, обязательно. Запуск секвенирования — типичный технический батч: он может давать систематический сдвиг, сравнимый с биологическим эффектом.
+
+      Если группы распределены по запускам примерно поровну, батч просто добавляется в формулу:
+
+      ```r
+      dds$batch <- factor(dds$batch)
+      dds$condition <- relevel(factor(dds$condition), ref = "control")
+      design(dds) <- ~ batch + condition
+      dds <- DESeq(dds)
+      res <- results(dds, name = "condition_fasting_vs_control")
+      ```
+
+      Важно проверить, что батч не совпадает с группой. Если все голодающие в мае, а все контроли в марте, эффект голодания неотделим от батча, и никакая модель не спасёт. Посмотрите таблицу:
+
+      ```r
+      table(dds$condition, dds$batch)
+      ```
+  - role: user
+    facts: []
+    text: |
+      По 6 контролей и по 5–6 голодающих в каждом запуске, вроде хорошо. Я в R вообще плаваю. Как мне таблицу результатов в Python забрать?
+  - role: assistant
+    facts: []
+    text: |
+      Сохраните из R обычный TSV, а дальше работайте в pandas:
+
+      ```r
+      res_df <- as.data.frame(res)
+      res_df$gene_id <- rownames(res_df)
+      readr::write_tsv(res_df, "results/deseq2_fasting_vs_control.tsv")
+
+      vst_mat <- assay(vst(dds, blind = FALSE))
+      write.table(vst_mat, "results/vst.tsv", sep = "\t", quote = FALSE)
+      ```
+
+      ```python
+      import pandas as pd
+      res = pd.read_csv("results/deseq2_fasting_vs_control.tsv", sep="\t")
+      vst = pd.read_csv("results/vst.tsv", sep="\t", index_col=0)
+      ```
+
+      VST-матрица нужна для визуализаций (PCA, тепловые карты) — сырые счёты для них не подходят.
+  - role: user
+    facts: [B11]
+    text: |
+      Отлично. Договоримся: все графики делаю в Python, matplotlib и seaborn, а R у меня только для DESeq2. Давай первую PCA. И ID там Ensembl, а мне нужны символы генов.
+  - role: assistant
+    facts: []
+    text: |
+      Символы берите из того же `tx2gene.tsv` (третья колонка) — так соответствие точно из вашей аннотации:
+
+      ```python
+      t2g = pd.read_csv("results/salmon/tx2gene.tsv", sep="\t", header=None, names=["tx", "gene", "symbol"])
+      gene2sym = t2g.drop_duplicates("gene").set_index("gene")["symbol"]
+      res["symbol"] = res["gene_id"].map(gene2sym)
+      ```
+
+      PCA по 500 самым вариабельным генам VST-матрицы:
+
+      ```python
+      from sklearn.decomposition import PCA
+      import seaborn as sns, matplotlib.pyplot as plt
+
+      top = vst.loc[vst.var(axis=1).sort_values(ascending=False).index[:500]]
+      pcs = PCA(n_components=2).fit(top.T.values)
+      coords = pd.DataFrame(pcs.transform(top.T.values), index=top.columns, columns=["PC1", "PC2"]).join(meta.set_index("sample"))
+
+      ax = sns.scatterplot(data=coords, x="PC1", y="PC2", hue="condition", style="batch", s=80)
+      ax.set_xlabel(f"PC1 ({pcs.explained_variance_ratio_[0]:.0%})")
+      ax.set_ylabel(f"PC2 ({pcs.explained_variance_ratio_[1]:.0%})")
+      plt.tight_layout()
+      ```
+
+      Форма точки по батчу сразу покажет, не делит ли батч данные сильнее, чем голодание.
+  - role: user
+    facts: []
+    text: |
+      PC1 — 48%, чисто голодание против контроля, батч по PC2 немного. Красиво. Завтра разбираю гены.

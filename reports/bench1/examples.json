@@ -1,0 +1,134 @@
+[
+ {
+  "case": "c_ppr нашёл, dense нет",
+  "id": "3hop1__9285_5188_23307",
+  "q": "What month did the Tripartite discussions begin between Britain, France, and the country where, despite being headquartered in the nation called the nobilities commonwealth, the top-ranking Warsaw Pact operatives originated?",
+  "gold_found": [
+   "Szlachta"
+  ],
+  "c_ppr": [
+   "Szlachta",
+   "Warsaw",
+   "Warsaw Pact",
+   "Warsaw Pact",
+   "Southern Europe"
+  ],
+  "a_dense": [
+   "Warsaw Pact",
+   "Treaty of Bärwalde",
+   "Warsaw Pact",
+   "Warsaw Pact",
+   "Szlachta"
+  ]
+ },
+ {
+  "case": "c_ppr нашёл, dense нет",
+  "id": "3hop1__849312_503371_21711",
+  "q": "When was the Palau de la Generalitat constructed in the city where Martin from the region where Perdiguera is located died?",
+  "gold_found": [
+   "Gothic architecture"
+  ],
+  "c_ppr": [
+   "Gothic architecture",
+   "Perdiguera",
+   "Bridge of Sighs",
+   "Erla",
+   "Pedrola"
+  ],
+  "a_dense": [
+   "Perdiguera",
+   "Martin of Aragon",
+   "Museu d'Art Jaume Morera",
+   "Enric Reyna",
+   "Monastery of Aguas Vivas"
+  ]
+ },
+ {
+  "case": "c_ppr нашёл, dense нет",
+  "id": "2hop__731956_126089",
+  "q": "Who was in charge of the place where Castricum is located?",
+  "gold_found": [
+   "North Holland"
+  ],
+  "c_ppr": [
+   "Theo van den Boogaard",
+   "Castricum",
+   "North Holland",
+   "Jardin botanique de Bordeaux",
+   "Galicia (Spain)"
+  ],
+  "a_dense": [
+   "Castricum",
+   "Galicia (Spain)",
+   "Castle of Muro Lucano",
+   "Battle of Cissa",
+   "Nicholas Girod"
+  ]
+ },
+ {
+  "case": "dense нашёл, c_ppr нет",
+  "id": "3hop1__9285_5188_23307",
+  "q": "What month did the Tripartite discussions begin between Britain, France, and the country where, despite being headquartered in the nation called the nobilities commonwealth, the top-ranking Warsaw Pact operatives originated?",
+  "gold_found": [
+   "Warsaw Pact"
+  ],
+  "a_dense": [
+   "Warsaw Pact",
+   "Treaty of Bärwalde",
+   "Warsaw Pact",
+   "Warsaw Pact",
+   "Szlachta"
+  ],
+  "c_ppr": [
+   "Szlachta",
+   "Warsaw",
+   "Warsaw Pact",
+   "Warsaw Pact",
+   "Southern Europe"
+  ]
+ },
+ {
+  "case": "dense нашёл, c_ppr нет",
+  "id": "3hop1__820301_720914_41132",
+  "q": "How many times did plague occur in the place where Crucifixion's creator died?",
+  "gold_found": [
+   "Black Death"
+  ],
+  "a_dense": [
+   "Crucifixion (Titian)",
+   "Black Death",
+   "Black Death",
+   "Black Death",
+   "Black Death"
+  ],
+  "c_ppr": [
+   "Crucifixion (Titian)",
+   "Crucifixion of Jesus",
+   "Crucifixion of Jesus",
+   "Crucifixion of Jesus",
+   "Crucifixion of Jesus"
+  ]
+ },
+ {
+  "case": "dense нашёл, c_ppr нет",
+  "id": "3hop1__136129_87694_124169",
+  "q": "What year did the Governor of the city where the basilica named after the same saint as the one that Mantua Cathedral is dedicated to die?",
+  "gold_found": [
+   "Governor of Vatican City"
+  ],
+  "a_dense": [
+   "Mantua Cathedral",
+   "Governor of Vatican City",
+   "Foligno Cathedral",
+   "William Russell Grace",
+   "Cathedral Basilica of Lima"
+  ],
+  "c_ppr": [
+   "Mantua Cathedral",
+   "Cathedral Basilica of Lima",
+   "Alatri Cathedral",
+   "Mortara, Lombardy",
+   "San Pietro in Ciel d'Oro"
+  ]
+ }
+]

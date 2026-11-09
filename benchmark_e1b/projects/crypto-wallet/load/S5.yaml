@@ -1,0 +1,139 @@
+segment: S5
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [F18]
+    text: |
+      Привет. Готовимся к релизу. E2E-тесты у нас на Detox, CI в GitHub Actions. На Android прогон зелёный, а на iOS один тест стабильно падает — «экран отправки»: Detox не находит кнопку «Отправить». Локально у меня проходит.
+  - role: assistant
+    facts: []
+    text: |
+      «Локально проходит, в CI нет» на iOS почти всегда про одно из трёх:
+
+      1. **Другой симулятор.** В CI по умолчанию может быть iPhone SE с маленьким экраном, и кнопка внизу формы просто вне видимой области. Detox `tap()` по невидимому элементу падает. Решение — прокрутить перед нажатием:
+
+      ```ts
+      await waitFor(element(by.id('send-submit'))).toBeVisible().whileElement(by.id('send-scroll')).scroll(200, 'down');
+      await element(by.id('send-submit')).tap();
+      ```
+
+      2. **Клавиатура перекрыла кнопку** после ввода суммы. Перед нажатием закройте клавиатуру: `await element(by.id('amount-input')).tapReturnKey();`.
+
+      3. **Таймаут синхронизации**: на медленной машине CI анимация или сетевой запрос не успевает. Включите логи `--loglevel trace` и посмотрите, что Detox ждёт.
+
+      Зафиксируйте симулятор в `.detoxrc.js` явно (`device: { type: 'iPhone 15' }`), чтобы локально и в CI было одно и то же.
+  - role: user
+    facts: []
+    text: |
+      Был iPhone SE, точно. Прокрутку добавил, зелёное. Как настроить в Actions, чтобы iOS-прогон не занимал по 40 минут?
+  - role: assistant
+    facts: []
+    text: |
+      Основное время съедают сборка и `pod install`. Кэшируйте всё, что можно:
+
+      ```yaml
+      jobs:
+        e2e-ios:
+          runs-on: macos-14
+          steps:
+            - uses: actions/checkout@v4
+            - uses: pnpm/action-setup@v4
+            - uses: actions/setup-node@v4
+              with: { node-version: 20, cache: pnpm }
+            - run: pnpm install --frozen-lockfile
+            - uses: actions/cache@v4
+              with:
+                path: apps/mobile/ios/Pods
+                key: pods-${{ hashFiles('apps/mobile/ios/Podfile.lock') }}
+            - run: cd apps/mobile/ios && pod install
+            - uses: actions/cache@v4
+              with:
+                path: apps/mobile/ios/build
+                key: ios-build-${{ hashFiles('apps/mobile/ios/**', 'apps/mobile/package.json') }}
+            - run: cd apps/mobile && npx detox build -c ios.sim.release
+            - run: cd apps/mobile && npx detox test -c ios.sim.release --retries 1
+      ```
+
+      И запускайте iOS-E2E не на каждый пуш, а на PR в `main` и по ночам — macOS-раннеры дорогие и медленные. На каждый пуш хватит юнит-тестов и линтера.
+  - role: user
+    facts: [F17]
+    text: |
+      Так и сделаю. Теперь сторы. Интерфейс у нас на русском и английском — описание и скриншоты тоже на двух языках делать? И что с иконкой, Apple придирается?
+  - role: assistant
+    facts: []
+    text: |
+      Да, раз интерфейс двуязычный, делайте две локализации карточки: русскую и английскую. Скриншоты снимайте в соответствующем языке интерфейса — сторы показывают их по языку устройства.
+
+      Скриншоты удобно генерировать тем же Detox: прогоняете сценарий с `--device-locale ru-RU` и `en-US` и снимаете `device.takeScreenshot('wallet')`. Нужны размеры для 6.7" и 6.5" iPhone и для Android — телефон и 7" планшет, если поддерживаете.
+
+      Иконка:
+      - iOS: один файл 1024×1024 без прозрачности и без скруглений (скругляет система). Прозрачный фон — частая причина отказа.
+      - Android: адаптивная иконка — отдельные foreground и background слои, иначе в некоторых лаунчерах будет белая рамка.
+
+      Для крипто-кошельков Apple обычно спрашивает в ревью, кто владеет ключами. Сразу напишите в заметках для ревьюера, что кошелёк некастодиальный, ключи хранятся только на устройстве, а обмен идёт через сторонний сервис.
+  - role: user
+    facts: [F16]
+    text: |
+      Про ревьюера хорошая мысль. Кстати, нас спросили на созвоне с потенциальным партнёром про аудит. Своих смарт-контрактов у нас нет, мы только вызываем чужие — 0x и токены. Что тогда вообще аудировать, если спросят ещё раз?
+  - role: assistant
+    facts: []
+    text: |
+      Если своих контрактов нет, аудит контрактов в классическом смысле не к чему применять. Имеет смысл говорить об аудите **приложения**:
+
+      - **Работа с ключами:** генерация (источник энтропии), хранение в Keychain/Keystore, что сид не попадает в логи, крэш-репорты, буфер обмена, скриншоты.
+      - **Подписание:** что пользователь видит перед подписью (адрес получателя, сумма, контракт, на который даётся approve), защита от подмены данных транзакции.
+      - **Интеграция обмена:** что котировка от 0x проверяется (сеть, токены, минимальная сумма) и что approve не даётся на бесконечную сумму без явного согласия.
+      - **Бэкенд и веб:** SIWE (nonce, домен, срок), cookie-сессия, прокси к 0x без утечки ключа.
+      - **Цепочка поставки:** зависимости npm, сборка в CI, подпись релизов.
+
+      Для небольшой команды подойдёт пентест мобильного приложения от студии, которая делала это для кошельков, плюс самопроверка по OWASP MASVS.
+  - role: user
+    facts: []
+    text: |
+      Ок, запишу MASVS. Перед релизом хочу обновить зависимости, там dependabot насыпал 30 PR. Как это разгрести без боли?
+  - role: assistant
+    facts: []
+    text: |
+      30 отдельных PR — это много ручной работы. Настройте группировку в `.github/dependabot.yml`:
+
+      ```yaml
+      version: 2
+      updates:
+        - package-ecosystem: npm
+          directory: "/"
+          schedule: { interval: weekly }
+          groups:
+            dev-tooling:
+              patterns: ["eslint*", "@typescript-eslint/*", "prettier", "jest*"]
+            react-native:
+              patterns: ["react-native*", "@react-native*", "react"]
+            minor-and-patch:
+              update-types: ["minor", "patch"]
+          ignore:
+            - dependency-name: "react-native"
+              update-types: ["version-update:semver-major"]
+      ```
+
+      Порядок перед релизом:
+      1. Сливайте `minor-and-patch` пачкой — после прогона CI.
+      2. Мажорные обновления React Native — не перед релизом, а сразу после, отдельной веткой, с React Native Upgrade Helper.
+      3. Библиотеки, которые трогают ключи и подписи (`@scure/bip39`, `viem`, `react-native-keychain`), обновляйте только читая changelog и только по одной.
+  - role: user
+    facts: []
+    text: |
+      Логично, крипто-либы по одной. Ещё вопрос про версию: какую ставить в сторы, 1.0.0 или 0.9?
+  - role: assistant
+    facts: []
+    text: |
+      Для сторов это в основном маркетинг. Технически важнее другое:
+
+      - `versionName`/`CFBundleShortVersionString` — то, что видит пользователь (1.0.0).
+      - `versionCode`/`CFBundleVersion` — должен расти с каждой загрузкой в стор. Генерируйте его в CI из номера сборки, чтобы не забывать.
+
+      Если продукт уже работает и вы готовы его поддерживать — ставьте 1.0.0. «0.9» в сторе выглядит как бета и снижает доверие, а для кошелька доверие важнее всего. Для бета-тестеров есть TestFlight и закрытое тестирование в Google Play — там можно хоть 0.1.
+
+      Автоматизировать выкладку можно через fastlane: `fastlane ios beta` и `fastlane android internal` из того же GitHub Actions.
+  - role: user
+    facts: []
+    text: |
+      Тогда 1.0.0. Отправляем в TestFlight на этой неделе. Спасибо, дальше буду спрашивать по ходу.

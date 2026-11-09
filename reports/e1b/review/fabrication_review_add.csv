@@ -1,0 +1,508 @@
+id,project,question,judge1_fabricated,judge2_fabricated,answer,fabrication(0/1),reviewer,note
+01c096964c,rnaseq-thesis,Q02,,Use STAR for index creation,"Индекс для выравнивания можно создать с помощью следующих шагов:
+
+1. **Создание индекса**: Используйте программу `STAR` для создания индекса на основе вашей参考答案：
+
+1. **创建索引**：使用 `STAR` 程序为您的参考基因组创建索引。具体步骤如下：
+
+```bash
+# 安装 STAR
+sudo apt-get install star
+
+# 创建索引
+STAR --runMode genomeGenerate \
+--genomeDir /path/to/genomeDir \
+--genomeFastaFiles /path/to/GRCm39.fasta \
+--sjdbOverhang 100  # 根据你的读长调整这个值
+```
+
+2. **验证索引**：确保索引正确生成，可以通过以下命令检查：
+
+```bash
+STAR --runMode verifyBamIndex \
+--genomeDir /path/to/genomeDir
+```
+
+3. **使用索引进行映射**（如果需要）：虽然你选择不进行映射，但索引文件仍然可以用于其他目的，如质量控制等。
+
+如果你在之前的讨论中已经创建了索引，并且不需要重新创建，可以直接跳过这一步。如果有任何问题或需要进一步的帮助，请告诉我！",0,"Claude, отдельная сессия",STAR как текущий — устаревший B02 (GRCm39 и отказ от выравнивания указаны верно)
+373813d767,django-shop,Q04,,product quantity stored in DB,"Чтобы предотвратить ситуацию, когда покупатель оплачивает товар, который затем оказывается недоступным, нужно внедрить несколько мер:
+
+1. **Проверка наличия товара перед оформлением заказа:**
+   Убедитесь, что товар действительно доступен на складе перед тем, как создавать заказ.
+
+2. **Заблокировать товар при оформлении заказа:**
+   После успешного оформления заказа товар должен быть заблокирован, чтобы он не мог быть продан повторно.
+
+3. **Обновление статуса заказа:**
+   Убедитесь, что статус заказа корректно обновляется после каждого шага.
+
+### Пример реализации:
+
+1. **Проверка наличия товара:**
+
+```python
+from django.core.exceptions import ValidationError
+
+def check_product_availability(product_id):
+    product = Product.objects.get(id=product_id)
+    if not product.quantity > 0:
+        raise ValidationError(""Product is out of stock"")
+```
+
+2. **Заблокировка товара:**
+
+```python
+def block_product(product_id):
+    product = Product.objects.get(id=product_id)
+    product.quantity -= 1
+    product.save()
+```
+
+3. **Обновление статуса заказа:**
+
+```python
+from django.db.models import F
+
+def create_order(product_id, customer_id):
+    try:
+        product = Product.objects.select_for_update().get(id=product_id)
+        if not product.quantity > 0:
+            raise ValidationError(""Product is out of stock"")
+
+        # Create order
+        order = Order.objects.create(
+            product=product,
+            customer_id=customer_id,
+            status='processing'
+        )
+        block_product(product.id)
+        return order
+    except ValidationError as e:
+        return str(e)
+```
+
+4. **Обработка вебхуков и статусов платежей:**
+
+```python
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import requests
+
+@csrf_exempt
+def handle_payment_webhook(request):
+    if request.method == 'POST':
+        data = request.POST
+        transaction_id = data.get('transaction_id')
+        status = data.get('status')
+
+        # Check if payment was successful
+        if status == 'success':
+            order = Order.objects.get(transaction_id=transaction_id)
+            order.status = 'paid'
+            order.save()
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'failed'})
+
+    return JsonResponse({'status': 'error'})
+```
+
+5. **Обработка возвратов:**
+
+```python
+def refund_order(order_id):
+    order = Order.objects.get(id=order_id)
+    if order.status == 'paid':
+        # Refund money
+        refund_amount = order.total
+        # Send refund request to payment gateway
+        # Example: refund_request(refund_amount)
+        order.status = 'refunded'
+        order.save()
+        return True
+    else:
+        return False
+```
+
+### Дополнительные меры:
+
+1. **SMS уведомления:**
+   Отправляйте SMS уведомления о статусе заказа и остатках товара.
+
+2. **Анализ и отчеты:**
+   Используйте аналитику для отслеживания проблем с наличием товара и оплатой.
+
+3. **Тестирование:**
+   Проводите регулярные тесты для проверки всех процессов.
+
+### Примеры кода:
+
+```python
+# models.py
+from django.db import models
+
+class Product(models.Model):
+    name = models.CharField(max_length=255)
+    quantity = models.IntegerField(default=0)
+
+class Order(models.Model):
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    customer = models.ForeignKey(User, on_delete=models.CASCADE)
+    status = models.CharField(max_length=50, default='processing')
+    transaction_id = models.CharField(max_length=255, unique=True)
+
+# views.py
+from django.shortcuts import render, redirect
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from .models import Product, Order
+from .utils import check_product_availability, block_product, create_order, handle_payment_webhook, refund_order
+
+def checkout(request):
+    if request.method == 'POST':
+        product_id = request.POST.get('product_id')
+        customer_id = request.POST.get('customer_id')
+
+        try:
+            check_product_availability(product_id)
+            order = create_order(product_id, customer_id)
+            return redirect('thankyou', order_id=order.id)
+        except ValidationError as e:
+            return JsonResponse({'error': str(e)}, status=400)
+
+    return render(request, 'checkout.html')
+
+@csrf_exempt
+def handle_webhook(request):
+    if request.method == 'POST':
+        data = request.POST
+        transaction_id = data.get('transaction_id')
+        status = data.get('status')
+
+        if status == 'success':
+            order = Order.objects.get(transaction_id=transaction_id)
+            order.status = 'paid'
+            order.save()
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'failed'})
+
+    return JsonResponse({'status': 'error'})
+
+def thankyou(request, order_id):
+    order = Order.objects.get(id=order_id)
+    context = {'order': order}
+    return render(request, 'thankyou.html', context)
+
+def refund(request, order_id):
+    if request.method == 'POST':
+        if refund_order(order_id):
+            return JsonResponse({'status': 'success'})
+        else:
+            return JsonResponse({'status': 'failed'})
+    return JsonResponse({'status': 'error'})
+```
+
+Эти меры помогут вам предотвратить ситуации, когда покупатель оплачивает товар, который затем оказывается недоступным.",0,"Claude, отдельная сессия","Product.quantity и т.п. — в примере кода, не утверждение о проекте"
+43de64cc63,crypto-wallet,Q12,,PostgreSQL database,"Конечно! Вот пример `docker-compose.yml` файла для бэкенда с использованием NestJS и PostgreSQL. Этот файл будет управлять контейнерами для вашего приложения NestJS и базы данных PostgreSQL.
+
+```yaml
+version: '3.8'
+
+services:
+  backend:
+    image: node:14-alpine
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+    ports:
+      - ""3000:3000""
+    volumes:
+      - ./backend:/app
+    command: npm run start:dev
+    depends_on:
+      - db
+    networks:
+      - app-network
+
+  db:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: mydatabase
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
+```
+
+### Объяснение
+
+1. **backend**:
+   - **image**: Используется образ `node:14-alpine`.
+   - **working_dir**: Указываем рабочую директорию `/app`.
+   - **environment**: Устанавливаем переменные окружения для Node.js и PostgreSQL.
+   - **ports**: Мape порта 3000 из контейнера на порт 3000 на хосте.
+   - **volumes**: Мape локальную директорию `./backend` на `/app` внутри контейнера.
+   - **command**: Запускаем команду `npm run start:dev` для разработки.
+   - **depends_on**: Зависимость от контейнера `db`.
+
+2. **db**:
+   - **image**: Используется образ `postgres:13`.
+   - **environment**: Устанавливаем переменные окружения для PostgreSQL.
+   - **volumes**: Мape локальную директорию `postgres_data` на `/var/lib/postgresql/data` внутри контейнера.
+   - **networks**: Устанавливаем сетевой интерфейс `app-network`.
+
+3. **volumes**:
+   - **postgres_data**: Локальная директория для хранения данных PostgreSQL.
+
+4. **networks**:
+   - **app-network**: Сетевой интерфейс `bridge` для изоляции контейнеров.
+
+### Установка и запуск
+
+1. **Создайте директории для проекта**:
+   ```sh
+   mkdir -p backend
+   cd backend
+   ```
+
+2. **Создайте структуру проекта**:
+   ```sh
+   mkdir src
+   touch src/main.ts
+   ```
+
+3. **Создайте файл `Dockerfile`**:
+   ```dockerfile
+   FROM node:14-alpine
+
+   WORKDIR /app
+
+   COPY package.json yarn.lock ./
+   RUN yarn install --production
+
+   COPY . .
+
+   CMD [""npm"", ""run"", ""start:dev""]
+   ```
+
+4. **Создайте файл `docker-compose.yml`**:
+   ```yaml
+   version: '3.8'
+
+   services:
+     backend:
+       image: node:14-alpine
+       working_dir: /app
+       environment:
+         NODE_ENV: development
+         PORT: 3000
+       ports:
+         - ""3000:3000""
+       volumes:
+         - ./backend:/app
+       command: npm run start:dev
+       depends_on:
+         - db
+       networks:
+         - app-network
+
+     db:
+       image: postgres:13
+       environment:
+         POSTGRES_USER: myuser
+         POSTGRES_PASSWORD: mypassword
+         POSTGRES_DB: mydatabase
+       volumes:
+         - postgres_data:/var/lib/postgresql/data
+       networks:
+         - app-network
+
+   volumes:
+     postgres_data:
+
+   networks:
+     app-network:
+       driver: bridge
+   ```
+
+5. **Запустите контейнеры**:
+   ```sh
+   docker-compose up --build
+   ```
+
+Этот набросок `docker-compose.yml` файл будет управлять контейнерами для вашего бэкенда и базы данных PostgreSQL, обеспечивая изоляцию и удобство в развертывании и тестировании.",0,"Claude, отдельная сессия","спорно: PostgreSQL в предлагаемом compose — устаревший F05, не новый факт"
+f3209d2f59,rnaseq-thesis,Q10,,presence of female samples in metadata example,"Для сравнения экспрессии между самцами и самками, нужно учесть несколько шагов:
+
+1. **Проверка метаданных**: Убедитесь, что в метаданных указаны полы животных.
+2. **Фильтрация данных**: Отфильтруйте данные по полу.
+3. **Анализ DESeq2**: Проведите анализ DESeq2 с учетом пола как дополнительного фактора.
+4. **Визуализация**: Создайте volcano plot и другие визуализации для сравнения.
+
+### Шаги для Анализа
+
+#### 1. Проверка метаданных
+
+Убедитесь, что в вашем `metadata.csv` есть столбец `sex`:
+
+```csv
+sample_id,organism,tissue,sex,age,condition,batch
+sample1,Mus musculus,liver,male,6 months,Fasting,1
+sample2,Mus musculus,liver,male,6 months,Control,1
+sample3,Mus musculus,liver,female,6 months,Fasting,1
+sample4,Mus musculus,liver,female,6 months,Control,1
+...
+```
+
+#### 2. Фильтрация данных
+
+Отфильтруйте данные по полу:
+
+```python
+import pandas as pd
+
+# Загрузка метаданных
+metadata = pd.read_csv('metadata.csv')
+
+# Фильтрация по полу
+males = metadata[metadata['sex'] == 'male']
+females = metadata[metadata['sex'] == 'female']
+
+# Сохранение отфильтрованных данных
+males.to_csv('males_metadata.csv', index=False)
+females.to_csv('females_metadata.csv', index=False)
+```
+
+#### 3. Анализ DESeq2
+
+Используйте DESeq2 для анализа экспрессии с учетом пола:
+
+```python
+import pandas as pd
+import numpy as np
+import os
+import rpy2.robjects as robjects
+from rpy2.robjects.packages import importr
+from rpy2.robjects.vectors import StrVector
+from rpy2.robjects.conversion import localconverter
+
+# Загрузка необходимых пакетов
+DESeq2 = importr('DESeq2')
+stats = importr('stats')
+
+# Загрузка Salmon counts
+count_matrix = pd.read_csv('salmon_counts.csv', index_col=0)
+
+# Загрузка метаданных
+metadata = pd.read_csv('metadata.csv')
+
+# Фильтрация данных по полу
+males = metadata[metadata['sex'] == 'male']
+females = metadata[metadata['sex'] == 'female']
+
+# Создание формулы DESeq2
+design = StrVector(['condition', 'sex'])
+dds = DESeq2.DESeqDataSetFromMatrix(countData=count_matrix.T,
+                                    colData=metadata[['condition', 'sex']],
+                                    design=design)
+
+# Обработка данных
+dds = DESeq2.DESeq(dds)
+
+# Получение результатов
+results = DESeq2.results(dds)
+
+# Фильтрация результатов
+results = results[results['padj'] < 0.05 & abs(results['log2FoldChange']) > 1]
+
+# Сохранение результатов
+results.to_csv('deseq2_results.csv', index=False)
+```
+
+#### 4. Визуализация
+
+Создайте volcano plot для сравнения самцов и самок:
+
+```python
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+# Загрузка результатов DESeq2
+results = pd.read_csv('deseq2_results.csv')
+
+# Фильтрация по полу
+males_results = results[results['sex'] == 'male']
+females_results = results[results['sex'] == 'female']
+
+# Создание volcano plot
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='log2FoldChange', y='-log10(padj)', hue='sex', data=results, palette=['blue', 'red'])
+
+# Добавление подписей
+for i, row in males_results.iterrows():
+    plt.annotate(f'{row[""gene_id""]}', (row['log2FoldChange'], -np.log10(row['padj'])), fontsize=8)
+
+for i, row in females_results.iterrows():
+    plt.annotate(f'{row[""gene_id""]}', (row['log2FoldChange'], -np.log10(row['padj'])), fontsize=8)
+
+# Настройка осей и легенды
+plt.xlabel('Log2 Fold Change')
+plt.ylabel('-log10 Adjusted P-value')
+plt.title('Volcano Plot of Differential Gene Expression by Sex')
+plt.legend()
+
+# Сохранение графика
+plt.savefig('volcano_plot_by_sex.png', dpi=300, bbox_inches='tight')
+
+# Вывод подписей
+print(""Figure 3. Differential gene expression by sex. Volcano plot of genes tested between male and female groups. The x-axis shows log2 fold change and the y-axis −log10 adjusted p-value. Coloured points mark genes passing the significance thresholds (dashed lines); the ten most significant genes are labelled."")
+```
+
+### Подписи к рисункам
+
+**Figure 3. Differential gene expression by sex.** Volcano plot of genes tested between male and female groups. The x-axis shows log2 fold change and the y-axis −log10 adjusted p-value. Coloured points mark genes passing the significance thresholds (dashed lines); the ten most significant genes are labelled.
+
+### Настройка стиля matplotlib
+
+Для настройки стиля matplotlib и обеспечения единства во всех рисунках, можно использовать следующий код:
+
+```python
+import matplotlib.pyplot as plt
+
+# Настройка стиля matplotlib
+plt.style.use('ggplot')
+
+# Настройка размера шрифта
+plt.rcParams.update({
+    'font.size': 10,
+    'axes.labelsize': 10,
+    'xtick.labelsize': 8,
+    'ytick.labelsize': 8,
+    'figure.dpi': 300
+})
+
+# Создание volcano plot с настроенными параметрами
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='log2FoldChange', y='-log10(padj)', hue='sex', data=results, palette=['blue', 'red'])
+
+# Добавление подписей
+for i, row in males_results.iterrows():
+    plt.annotate(f'{row[""gene_id""]}', (row['log2FoldChange'], -np.log10(row['padj'])), fontsize=8)
+
+for i, row in females_results.iterrows():
+    plt.annotate(f'{row[""gene_id""]}', (row['log2FoldChange'], -np.log10(row['padj'])), fontsize=8)
+
+# Настройка осей и легенды
+plt.xlabel('Log2 Fold Change')
+plt.ylabel",0,"Claude, отдельная сессия","спорно: самки только в примере metadata при «убедитесь, что есть столбец sex» — не утверждает, что они в проекте"

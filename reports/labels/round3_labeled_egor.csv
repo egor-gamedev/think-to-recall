@@ -1,0 +1,101 @@
+﻿source_type,from,relation,to,from_id,to_id,shown_in_menu,context_set,provenance,meaningful,comment
+wordnet,electronic communication,брат (общий родитель),channel,wn:electronic_communication.n.01,wn:channel.n.01,0,seen,wn:transmission.n.02,1,
+wordnet,state,брат (общий родитель),personality,wn:state.n.02,wn:personality.n.01,0,seen,wn:attribute.n.02,0,"оба «атрибуты», связь пустая"
+link,температура,привязка,температура,ent:температура,rwn:3192-N,1,heldout,text:0,1,
+wordnet,termination,обобщение,end,wn:termination.n.01,wn:end.n.02,1,seen,,1,
+experience,api,вместе в 2 сессиях,rate,exp:api,exp:rate,1,seen,,1,
+link,accounting,привязка,бухгалтерский учёт,ent:accounting,wd:Q4116214,1,seen,item:docs/accounting-handbook.md,1,
+link,реформа,привязка,реформа,ent:реформа,wd:Q900406,1,heldout,text:0,1,
+wordnet,messaging,обобщение,electronic communication,wn:messaging.n.01,wn:electronic_communication.n.01,1,seen,,1,
+link,головная боль,привязка,Головная боль напряжения,ent:головная боль,wd:Q1338684,1,seen,text:0,0,привязка к слишком узкому понятию
+link,region,привязка,region,ent:region,wd:Q82794,1,seen,item:docs/regions.md,0,в техдоке region — скорее облачный регион
+link,причина,привязка,причина явления,ent:причина,rwn:106474-N,1,seen,text:0,1,
+ruwordnet,морская рыба,брат (общий родитель),дорадо (рыба),rwn:9144-N,rwn:151458-N,0,seen,rwn:502-N,1,
+link,status,привязка,status,ent:status,exp:status,1,seen,item:docs/payment-provider.md,1,
+ruwordnet,туристское снаряжение,обобщение,снаряжение (предметы),rwn:138657-N,rwn:125001-N,1,heldout,,1,
+wordnet,state,подвид,freedom,wn:state.n.02,wn:freedom.n.01,0,seen,,0,странный подвид
+ruwordnet,"измениться, изменение",подвид,зарасти растительностью,rwn:106629-N,rwn:114087-N,0,heldout,,0,"формально верно, бесполезно"
+wikidata,region,используется в,regional cartography,wd:Q82794,wd:Q124758745,1,seen,,0,слабо
+wordnet,satisfaction,обобщение,contentment,wn:satisfaction.n.01,wn:contentment.n.01,1,seen,,1,
+ruwordnet,"грозить, предупреждать с угрозой",брат (общий родитель),предостеречь,rwn:106954-N,rwn:106708-N,0,seen,rwn:106707-N,1,
+experience,status,вместе в 2 сессиях,order,exp:status,exp:order,0,seen,,1,
+link,аптечка,привязка,медицинская аптечка,ent:аптечка,rwn:7495-N,1,heldout,text:0,1,
+wikidata,contract price,брат (общий родитель),себестоимость,wd:Q5165676,wd:Q1450203,0,seen,wd:Q160151,1,
+link,termination,привязка,termination,ent:termination,wn:termination.n.01,1,seen,item:docs/security-policy.md,1,
+experience,api,вместе в 2 сессиях,limit,exp:api,exp:limit,0,seen,,1,
+experience,api,вместе в 2 сессиях,image,exp:api,exp:image,0,seen,,0,случайное совпадение
+ruwordnet,туризм,подвид,этнографический туризм,rwn:1633-N,rwn:152364-N,0,heldout,,1,
+experience,api,вместе в 2 сессиях,yaml,exp:api,exp:yaml,0,seen,,0,слабо
+wordnet,excavation,подвид,root cellar,wn:excavation.n.03,wn:root_cellar.n.01,1,seen,,1,
+experience,login,вместе в 2 сессиях,session,exp:login,exp:session,1,heldout,,1,
+ruwordnet,"совокупность, целое",подвид,"выборка, выборочная совокупность",rwn:106508-N,rwn:140494-N,0,heldout,,1,
+wordnet,entree,брат (общий родитель),voting right,wn:entree.n.02,wn:voting_right.n.01,0,seen,wn:right.n.01,1,
+wordnet,report,подвид,dispatch,wn:report.n.03,wn:dispatch.n.01,0,seen,,1,
+wikidata,точка,обобщение,геометрическое место точек,wd:Q44946,wd:Q211548,1,seen,,0,направление неверно: ГМТ — не обобщение точки
+ruwordnet,телеграфировать,брат (общий родитель),указать (дать знать),rwn:115607-N,rwn:116198-N,0,heldout,rwn:106542-N,0,бессмыслица
+wordnet,access,брат (общий родитель),due,wn:access.n.02,wn:due.n.01,0,seen,wn:right.n.01,0,пустая связь через хаб right
+wordnet,written record,подвид,chronology,wn:written_record.n.01,wn:chronology.n.02,1,seen,,1,
+experience,status,вместе в 2 сессиях,timezone,exp:status,exp:timezone,1,seen,,0,случайное совпадение
+experience,created at,вместе в 2 сессиях,price,exp:created at,exp:price,1,seen,,0,случайное совпадение
+link,architecture,привязка,архитектура,ent:architecture,wd:Q12271,1,seen,item:docs/architecture.md,0,"в docs/architecture.md — архитектура ПО, а не зданий"
+ruwordnet,медицинский термометр,обобщение,медицинский инструмент,rwn:136990-N,rwn:126891-N,1,heldout,,1,
+wikidata,Commit (SQL),брат (общий родитель),блок,wd:Q1115672,wd:Q1327579,1,seen,wd:Q613299,0,неясная связь
+experience,payment,вместе в 2 сессиях,worker,exp:payment,exp:worker,0,seen,,1,
+ruwordnet,медицинский термометр,обобщение,ртутный термометр,rwn:136990-N,rwn:146225-N,0,heldout,,0,направление перепутано: ртутный — подвид
+wordnet,end,обобщение,point,wn:end.n.02,wn:point.n.06,1,seen,,1,
+experience,api,вместе в 3 сессиях,app,exp:api,exp:app,1,seen,,1,
+wordnet,end,брат (общий родитель),phase,wn:end.n.02,wn:phase.n.03,0,seen,wn:point.n.06,0,слабо
+link,contract price,привязка,contract price,ent:contract price,wd:Q5165676,1,seen,item:api/products.py,1,
+link,created at,привязка,created at,ent:created at,exp:created at,1,seen,item:models/user.py,1,
+ruwordnet,наехать (оказывать давление),обобщение,"грозить, предупреждать с угрозой",rwn:138424-N,rwn:106954-N,1,seen,,1,
+wordnet,point,подвид,distance,wn:point.n.06,wn:distance.n.06,0,seen,,0,странный подвид
+ruwordnet,туристское снаряжение,предметная область,туризм,rwn:138657-N,rwn:1633-N,1,heldout,,1,
+wikidata,давление,подкласс,Корневое давление,wd:Q39552,wd:Q1283196,0,seen,,1,
+ruwordnet,медицинская аптечка,предметная область,фармакология,rwn:7495-N,rwn:1071-N,1,heldout,,0,"предметная область — медицина, а не фармакология"
+wikidata,отмена рабства,брат (общий родитель),эмансипация,wd:Q2966922,wd:Q380351,0,heldout,wd:Q24238946,1,
+link,image,привязка,image,ent:image,exp:image,1,heldout,item:deploy/docker-compose.yml,1,
+link,access,привязка,access,ent:access,wn:access.n.02,1,seen,item:docs/security-policy.md,1,
+wordnet,written record,брат (общий родитель),history,wn:written_record.n.01,wn:history.n.02,0,seen,wn:record.n.01,1,
+link,sftp,привязка,sftp,ent:sftp,wd:Q7444872,1,seen,item:docs/ops/sftp.md,1,
+wikidata,malicious compliance,брат (общий родитель),сон,wd:Q16963544,wd:Q35831,1,seen,wd:Q9332,0,бессмыслица
+ruwordnet,реформа,подвид,политическая реформа,rwn:7936-N,rwn:1473-N,1,heldout,,1,
+wordnet,end,подвид,stopping point,wn:end.n.02,wn:stopping_point.n.01,1,seen,,1,
+link,отмена крепостного права,привязка,Отмена крепостного права в Польше,ent:отмена крепостного права,wd:Q11837438,1,heldout,text:0,0,привязка к другой стране
+wordnet,rank,брат (общий родитель),leadership,wn:rank.n.02,wn:leadership.n.03,0,seen,wn:status.n.01,1,
+link,messaging,привязка,messaging,ent:messaging,wn:messaging.n.01,1,seen,item:docs/compliance/messaging.md,1,
+experience,page,вместе в 2 сессиях,catalog,exp:page,exp:catalog,1,seen,,1,
+experience,api,вместе в 3 сессиях,redis,exp:api,exp:redis,0,seen,,1,
+wikidata,киоск,подкласс,canopy kiosk,wd:Q693369,wd:Q18660589,1,seen,,1,
+wikidata,серверное программное обеспечение,служит для этого,Apache CXF,wd:Q1371279,wd:Q223449,0,seen,,1,
+ruwordnet,температура тела,брат (общий родитель),холод (низкая температура воздуха),rwn:121341-N,rwn:113822-N,0,heldout,rwn:3192-N,0,бессмыслица
+link,рыба,привязка,рыба,ent:рыба,rwn:502-N,1,seen,text:0,1,
+experience,created at,вместе в 2 сессиях,reference,exp:created at,exp:reference,1,seen,,0,случайное совпадение
+experience,status,вместе в 2 сессиях,text,exp:status,exp:text,0,seen,,0,случайное совпадение
+wikidata,SQL,часть,Commit (SQL),wd:Q47607,wd:Q1115672,1,seen,,1,
+wikidata,точка,подкласс,центральная точка,wd:Q44946,wd:Q1645406,1,seen,,1,
+wikidata,архитектурная акустика,брат (общий родитель),underwater acoustics,wd:Q2305951,wd:Q1292425,1,seen,wd:Q82811,1,
+experience,api,вместе в 2 сессиях,postgresql,exp:api,exp:postgresql,0,seen,,1,
+experience,page,вместе в 2 сессиях,customer,exp:page,exp:customer,1,seen,,0,слабо
+wikidata,медицинские данные,подкласс,wearable device data,wd:Q18745135,wd:Q138520977,1,seen,,1,
+wikidata,серверное программное обеспечение,служит для этого,Apache Directory,wd:Q1371279,wd:Q616321,0,seen,,1,
+experience,api,вместе в 2 сессиях,replica,exp:api,exp:replica,0,seen,,0,случайное совпадение
+wikidata,маршрутизатор,брат (общий родитель),сетевой мост,wd:Q5318,wd:Q188635,0,seen,wd:Q1546066,1,
+wikidata,маршрутизатор,брат (общий родитель),сетевой коммутатор,wd:Q5318,wd:Q4503,0,seen,wd:Q1546066,1,
+wikidata,бесконтактная оплата,подкласс,Visa payWave,wd:Q625903,wd:Q5212659,0,seen,,1,
+ruwordnet,анадромные рыбы,подвид,осетровые рыбы,rwn:6375-N,rwn:5372-N,1,seen,,1,
+ruwordnet,"различаться, различие",подвид,диспаритет,rwn:118966-N,rwn:139223-N,0,heldout,,1,
+ruwordnet,"принудить, заставить",подвид,поручить,rwn:106817-N,rwn:106866-N,1,seen,,0,поручить — не вид принуждения
+wikidata,киоск,служит для этого,Tramhuis (Rotterdam),wd:Q693369,wd:Q137047500,0,seen,,0,мусор
+experience,payment,вместе в 3 сессиях,postgresql,exp:payment,exp:postgresql,1,seen,,1,
+wordnet,rank,подвид,third,wn:rank.n.02,wn:third.n.03,1,seen,,1,
+wordnet,state,брат (общий родитель),space,wn:state.n.02,wn:space.n.01,1,seen,wn:attribute.n.02,0,пустая связь
+wordnet,manual,подвид,grimoire,wn:manual.n.01,wn:grimoire.n.01,1,seen,,1,
+ruwordnet,спорт,предметная область,гандбол,rwn:1622-N,rwn:10040-A,0,heldout,,1,
+link,payment,привязка,платёж,ent:payment,wd:Q1148747,1,seen,item:webhooks/payments.py,1,
+wikidata,десятичная позиция,подкласс,correct decimals,wd:Q19685717,wd:Q10548149,1,seen,,1,
+experience,created at,вместе в 2 сессиях,model,exp:created at,exp:model,1,seen,,1,
+ruwordnet,температура,подвид,температура тела,rwn:3192-N,rwn:121341-N,1,heldout,,1,
+wikidata,покладистость,обобщение,поведение,wd:Q1399332,wd:Q9332,0,seen,,1,
+experience,created at,вместе в 2 сессиях,field,exp:created at,exp:field,0,seen,,1,
+ruwordnet,туристическая палатка,предметная область,туризм,rwn:129645-N,rwn:1633-N,1,heldout,,1,
+link,таблица,привязка,таблица,ent:таблица,rwn:117703-N,1,seen,text:0,1,

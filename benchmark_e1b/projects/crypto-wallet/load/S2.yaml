@@ -1,0 +1,199 @@
+segment: S2
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: []
+    text: |
+      Привет, продолжаем. Сегодня экран создания кошелька. Генерим мнемонику из 12 слов, показываем пользователю, потом просим подтвердить пару слов. С чего начать?
+  - role: assistant
+    facts: []
+    text: |
+      Порядок такой: генерация → показ → проверка → сохранение. Генерацию делайте через `@scure/bip39` — маленькая, аудированная библиотека, без лишних зависимостей:
+
+      ```ts
+      import { generateMnemonic, validateMnemonic } from '@scure/bip39';
+      import { wordlist } from '@scure/bip39/wordlists/english';
+
+      export function createMnemonic(): string {
+        return generateMnemonic(wordlist, 128); // 128 бит → 12 слов
+      }
+      ```
+
+      Экран показа: слова сеткой 3×4 с номерами, кнопка «Я записал» активна не сразу, а через несколько секунд, чтобы человек не пролистал. Экран проверки: спросите 3 случайных слова по номерам и дайте выбрать каждое из 4 вариантов — так меньше опечаток, чем при ручном вводе.
+
+      Важно: держите мнемонику только в локальном state экрана и затирайте её при уходе со стека создания. Не кладите её в Redux/Zustand и не передавайте в параметрах навигации.
+  - role: user
+    facts: [F07]
+    text: |
+      Ок. Хранить будем в Secure Enclave на айфоне и Android Keystore — через react-native-keychain, доступ по биометрии. Покажи, как правильно сохранить, чтобы без отпечатка/лица было не достать.
+  - role: assistant
+    facts: []
+    text: |
+      С `react-native-keychain` это делается флагами доступа:
+
+      ```ts
+      import * as Keychain from 'react-native-keychain';
+
+      const SERVICE = 'kladez.wallet.v1';
+
+      export async function saveSecret(mnemonic: string) {
+        await Keychain.setGenericPassword('wallet', mnemonic, {
+          service: SERVICE,
+          accessControl: Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET,
+          accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+          securityLevel: Keychain.SECURITY_LEVEL.SECURE_HARDWARE,
+        });
+      }
+
+      export async function readSecret(): Promise<string | null> {
+        const res = await Keychain.getGenericPassword({
+          service: SERVICE,
+          authenticationPrompt: { title: 'Подтвердите доступ к кошельку' },
+        });
+        return res ? res.password : null;
+      }
+      ```
+
+      Пояснения:
+      - `BIOMETRY_CURRENT_SET` — если пользователь добавит новый отпечаток, доступ к секрету пропадёт. Это защищает от сценария «кто-то добавил свой палец», но значит, что без резервной копии сид-фразы пользователь может потерять доступ. Это надо явно сказать в онбординге.
+      - `THIS_DEVICE_ONLY` — секрет не попадёт в iCloud Keychain и не переедет на новое устройство.
+      - На Android `SECURE_HARDWARE` требует аппаратного Keystore; на старых устройствах без него будет ошибка — обработайте её понятным сообщением, а не падением.
+  - role: user
+    facts: [F07r]
+    text: |
+      Про резервную копию. Обсуждали облачный бэкап сид-фразы в iCloud или Google Drive, зашифрованный паролем — отказались. Только бумажная копия, которую человек записывает сам. Меньше поверхность атаки и меньше вопросов к нам.
+  - role: assistant
+    facts: []
+    text: |
+      Понятно, тогда онбординг должен очень серьёзно подводить к бумажной копии — это единственный путь восстановления.
+
+      Что помогает на практике:
+      - Отдельный экран перед показом слов: «Приготовьте бумагу и ручку. Не делайте скриншот. Без этих слов восстановить кошелёк невозможно».
+      - Блокировка скриншотов на экране слов (`FLAG_SECURE` на Android, на iOS — размытие при уходе в фон).
+      - Напоминание в настройках, если пользователь пропустил проверку: «Вы не подтвердили резервную копию».
+      - Восстановление: экран ввода 12 слов с автодополнением по словарю BIP39 и проверкой контрольной суммы.
+
+      ```ts
+      export function isValidPhrase(input: string): boolean {
+        const words = input.trim().toLowerCase().split(/\s+/);
+        return words.length === 12 && validateMnemonic(words.join(' '), wordlist);
+      }
+      ```
+  - role: user
+    facts: []
+    text: |
+      Сделали. Джун прислал PR с экраном проверки слов, глянь на кусок, что-то мне не нравится, но не пойму что:
+
+      ```tsx
+      const [words, setWords] = useState(mnemonic.split(' '));
+      useEffect(() => {
+        setChallenge(pickRandom(words, 3));
+      });
+      ```
+  - role: assistant
+    facts: []
+    text: |
+      Тут две проблемы.
+
+      1. `useEffect` без массива зависимостей запускается после каждого рендера. `setChallenge` вызывает новый рендер, тот снова запускает эффект — получится бесконечный цикл (или, если `pickRandom` возвращает тот же массив, — постоянная смена вопросов). Нужен `[]` или `[words]`.
+
+      2. `useState(mnemonic.split(' '))` делит строку на каждом рендере, хотя результат нужен только при первом. Используйте ленивую инициализацию: `useState(() => mnemonic.split(' '))`. Мелочь, но хорошая привычка.
+
+      Исправленный вариант:
+
+      ```tsx
+      const words = useMemo(() => mnemonic.split(' '), [mnemonic]);
+      const [challenge] = useState(() => pickRandom(words, 3));
+      ```
+
+      Здесь вопросы выбираются один раз при открытии экрана и не меняются, пока пользователь отвечает. Линтер `react-hooks/exhaustive-deps`, который мы включили, кстати, должен был подсветить первый случай — проверьте, что у джуна в редакторе ESLint вообще работает.
+  - role: user
+    facts: [F08]
+    text: |
+      Ха, у него eslint в vscode был выключен. Ладно. Ещё вопрос про рынок: пользователи у нас в ЕС. Покупку крипты за фиат, on-ramp, в MVP не делаем, отложили на потом. Что нам из регуляторики надо держать в голове уже сейчас?
+  - role: assistant
+    facts: []
+    text: |
+      Для некастодиального кошелька без on-ramp нагрузка небольшая, но несколько вещей стоит заложить сразу.
+
+      - **MiCA.** Регламент ЕС о криптоактивах в основном касается поставщиков услуг, которые хранят средства клиентов или проводят обмен за них. Некастодиальный кошелёк, где ключи только у пользователя, обычно не считается таким поставщиком. Но как только появится покупка за фиат или обмен, где вы выступаете стороной, картина меняется — это уже вопрос к юристу.
+      - **GDPR.** Пользователи в ЕС — значит, к любым персональным данным, которые вы собираете (даже device id и push-токен), применим GDPR: нужна политика конфиденциальности, минимизация данных и способ удалить данные по запросу.
+      - **Правила сторов.** Apple и Google требуют отдельно описывать криптофункции; для некоторых стран у них свои ограничения.
+
+      Это не юридическая консультация, но архитектурно вы в хорошей позиции: чем меньше вы знаете о пользователе, тем меньше обязательств.
+  - role: user
+    facts: [F09]
+    text: |
+      Да, в эту сторону и думаем. Поэтому никаких сторонних SDK аналитики — ни Firebase Analytics, ни Amplitude. Только своя обезличенная статистика, и то если пользователь согласился, opt-in.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда можно сделать простой собственный сборщик событий:
+
+      ```ts
+      type Event = { name: 'onboarding_step' | 'wallet_created' | 'send_started' | 'send_done'; step?: number };
+
+      export async function track(e: Event) {
+        if (!(await settings.analyticsOptIn())) return;
+        queue.push({ ...e, day: new Date().toISOString().slice(0, 10) }); // только дата, без времени
+      }
+      ```
+
+      Принципы:
+      - Без идентификатора пользователя и устройства — только счётчики по дням.
+      - Отправка пачкой раз в день, а не по событию, чтобы по времени запросов нельзя было восстановить поведение.
+      - На бэкенде — таблица агрегатов `(day, event, count)`, сырые события не храните.
+      - Экран согласия с понятным текстом и выключателем в настройках.
+
+      Воронку онбординга так вполне можно увидеть: сколько дошло до каждого шага в день.
+  - role: user
+    facts: []
+    text: |
+      Норм. Слушай, ещё мелочь: даты в истории транзакций показываются как 10/21/2026, а у нас половина пользователей русскоязычные. Как сделать нормально?
+  - role: assistant
+    facts: []
+    text: |
+      Используйте `Intl.DateTimeFormat` с локалью устройства, а не ручное форматирование:
+
+      ```ts
+      import { getLocales } from 'react-native-localize';
+
+      const locale = getLocales()[0]?.languageTag ?? 'en-US';
+      const fmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' });
+      fmt.format(new Date(tx.timestamp * 1000)); // «21 окт. 2026 г.» или «Oct 21, 2026»
+      ```
+
+      В Hermes `Intl` поддерживается, но на Android нужно, чтобы в сборке был полный ICU — проверьте, что в `android/app/build.gradle` не стоит урезанный JSC/ICU. Для относительного времени («5 минут назад») есть `Intl.RelativeTimeFormat`.
+
+      Суммы тоже форматируйте через `Intl.NumberFormat`, но аккуратно: для крипты нельзя полагаться на `number` — держите значения в `bigint` (wei) и переводите в строку своей функцией, иначе потеряете точность на больших суммах.
+  - role: user
+    facts: [F10]
+    text: |
+      Ага, на бигинтах и так. Последнее на сегодня — пуши о входящих транзакциях. Шлём через Firebase Cloud Messaging на Android и APNs на iOS. Как это связать с нашим бэком на Nest?
+  - role: assistant
+    facts: []
+    text: |
+      Схема:
+
+      1. Клиент получает push-токен (FCM на Android, APNs на iOS — через `@react-native-firebase/messaging` можно получить оба) и отправляет его на `POST /devices` вместе с `deviceId`.
+      2. Клиент сообщает список публичных адресов для наблюдения: `PUT /devices/:id/watch`.
+      3. Бэкенд подписывается на входящие переводы по этим адресам (вебхуки провайдера узлов или опрос новых блоков) и шлёт пуш.
+
+      ```ts
+      @Injectable()
+      export class PushService {
+        constructor(private readonly fcm: FcmClient, private readonly apns: ApnsClient) {}
+
+        async notifyIncoming(device: Device, tx: IncomingTx) {
+          const body = `Получено ${formatAmount(tx)} ${tx.symbol}`;
+          if (device.platform === 'android') await this.fcm.send(device.pushToken, { title: 'Кладезь', body });
+          else await this.apns.send(device.pushToken, { alert: { title: 'Кладезь', body } });
+        }
+      }
+      ```
+
+      Не кладите в текст пуша адрес отправителя целиком и не пишите сумму, если пользователь включил «скрывать балансы» — уведомление видно на экране блокировки.
+  - role: user
+    facts: []
+    text: |
+      Про скрытие балансов хорошая мысль, добавлю в бэклог. Всё, до завтра.

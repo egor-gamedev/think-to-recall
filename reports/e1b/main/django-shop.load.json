@@ -1,0 +1,34 @@
+{
+ "project": "django-shop",
+ "kind": "load",
+ "compressions": [
+  {
+   "after_turn": "S1.11",
+   "turns": 12,
+   "tokens_out": 1855,
+   "summary_tokens": 161
+  },
+  {
+   "after_turn": "S2.7",
+   "turns": 11,
+   "tokens_out": 1752,
+   "summary_tokens": 304
+  },
+  {
+   "after_turn": "S3.4",
+   "turns": 12,
+   "tokens_out": 1822,
+   "summary_tokens": 500
+  },
+  {
+   "after_turn": "S4.3",
+   "turns": 12,
+   "tokens_out": 2040,
+   "summary_tokens": 500
+  }
+ ],
+ "summary": "- Project: Online bike parts store \"Спица\" using Django 5.\n- Technology Stack: Server-side templates, HTMX for client-side interactions.\n- Problem: Catalog page takes 3 seconds to load due to slow database queries.\n- Current Solution: Reduced query count from 212 to 400 ms by optimizing with `select_related` and `prefetch_related`.\n- Next Steps: Implement infinite scroll pagination using HTMX to reduce server load and improve user experience.\n- Mobile Optimization: Use scroll-triggered loading and save scroll position for better navigation.\n- Payment Integration: Use YKassa webhook to handle payment status updates, ensuring orders are marked as paid only when payments succeed.\n- Open Questions: How to handle delayed webhooks and ensure order status updates are accurate.\n\n- Problem: Import process takes 10 minutes for 30,000 rows.\n- Current Solution: Optimized import script to update only changed positions in batches and moved import to background tasks using Celery with Redis.\n- Open Questions: How to handle stuck Celery tasks and ensure they complete correctly.\n\n- Queues: Divided tasks into fast and slow queues to avoid delays.\n- SMS Handling: Added retry timer and limited attempts to prevent frustration from users.\n\n- Infrastructure: Considering moving to Yandex Cloud's managed PostgreSQL for personal data compliance with 152-FZ regulations.\n- Open Questions: How to manage costs and ensure data recovery with managed services versus self-managed virtual machines.\n\n- Delivery: Only СДЭК available, sometimes takes up to 10 seconds via their API.\n- Solutions: \n  - Set request timeout to 2–3 seconds.\n  - Cache delivery costs.\n  - Use HTMX for asynchronous loading of delivery options.\n- Open Question: How to handle delivery options for remote regions.\n\n- Model Field Renaming: Changed `phone` to `contact_phone` in model.\n- Solution: Used `RenameField` migration without losing data.\n- Open Question: Verify all references to the old field name.\n\n- Invoicing: Generate PDF invoices from orders.\n- Tool: WeasyPrint for generating PDFs.\n- Notes: Use `num2words` for writing numbers in words.\n- Sequence: Maintain a separate sequence for invoice numbering.\n\n- Taxation: Selling on UСN without VAT, prices in rubles.\n- Notes: Write \"Без НДС\" in the invoice and include a tax",
+ "window_tokens": 3067,
+ "archive_turns": 47,
+ "seconds": 29.7
+}

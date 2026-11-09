@@ -1,0 +1,140 @@
+segment: S4
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [G02b]
+    text: |
+      Привет. Большая новость: ушли с ЮKassa на CloudPayments, у них комиссия ниже. ЮKassa уже отключил полностью. Теперь надо принимать их уведомления — Pay, Fail. Как проверить, что запрос действительно от них?
+  - role: assistant
+    facts: []
+    text: |
+      CloudPayments подписывает каждое уведомление: в заголовке `Content-HMAC` (или `X-Content-HMAC`) лежит HMAC-SHA256 тела запроса по вашему API Secret в base64. Проверяйте его до любой обработки:
+
+      ```python
+      import base64, hashlib, hmac
+
+      def verify_cp(request) -> bool:
+          sign = request.headers.get("Content-HMAC") or request.headers.get("X-Content-HMAC", "")
+          digest = hmac.new(settings.CP_API_SECRET.encode(), request.body, hashlib.sha256).digest()
+          return hmac.compare_digest(base64.b64encode(digest).decode(), sign)
+
+      @csrf_exempt
+      def cp_pay(request):
+          if not verify_cp(request):
+              return HttpResponseForbidden()
+          data = request.POST  # form-urlencoded
+          mark_order_paid.delay(order_id=data["InvoiceId"], tx_id=data["TransactionId"], amount=data["Amount"])
+          return JsonResponse({"code": 0})
+      ```
+
+      Важно: ответ должен быть именно `{"code": 0}`, иначе CloudPayments будет повторять. Подписывайте по сырому `request.body`, а не по разобранным полям — порядок и кодировка важны. Сумму из уведомления сверяйте с суммой заказа.
+  - role: user
+    facts: []
+    text: |
+      Подпись сходится. А старую фоновую сверку статусов, что делали для ЮKassa, куда девать?
+  - role: assistant
+    facts: []
+    text: |
+      Логику оставьте, а источник поменяйте: у CloudPayments есть API поиска транзакции по `InvoiceId` (метод `payments/find`). Сверка делает то же самое — находит заказы «ожидают оплату» старше 15 минут и спрашивает статус:
+
+      ```python
+      @app.task
+      def reconcile_pending():
+          for order in Order.objects.filter(status="awaiting_payment", created_at__lt=now() - timedelta(minutes=15)):
+              r = cp_client.post("payments/find", json={"InvoiceId": str(order.number)})
+              tx = r.json().get("Model")
+              if tx and tx["Status"] == "Completed":
+                  mark_order_paid(order.id, tx["TransactionId"], tx["Amount"])
+      ```
+
+      Код работы с ЮKassa (вебхук, клиент, настройки) удалите, а не закомментируйте, — чтобы через полгода никто не перепутал, какая платёжка живая.
+  - role: user
+    facts: [G06b]
+    text: |
+      Удалил. Ещё новость: поставщик наконец дал API с вебхуками. Остатки теперь обновляем сразу по вебхуку, а CSV раз в час убираем совсем. Боюсь, что вебхук придёт дважды или вперемешку.
+  - role: assistant
+    facts: []
+    text: |
+      Обе проблемы реальные. Защиты:
+
+      1. **Идемпотентность**: у каждого события поставщика есть id — сохраняйте обработанные id и пропускайте повторы.
+      2. **Порядок**: используйте версию или время изменения остатка у поставщика и не применяйте событие, если оно старше уже записанного.
+
+      ```python
+      @csrf_exempt
+      def supplier_stock_webhook(request):
+          ev = json.loads(request.body)
+          if not verify_supplier_signature(request):
+              return HttpResponseForbidden()
+          with transaction.atomic():
+              _, created = ProcessedEvent.objects.get_or_create(event_id=ev["id"])
+              if not created:
+                  return HttpResponse(status=200)  # повтор
+              Product.objects.filter(sku=ev["sku"], stock_updated_at__lt=ev["updated_at"]).update(
+                  stock=ev["qty"], stock_updated_at=ev["updated_at"]
+              )
+          return HttpResponse(status=200)
+      ```
+
+      3. **Пропуски**: вебхук может не дойти вообще. Раз в сутки делайте полную сверку через их API (не CSV) — лёгкую, только для расхождений.
+  - role: user
+    facts: []
+    text: |
+      Полную сверку раз в сутки сделаю. ProcessedEvent будет пухнуть — чистить?
+  - role: assistant
+    facts: []
+    text: |
+      Да, повторы приходят в пределах часов, а не месяцев. Храните id событий 7 дней и чистите задачей:
+
+      ```python
+      @app.task
+      def purge_processed_events():
+          ProcessedEvent.objects.filter(created_at__lt=now() - timedelta(days=7)).delete()
+      ```
+
+      Индекс на `created_at` и уникальный индекс на `event_id`. При десятках тысяч событий в день таблица останется маленькой.
+  - role: user
+    facts: [G16]
+    text: |
+      Окей. Аналитика у нас — Яндекс Метрика. Хочу видеть, сколько людей дошло до оплаты и сколько реально оплатило. Сейчас цель «оплата» стоит на странице «спасибо», и цифры врут.
+  - role: assistant
+    facts: []
+    text: |
+      Страница «спасибо» врёт в обе стороны: её открывают повторно (обновление, возврат по истории), и до неё не доходят те, кто оплатил, но закрыл вкладку банка. Разведите события:
+
+      - `checkout_start` — нажали «Оформить заказ»;
+      - `payment_redirect` — ушли на платёжную форму;
+      - `purchase` — подтверждённая оплата.
+
+      Первые два шлите из браузера через `ym(COUNTER_ID, 'reachGoal', 'checkout_start')`. А подтверждённую оплату отправляйте с сервера, когда пришло уведомление об оплате, — через Measurement Protocol Метрики или загрузку офлайн-конверсий по `ClientID`, сохранённому в заказе. Тогда «оплатил» в отчёте = действительно оплатил.
+
+      Для электронной коммерции в Метрике включите dataLayer и передавайте `purchase` с товарами — увидите выручку по товарам.
+  - role: user
+    facts: [G17]
+    text: |
+      ClientID в заказ уже пишу. Последнее — баг с промокодами. Правило у нас простое: один промокод на заказ, складывать нельзя. А кто-то умудрился применить два, получил минус 40%.
+  - role: assistant
+    facts: []
+    text: |
+      Скорее всего, гонка или обход через несколько вкладок: две отправки формы почти одновременно, каждая видит «промокода ещё нет» и добавляет свой. Защита — на уровне данных, а не только формы:
+
+      ```python
+      class Order(models.Model):
+          promo = models.ForeignKey(PromoCode, null=True, blank=True, on_delete=models.PROTECT)  # одно поле, не M2M
+
+      def apply_promo(order_id: int, code: str):
+          with transaction.atomic():
+              order = Order.objects.select_for_update().get(pk=order_id)
+              if order.promo_id:
+                  raise PromoError("К заказу уже применён промокод")
+              promo = PromoCode.objects.get(code=code, is_active=True)
+              order.promo = promo
+              order.recalc_total()
+              order.save(update_fields=["promo", "total"])
+      ```
+
+      Если сейчас промокоды хранятся связью многие-ко-многим или списком в сессии — в этом и дыра. Одно поле в заказе плюс `select_for_update` делают второй промокод невозможным даже при параллельных запросах. Существующие заказы с двумя скидками найдите запросом и решите вручную.
+  - role: user
+    facts: []
+    text: |
+      Так и было — M2M. Переделал на одно поле, двойных заказов нашлось три. До завтра.

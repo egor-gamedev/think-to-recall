@@ -1,0 +1,46 @@
+{
+ "project": "crypto-wallet",
+ "kind": "load",
+ "compressions": [
+  {
+   "after_turn": "S1.9",
+   "turns": 10,
+   "tokens_out": 2055,
+   "summary_tokens": 166
+  },
+  {
+   "after_turn": "S2.1",
+   "turns": 11,
+   "tokens_out": 1689,
+   "summary_tokens": 265
+  },
+  {
+   "after_turn": "S2.12",
+   "turns": 11,
+   "tokens_out": 1847,
+   "summary_tokens": 500
+  },
+  {
+   "after_turn": "S3.6",
+   "turns": 11,
+   "tokens_out": 1869,
+   "summary_tokens": 484
+  },
+  {
+   "after_turn": "S3.15",
+   "turns": 9,
+   "tokens_out": 1724,
+   "summary_tokens": 500
+  },
+  {
+   "after_turn": "S4.9",
+   "turns": 11,
+   "tokens_out": 1827,
+   "summary_tokens": 500
+  }
+ ],
+ "summary": "- Project: Кошелёк «Кладезь» for mobile (React Native) and web (Next.js).\n- Navigation: Using React Navigation for smooth transitions and native controllers.\n- Screen parameters typing: Define types in `types.ts` to avoid `any`.\n- Repository structure: Monorepo for mobile, backend, and web.\n- Metro configuration: Add `watchFolders` and disable hierarchical lookup.\n- Security: Non-custodial wallet; private keys and seed phrases stored only on device.\n- Networks: Supporting Ethereum and Polygon; Solana excluded due to lack of expertise.\n- Libraries: Using `viem` for network interactions.\n- Backend: Using NestJS for currency rates and push notifications.\n- No user accounts; identify users by `deviceId`.\n- Protecting against abuse: IP limits and device signature.\n- Linter: Configured in a monorepo flat-config, ensuring consistency across projects.\n- Data storage: PostgreSQL for price history; SQLite for ORM.\n- Onboarding: Generating and confirming mnemonic phrases; ensuring secure handling.\n  - Detailed implementation of seed phrase and private key storage using `react-native-keychain`.\n  - Protecting seed phrase with biometric access control.\n  - Paper backup required for recovery.\n- Crash reports and logs: Not addressed yet.\n- Secure buffer handling and screen security: Not addressed yet.\n- Implementing heuristics for push notifications and currency rates: Not addressed yet.\n- Regulatory compliance:\n  - MiCA: Consider regulations for future on-ramp functionality.\n  - GDPR: Collect only necessary data and provide opt-out.\n  - Store analytics opt-in status locally.\n- Analytics:\n  - Use custom analytics without third-party SDKs like Firebase or Amplitude.\n  - Track events with user consent.\n- Transaction history dates: Display dates in a format suitable for all users.\n  - Use locale-aware date formatting in UI.\n- Push notifications for incoming transactions: Use Firebase Cloud Messaging on Android and APNs on iOS.\n- Currency rates: Update every 5 minutes from CoinGecko; cache locally.\n- Database: Switch from PostgreSQL to SQLite for price history; use Prisma with SQLite.\n- Backups: Daily backups of SQLite database using `sqlite3 .backup` and `rclone` to Hetzner Storage.\n- Node providers: Use Alchemy free tier with rate limiting; batch requests and retry with exponential backoff.\n- Offline support: Show balances from local cache; update when connected.",
+ "window_tokens": 2793,
+ "archive_turns": 63,
+ "seconds": 47.4
+}

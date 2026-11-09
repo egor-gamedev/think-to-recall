@@ -1,0 +1,4 @@
+{"model": "openai/gpt-oss-20b", "usage": {"prompt_tokens": 1232, "total_tokens": 1421, "completion_tokens": 189, "prompt_tokens_details": null}, "phase": "e1c-sel-test", "purpose": "selection", "run_id": "Q01"}
+{"model": "openai/gpt-oss-20b", "usage": {"prompt_tokens": 1224, "total_tokens": 1653, "completion_tokens": 429, "prompt_tokens_details": null}, "phase": "e1c-sel-test", "purpose": "selection", "run_id": "Q02"}
+{"model": "openai/gpt-oss-20b", "usage": {"prompt_tokens": 1411, "total_tokens": 1833, "completion_tokens": 422, "prompt_tokens_details": null}, "phase": "e1c-sel-test", "purpose": "selection", "run_id": "Q03"}
+{"model": "openai/gpt-oss-20b", "usage": {"prompt_tokens": 1235, "total_tokens": 1545, "completion_tokens": 310, "prompt_tokens_details": null}, "phase": "e1c-sel-test", "purpose": "selection", "run_id": "Q05"}

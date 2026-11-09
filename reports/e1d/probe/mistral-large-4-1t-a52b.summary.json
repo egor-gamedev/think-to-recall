@@ -1,0 +1,171 @@
+{
+ "model": "nvidia:mistralai/mistral-large-4-1t-a52b",
+ "name": "mistral-large-4-1t-a52b",
+ "questions_done": 5,
+ "error": null,
+ "minutes": 10.3,
+ "calls": [
+  {
+   "s": 3.7,
+   "finish": "length",
+   "max_tokens": 500,
+   "out": 500
+  },
+  {
+   "s": 3.0,
+   "finish": "length",
+   "max_tokens": 500,
+   "out": 500
+  },
+  {
+   "s": 2.9,
+   "finish": "length",
+   "max_tokens": 500,
+   "out": 500
+  },
+  {
+   "s": 7.7,
+   "finish": "length",
+   "max_tokens": 500,
+   "out": 500
+  },
+  {
+   "s": 3.4,
+   "finish": "length",
+   "max_tokens": 500,
+   "out": 500
+  },
+  {
+   "s": 2.9,
+   "finish": "length",
+   "max_tokens": 500,
+   "out": 500
+  },
+  {
+   "s": 2.5,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 2.1,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 2.4,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 2.8,
+   "finish": "stop",
+   "max_tokens": 1500,
+   "out": 329
+  },
+  {
+   "s": 2.2,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 1.9,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 6.3,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 5.9,
+   "finish": "stop",
+   "max_tokens": 1500,
+   "out": 733
+  },
+  {
+   "s": 2.9,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 5.0,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 3.3,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 14.1,
+   "finish": "stop",
+   "max_tokens": 1500,
+   "out": 701
+  },
+  {
+   "s": 4.7,
+   "finish": "length",
+   "max_tokens": 500,
+   "out": 500
+  },
+  {
+   "s": 4.0,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 2.8,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 1.8,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 7.1,
+   "finish": "stop",
+   "max_tokens": 1500,
+   "out": 1141
+  },
+  {
+   "s": 3.5,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 5.6,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 7.9,
+   "finish": "length",
+   "max_tokens": 250,
+   "out": 250
+  },
+  {
+   "s": 27.5,
+   "finish": "stop",
+   "max_tokens": 1500,
+   "out": 1434
+  }
+ ]
+}

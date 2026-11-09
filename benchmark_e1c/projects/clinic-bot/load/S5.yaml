@@ -1,0 +1,244 @@
+segment: S5
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: []
+    text: |
+      Неделю гоняли в бою. Лимит 60 в минуту нас душит: в понедельник утром слоты показываются по 10 секунд, кэш не спасает, метода «слоты за неделю» у вендора нет и не будет до следующего года. Пациенты пишут, что бот тормозит.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда чтение — главный потребитель лимита, а запись — копейки: даже в пиковый час это несколько десятков созданий и отмен. Есть смысл говорить с вендором именно о чтении. Варианты, которые обычно соглашаются обсуждать:
+
+      1. Повышенный лимит для одного клиента (иногда за доплату).
+      2. Доступ только на чтение к базе — для вендора это безопаснее, чем кажется: бот не может ничего испортить, а нагрузка на их облако падает.
+      3. Выгрузка расписания по расписанию (раз в несколько минут) в файл или вебхук.
+
+      Для аргумента полезно показать цифры: сколько запросов в минуту в пике уходит на `free_slots`, а сколько — на `create_visit`/`cancel_visit`. Это легко достать из логов лимитера.
+  - role: user
+    facts: [C02c]
+    text: |
+      Поговорил с вендором, показал цифры. Разрешили. Итог: вернулись к чтению расписания напрямую из Firebird — под read-only пользователем, с письменного разрешения вендора, письмо у клиники. А создание и отмена записей — только через API, как сейчас. Как это правильно оформить?
+  - role: assistant
+    facts: []
+    text: |
+      Сначала пользователь в Firebird. Создавать его должен администратор сервера (SYSDBA), ваша часть — точный список прав:
+
+      ```sql
+      CREATE USER BOT_RO PASSWORD 'длинный-пароль';
+      GRANT SELECT ON SCHEDULE TO USER BOT_RO;
+      GRANT SELECT ON DOCTORS  TO USER BOT_RO;
+      GRANT SELECT ON PATIENTS TO USER BOT_RO;
+      GRANT SELECT ON BRANCHES TO USER BOT_RO;
+      ```
+
+      Никаких `UPDATE`/`INSERT`/`DELETE`, и не `GRANT ALL`. Проверьте с VPS, что запись действительно запрещена:
+
+      ```bash
+      echo "UPDATE SCHEDULE SET NOTE = NOTE WHERE 1 = 0;" | isql -user BOT_RO -password '...' 10.8.0.2:/data/stoma.fdb
+      ```
+
+      Должно быть `no permission for UPDATE access`.
+
+      В коде — два раздельных класса, чтобы никто случайно не начал писать через репозиторий чтения:
+
+      ```python
+      class ScheduleReader:            # Firebird, только SELECT
+          async def free_slots(self, doctor_id, branch_id, day_from, day_to) -> list[Slot]: ...
+          async def visits_between(self, t_from, t_to) -> list[Visit]: ...
+
+      class VisitWriter:               # облачный API вендора
+          def __init__(self, api: StomaApi): self.api = api
+          async def create(self, slot_id, patient_id, note=""): ...
+          async def cancel(self, visit_id): ...
+      ```
+
+      Бонус: неделя слотов из Firebird — это один SQL-запрос с диапазоном дат вместо семи вызовов API.
+  - role: user
+    facts: []
+    text: |
+      Нашёл подвох: облачное API пишет в базу клиники не сразу, а через их агент синхронизации, задержка до минуты. Пациент записался, бот перечитывает слоты из Firebird — а слот ещё свободен. Второй пациент может на него нажать.
+  - role: assistant
+    facts: []
+    text: |
+      Классическая гонка между двумя источниками. Закрываем её у себя: после успешного `create` бот локально «держит» слот, пока его не увидит Firebird.
+
+      ```python
+      # clinic_bot/storage/holds.py
+      HOLD_TTL = timedelta(minutes=5)
+
+      async def hold(slot_id: int):
+          async with aiosqlite.connect(DB) as db:
+              await db.execute("INSERT OR REPLACE INTO holds(slot_id, until) VALUES (?, ?)",
+                               (slot_id, (datetime.utcnow() + HOLD_TTL).isoformat()))
+              await db.commit()
+
+      async def held_ids() -> set[int]:
+          async with aiosqlite.connect(DB) as db:
+              cur = await db.execute("SELECT slot_id FROM holds WHERE until > ?", (datetime.utcnow().isoformat(),))
+              return {r[0] for r in await cur.fetchall()}
+      ```
+
+      ```python
+      async def free_slots_for_user(reader, doctor_id, branch_id, d1, d2):
+          slots = await reader.free_slots(doctor_id, branch_id, d1, d2)
+          held = await held_ids()
+          return [s for s in slots if s.id not in held]
+      ```
+
+      Пять минут — с запасом к минуте синхронизации. Даже если второй пациент всё же успеет нажать на слот, API вендора при `create` откажет, и бот покажет «время только что заняли». Для отмены — то же в обратную сторону: освобождённый слот появится в списке, когда его увидит Firebird, это не страшно.
+  - role: user
+    facts: [C15]
+    text: |
+      Работает. Встал вопрос, как это всё тестировать. Для API есть песочница вендора, а копии боевой базы Firebird для тестов нет — главврач не разрешил выносить базу, там же все пациенты.
+  - role: assistant
+    facts: []
+    text: |
+      И правильно, что не разрешил. Тогда разделяем тесты по тем же двум половинам:
+
+      - **Запись и отмена** — против песочницы вендора: создание, отмена, ответ на занятый слот, 429.
+      - **Чтение** — против своей тестовой Firebird. Нужна только схема, без данных. Её можно получить у вендора или снять с боевой базы командой, которая выгружает одни метаданные:
+
+      ```bash
+      isql -x -user SYSDBA -password '...' 10.8.0.2:/data/stoma.fdb > schema.sql
+      ```
+
+      Ключ `-x` выгружает только DDL — ни одной строки с пациентами. Но запускать это всё равно должен админ клиники, с вашего согласования.
+
+      Дальше Firebird в Docker на вашей машине:
+
+      ```bash
+      docker run -d --name fb-test -e FIREBIRD_ROOT_PASSWORD=test -e FIREBIRD_DATABASE=stoma.fdb -p 3050:3050 firebirdsql/firebird:3
+      ```
+
+      и накатить `schema.sql`.
+  - role: user
+    facts: []
+    text: |
+      Схему без данных вендор дал сам, файлом. Docker поднял. Как наполнять — руками неохота.
+  - role: assistant
+    facts: []
+    text: |
+      Генератор фикстур на pytest: несколько врачей, два филиала, сетка на две недели, часть слотов занята. Важно воспроизвести «грязь» из боевой базы — телефоны в разных форматах и несколько карт на номер, иначе тесты пройдут, а бой — нет.
+
+      ```python
+      # tests/conftest.py
+      import random
+      from datetime import date, datetime, timedelta
+
+      PHONES = ["8 911 123-45-67", "+7(911)1234567", "89111234567", "8 (4012) 55-66-77"]
+
+      @pytest.fixture(scope="session")
+      def fb_seed(fb_conn):
+          cur = fb_conn.cursor()
+          cur.execute("INSERT INTO DOCTORS (ID, FIO, SPEC, IS_ACTIVE) VALUES (1, 'Соколова Анна Петровна', 'TER', 1)")
+          cur.execute("INSERT INTO DOCTORS (ID, FIO, SPEC, IS_ACTIVE) VALUES (2, 'Белов Игорь Сергеевич', 'GIG', 1)")
+          for i, ph in enumerate(PHONES, start=1):
+              cur.execute("INSERT INTO PATIENTS (ID, FIO, PHONE, BIRTH_DATE) VALUES (?, ?, ?, ?)",
+                          (i, f"Тестов{i} Тест Тестович", ph, date(1980, 1, i)))
+          start = datetime.combine(date.today(), datetime.min.time()).replace(hour=9)
+          sid = 1
+          for day in range(14):
+              for k in range(16):
+                  t = start + timedelta(days=day, minutes=30 * k)
+                  branch = 1 if t.weekday() < 3 else 2
+                  busy = random.random() < 0.4
+                  cur.execute("INSERT INTO SCHEDULE (ID, DOCTOR_ID, BRANCH_ID, START_TIME, DURATION, PATIENT_ID, IS_BLOCKED) "
+                              "VALUES (?, 1, ?, ?, 30, ?, 0)", (sid, branch, t, 1 if busy else None))
+                  sid += 1
+          fb_conn.commit()
+      ```
+
+      `random` зафиксируйте `random.seed(42)`, чтобы тесты были воспроизводимыми.
+  - role: user
+    facts: [C09b]
+    text: |
+      Новость от клиники: Олег Викторович передумал по хирургам. К хирургам и имплантологам в боте теперь можно записаться, но только на консультацию, не на операцию. Операции назначает врач после консультации.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда фильтр становится не «по специальности», а «по специальности и виду визита». В настройках:
+
+      ```python
+      # .env
+      # BOOKABLE=TER:*,GIG:*,HIR:CONSULT,IMP:CONSULT
+      def parse_bookable(s: str) -> dict[str, set[str] | None]:
+          out = {}
+          for item in s.split(","):
+              spec, kinds = item.split(":")
+              out[spec] = None if kinds == "*" else set(kinds.split("|"))
+          return out
+      ```
+
+      `None` — любые визиты, иначе только перечисленные. В сценарии записи для хирургов и имплантологов шаг «выбор услуги» пропускается, сразу ставится вид визита «консультация», а в подтверждении стоит явная строка: «Это консультация. Лечение врач назначит на приёме».
+
+      Длительность консультации берите из сетки врача, не зашивайте 30 минут — у хирургов она бывает другой.
+  - role: user
+    facts: [C16]
+    text: |
+      И отзывы. Схема клиники: через 3 часа после приёма бот просит оценку от 1 до 5. На 5 — даёт ссылку на отзыв в 2ГИС, на 1–4 — пересылает отзыв управляющей, Ирине. Ей в личку, она сама разбирается.
+  - role: assistant
+    facts: []
+    text: |
+      Встраивается в ту же периодическую задачу. Важно спрашивать только тех, кто реально пришёл, — иначе человек, который не явился, получит «Как прошёл приём?». Статус визита есть в SCHEDULE (обычно что-то вроде `STATUS = 'DONE'`):
+
+      ```python
+      class RateCb(CallbackData, prefix="rate"):
+          visit_id: int
+          score: int
+
+      async def ask_ratings(bot, reader):
+          now = datetime.now()
+          for v in await reader.done_visits_between(now - timedelta(hours=3, minutes=10), now - timedelta(hours=3)):
+              if await sent.was_sent(v.id, "rate"):
+                  continue
+              tg_id = await links.tg_for_card(v.patient_id)
+              if tg_id:
+                  kb = InlineKeyboardBuilder()
+                  for s in range(1, 6):
+                      kb.button(text="⭐" * s, callback_data=RateCb(visit_id=v.id, score=s))
+                  kb.adjust(1)
+                  await bot.send_message(tg_id, f"Как прошёл приём у врача {v.doctor}?", reply_markup=kb.as_markup())
+              await sent.mark(v.id, "rate")
+
+      @router.callback_query(RateCb.filter())
+      async def rated(cb: CallbackQuery, callback_data: RateCb, bot: Bot):
+          if callback_data.score == 5:
+              await cb.message.edit_text(f"Спасибо! Будем рады отзыву: {settings.review_url}")
+          else:
+              await bot.send_message(settings.manager_tg_id, f"Оценка {callback_data.score} · визит {callback_data.visit_id}")
+              await cb.message.edit_text("Спасибо за оценку. Мы обязательно разберёмся.")
+          await cb.answer()
+      ```
+
+      `settings.manager_tg_id` — Ирина должна хотя бы раз нажать `/start` у бота, иначе бот не сможет ей написать.
+  - role: user
+    facts: []
+    text: |
+      Ирина просит, чтобы при оценке ниже пятёрки бот ещё спрашивал «что не так», и текст тоже ей.
+  - role: assistant
+    facts: []
+    text: |
+      Добавим одно состояние FSM после низкой оценки:
+
+      ```python
+      class Feedback(StatesGroup):
+          text = State()
+
+      # в rated(), ветка score < 5:
+      await state.set_state(Feedback.text)
+      await state.update_data(visit_id=callback_data.visit_id, score=callback_data.score)
+      await cb.message.edit_text("Спасибо. Напишите, пожалуйста, что было не так — это прочитает управляющая.")
+
+      @router.message(Feedback.text, F.text)
+      async def feedback_text(message: Message, state: FSMContext, bot: Bot):
+          data = await state.get_data()
+          await bot.send_message(
+              settings.manager_tg_id,
+              f"Оценка {data['score']} · визит {data['visit_id']}\n«{message.text[:1500]}»",
+          )
+          await state.clear()
+          await message.answer("Передали управляющей. Спасибо, что написали.")
+      ```
+
+      Обрезка до 1500 символов — чтобы длинный текст не упёрся в лимит сообщения вместе с шапкой. Если человек вместо текста нажмёт меню — состояние сбросится, и это нормально.

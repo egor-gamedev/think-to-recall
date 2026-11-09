@@ -1,0 +1,142 @@
+segment: S4
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [B13]
+    text: |
+      Привет. Теперь обогащение. Делаем GO через clusterProfiler. Запустила на всех значимых генах — вылезло 300 терминов, половина про одно и то же. Как это разгрести?
+  - role: assistant
+    facts: []
+    text: |
+      300 терминов при 1400 значимых генах — обычная картина: GO сильно избыточен, родительские и дочерние термины дублируют друг друга. Три шага:
+
+      1. **Правильный фон.** Универсум — все гены, прошедшие фильтр экспрессии в вашем эксперименте, а не весь геном:
+
+      ```r
+      library(clusterProfiler); library(org.Mm.eg.db)
+      universe <- res_df$gene_id_nover            # все протестированные гены, без версии
+      up_genes <- res_df$gene_id_nover[res_df$padj < 0.05 & res_df$log2FoldChange > 1]
+      ego_up <- enrichGO(up_genes, OrgDb = org.Mm.eg.db, keyType = "ENSEMBL",
+                         ont = "BP", universe = universe, pvalueCutoff = 0.05, qvalueCutoff = 0.05)
+      ```
+
+      2. **Раздельно вверх и вниз** — смешанный список размывает сигнал.
+      3. **Убрать избыточность:** `simplify(ego_up, cutoff = 0.7, by = "p.adjust")` склеивает похожие термины.
+
+      После этого обычно остаётся 30–60 терминов, которые уже можно читать.
+  - role: user
+    facts: [B13r]
+    text: |
+      Стало 40, читается. Про пути: KEGG мы решили не использовать — у них лицензия для таких целей мутная, руководитель не хочет рисковать. Для путей берём Reactome.
+  - role: assistant
+    facts: []
+    text: |
+      Reactome — хороший выбор: открытая лицензия, хорошо курируемые пути, есть пакет для R:
+
+      ```r
+      library(ReactomePA)
+      entrez_up <- bitr(up_genes, fromType = "ENSEMBL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)$ENTREZID
+      entrez_univ <- bitr(universe, fromType = "ENSEMBL", toType = "ENTREZID", OrgDb = org.Mm.eg.db)$ENTREZID
+      epa_up <- enrichPathway(entrez_up, organism = "mouse", universe = entrez_univ, pvalueCutoff = 0.05)
+      ```
+
+      Учтите, что Reactome работает с Entrez ID — часть генов при переводе потеряется (обычно несколько процентов, в основном некодирующие). Это стоит упомянуть в методах. Таблицы обогащения сохраните в TSV, рисунки сделаете в Python, как договаривались.
+  - role: user
+    facts: [B09]
+    text: |
+      Сохранила. Статью пишем на английском, журнал требует рисунки в TIFF 300 dpi, шрифт не меньше 7 pt. Можно один раз настроить стиль matplotlib, чтобы все рисунки сразу такие были?
+  - role: assistant
+    facts: []
+    text: |
+      Да, заведите один модуль стиля и импортируйте его во всех скриптах рисунков:
+
+      ```python
+      # figstyle.py
+      import matplotlib as mpl
+
+      mpl.rcParams.update({
+          "font.family": "Arial",
+          "font.size": 7,
+          "axes.labelsize": 7,
+          "axes.titlesize": 8,
+          "xtick.labelsize": 6.5,
+          "ytick.labelsize": 6.5,
+          "legend.fontsize": 6.5,
+          "axes.linewidth": 0.6,
+          "savefig.dpi": 300,
+          "savefig.bbox": "tight",
+          "pdf.fonttype": 42,
+      })
+
+      def save(fig, name):
+          fig.savefig(f"figures/{name}.tiff", format="tiff", pil_kwargs={"compression": "tiff_lzw"})
+          fig.savefig(f"figures/{name}.pdf")  # векторная копия для правок
+      ```
+
+      Ширину задавайте под колонку журнала: обычно 85 мм для одной колонки и 175 мм для двух — `figsize=(85/25.4, 70/25.4)`. Все подписи на английском, без «PC1 (48 %)» с русским пробелом.
+  - role: user
+    facts: []
+    text: |
+      Шрифт Arial на кластере не нашёлся, matplotlib ругается.
+  - role: assistant
+    facts: []
+    text: |
+      На Linux-кластере Arial обычно нет. Варианты:
+
+      - Положите файл шрифта в проект и зарегистрируйте его:
+
+      ```python
+      from matplotlib import font_manager
+      font_manager.fontManager.addfont("fonts/LiberationSans-Regular.ttf")
+      mpl.rcParams["font.family"] = "Liberation Sans"
+      ```
+
+      Liberation Sans метрически совместим с Arial — размеры текста те же, журналы его принимают.
+      - Или рисуйте финальные рисунки локально, где Arial есть, а на кластере только считайте.
+
+      После добавления шрифта удалите кэш matplotlib (`~/.cache/matplotlib`), иначе он не увидит новый файл.
+  - role: user
+    facts: [B15]
+    text: |
+      Liberation Sans сработал. Код у нас в приватном репозитории на GitHub. Сырые данные туда, понятно, не кладём — они сотни гигабайт. Как разложить репозиторий, чтобы было понятно рецензентам?
+  - role: assistant
+    facts: []
+    text: |
+      Структура, которая хорошо читается:
+
+      ```
+      liver-fasting-rnaseq/
+        README.md            # что за данные, как воспроизвести, ссылки на данные
+        environment.yml
+        conda-lock.yml
+        config/
+          samplesheet.csv
+          metadata.csv       # группы, батч, RIN, excluded
+        workflow/
+          run_nfcore.sh      # точная команда пайплайна и версия
+          slurm.config
+        analysis/
+          01_deseq2.R
+          02_enrichment.R
+          03_figures.py
+          figstyle.py
+        results/             # маленькие таблицы — можно в git
+        figures/
+      ```
+
+      ```gitignore
+      # .gitignore
+      data/raw/
+      *.fastq.gz
+      *.bam
+      work/
+      results_salmon/**/quant.sf
+      *.sif
+      .nextflow*
+      ```
+
+      В README — откуда брать сырые данные (будущий номер в архиве данных) и как запустить каждый шаг. Маленькие итоговые таблицы (результаты DESeq2, обогащение) в git класть можно и полезно.
+  - role: user
+    facts: []
+    text: |
+      Разложила по папкам. Руководитель посмотрел и сказал, что так понятно. Спасибо!

@@ -1,0 +1,44 @@
+судья: ответов 40, потрачено 16.62 ₽
+[1/40] hard-shipping-sms|v8|r1 
+[2/40] control-rate-limit-public-api|v1|r1 
+[3/40] control-weekend-kazan|v1|r1 
+[4/40] auth-offline-field-app|v3|r1 
+[5/40] hard-shipping-sms|v2|r1 
+[6/40] auth-offline-field-app|v4|r1 
+[7/40] trip-japan-itinerary|v8|r1 
+[8/40] auth-offline-field-app|v2|r1 
+[9/40] control-rate-limit-public-api|v4|r1 
+[10/40] control-weekend-kazan|v7|r1 
+[11/40] trip-japan-itinerary|v5|r1 
+[12/40] control-weekend-kazan|v8|r1 
+[13/40] auth-offline-field-app|v1|r1 
+[14/40] control-rate-limit-public-api|v7|r1 
+[15/40] trip-japan-itinerary|v7|r1 
+[16/40] hard-shipping-sms|v7|r1 
+[17/40] auth-offline-field-app|v7|r1 
+[18/40] hard-shipping-sms|v3|r1 
+[19/40] control-weekend-kazan|v3|r1 
+WARNING ctxgraph.e1.llm: openai/gpt-5.4-nano: HTTP 500, повтор 1
+[20/40] control-rate-limit-public-api|v8|r1 
+[21/40] control-weekend-kazan|v2|r1 
+WARNING ctxgraph.e1.llm: openai/gpt-5.4-nano: HTTP 500, повтор 1
+[22/40] trip-japan-itinerary|v2|r1 
+WARNING ctxgraph.e1.llm: openai/gpt-5.4-nano: HTTP 500, повтор 1
+[23/40] hard-shipping-sms|v5|r1 
+[24/40] trip-japan-itinerary|v6|r1 
+[25/40] hard-shipping-sms|v6|r1 
+[26/40] control-rate-limit-public-api|v2|r1 
+[27/40] trip-japan-itinerary|v4|r1 
+[28/40] trip-japan-itinerary|v1|r1 
+[29/40] auth-offline-field-app|v5|r1 
+[30/40] auth-offline-field-app|v8|r1 
+[31/40] control-weekend-kazan|v5|r1 
+[32/40] control-rate-limit-public-api|v3|r1 
+[33/40] control-weekend-kazan|v6|r1 
+[34/40] hard-shipping-sms|v4|r1 
+[35/40] auth-offline-field-app|v6|r1 
+[36/40] trip-japan-itinerary|v3|r1 
+[37/40] hard-shipping-sms|v1|r1 
+[38/40] control-weekend-kazan|v4|r1 
+[39/40] control-rate-limit-public-api|v5|r1 
+[40/40] control-rate-limit-public-api|v6|r1 

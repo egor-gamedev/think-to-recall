@@ -1,0 +1,12 @@
+{"ts": 1792751641.154415, "phase": "e1b-judge", "purpose": "judge", "run_id": "indie-game|Q24|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2503, "completion_tokens": 1506, "rub": 0.415745}
+{"ts": 1792751650.5240936, "phase": "e1b-judge", "purpose": "judge", "run_id": "clinic-bot|Q34|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2684, "completion_tokens": 1469, "rub": 0.41983800000000004}
+{"ts": 1792751654.8134696, "phase": "e1b-judge", "purpose": "judge", "run_id": "greenhouse-iot|Q29|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2586, "completion_tokens": 3000, "rub": 0.686574}
+{"ts": 1792751659.8512902, "phase": "e1b-judge", "purpose": "judge", "run_id": "greenhouse-iot|Q03|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2737, "completion_tokens": 1473, "rub": 0.42367699999999997}
+{"ts": 1792751663.9460795, "phase": "e1b-judge", "purpose": "judge", "run_id": "greenhouse-iot|Q29|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2601, "completion_tokens": 1389, "rub": 0.40070100000000003}
+{"ts": 1792751666.7023137, "phase": "e1b-judge", "purpose": "judge", "run_id": "econ-thesis|Q22|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2449, "completion_tokens": 1030, "rub": 0.327831}
+{"ts": 1792751679.0518382, "phase": "e1b-judge", "purpose": "judge", "run_id": "clinic-bot|Q35|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2894, "completion_tokens": 2004, "rub": 0.527458}
+{"ts": 1792751682.8988698, "phase": "e1b-judge", "purpose": "judge", "run_id": "econ-thesis|Q28|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2735, "completion_tokens": 3000, "rub": 0.695365}
+{"ts": 1792751685.5792277, "phase": "e1b-judge", "purpose": "judge", "run_id": "clinic-bot|Q17|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2587, "completion_tokens": 897, "rub": 0.312299}
+{"ts": 1792751694.976333, "phase": "e1b-judge", "purpose": "judge", "run_id": "indie-game|Q32|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2543, "completion_tokens": 1443, "rub": 0.406891}
+{"ts": 1792751698.8841252, "phase": "e1b-judge", "purpose": "judge", "run_id": "econ-thesis|Q28|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2750, "completion_tokens": 2576, "rub": 0.620778}
+{"ts": 1792751705.9843686, "phase": "e1b-judge", "purpose": "judge", "run_id": "greenhouse-iot|Q27|1", "model": "deepseek/deepseek-flash", "prompt_tokens": 2830, "completion_tokens": 1701, "rub": 0.469748}

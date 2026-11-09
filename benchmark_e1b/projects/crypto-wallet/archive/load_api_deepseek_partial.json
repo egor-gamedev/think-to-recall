@@ -1,0 +1,411 @@
+{
+ "segments": {
+  "S1": {
+   "turns": [
+    {
+     "role": "user",
+     "text": "Привет. Стартуем по кошельку. Первый вопрос — навигация: React Navigation или Expo Router? Напомню, делаем мобильное приложение на React Native для iOS и Android, веб-версии не планируем, так что эксповский роутинг с URL нам вроде ни к чему.",
+     "facts": [
+      "F01"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Привет. Да, если веб не планируется, Expo Router даёт мало — его главный плюс это файловый роутинг с URL-состоянием и deep links «из коробки», а у тебя всё равно bare RN. Бери React Navigation + native-stack: предсказуемо, меньше магии, легко типизировать.\n\nСхематично:\n\n```ts\n// packages/shared/src/navigation.ts\nexport type RootStackParamList = {\n  Onboarding: undefined;\n  Unlock: undefined;\n  Wallet: undefined;\n  AssetDetails: { assetId: string };\n  Send: { assetId: string; to?: string };\n  Receive: { assetId: string };\n};\n```\n\n```tsx\n// apps/mobile/src/App.tsx\nconst Stack = createNativeStackNavigator<RootStackParamList>();\n\nexport default function App() {\n  return (\n    <NavigationContainer>\n      <Stack.Navigator screenOptions={{ headerShown: false }}>\n        <Stack.Screen name=\"Onboarding\" component={OnboardingScreen} />\n        <Stack.Screen name=\"Unlock\" component={UnlockScreen} />\n        <Stack.Screen name=\"Wallet\" component={WalletScreen} />\n        <Stack.Screen name=\"Send\" component={SendScreen} />\n      </Stack.Navigator>\n    </NavigationContainer>\n  );\n}\n```\n\nТип `RootStackParamList` держи в shared-пакете — пригодится и для deep links, когда будем добавлять `linking` для `kladez://send?...`. Навигатор лучше один корневой, а табы уже внутри `Wallet` как вложенный `createBottomTabNavigator`. Так не придётся прыгать между навигаторами при разблокировке."
+    },
+    {
+     "role": "user",
+     "text": "Ок, уговорил. Ещё момент: как разложить репо? У нас в планах и мобилка, и бэкенд, хочется монорепо, чтобы типы и конфиги сетей шарить между ними.",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Монорепо тут оправдано, особенно ради `packages/shared` с типами, chain-конфигами и валидаторами DTO. Я бы взял pnpm workspaces + turborepo (или просто pnpm-скрипты, если не хочется лишнего).\n\n```\nkladez/\n  apps/\n    mobile/        # RN\n    api/           # NestJS\n  packages/\n    shared/        # типы, chain config, zod-схемы\n    eslint-config/\n  pnpm-workspace.yaml\n  turbo.json\n```\n\n```yaml\n# pnpm-workspace.yaml\npackages:\n  - 'apps/*'\n  - 'packages/*'\n```\n\nКлючевой момент для RN — Metro должен видеть файлы за пределами `apps/mobile`:\n\n```js\n// apps/mobile/metro.config.js\nconst path = require('path');\nconst { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');\nconst root = path.resolve(__dirname, '../..');\n\nmodule.exports = mergeConfig(getDefaultConfig(__dirname), {\n  watchFolders: [root],\n  resolver: {\n    nodeModulesPaths: [\n      path.resolve(__dirname, 'node_modules'),\n      path.resolve(root, 'node_modules'),\n    ],\n  },\n});\n```\n\nИ в `shared` не тяни тяжёлые node-only зависимости — оно компилится и для мобилки тоже. Сборку `shared` в CJS+ESM сделаем через tsup."
+    },
+    {
+     "role": "user",
+     "text": "Понял. И сразу важное про безопасность, чтоб дальше не возвращаться: кошелёк некастодиальный. Приватные ключи и сид-фраза живут только на устройстве, на сервер не уходят никогда.",
+     "facts": [
+      "F02"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Принято, это главный архитектурный инвариант. Из него следствия:\n\n1. Бэкенд никогда не видит ни ключей, ни сид-фразы, ни подписей целиком — максимум публичные адреса и готовые подписанные транзакции, если мы захотим relay. Но даже это не обязательно, лучше отправлять транзакции напрямую через RPC.\n2. Сид-фраза генерируется и восстанавливается на клиенте, никаких «зашифруем и положим в облако».\n3. Хранение — Keychain (iOS) / Keystore + EncryptedSharedPreferences (Android), через `react-native-keychain`:\n\n```ts\nawait Keychain.setGenericPassword('seed', mnemonic, {\n  service: 'kladez.seed',\n  accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY,\n  storage: Keychain.STORAGE_TYPE.AES_GCM_NO_AUTH,\n});\n```\n\n4. На Android ставим `FLAG_SECURE` на экраны с сид-фразой, чтобы не скринили. На iOS — при уходе в бэкграунд blur-овер.\n5. В логах и в Sentry вычищаем всё, что похоже на hex-64/12 слов, отдельным фильтром.\n\nИ обязательно онбординг с «запишите фразу на бумагу, мы не сможем восстановить» — иначе поддержка захлебнётся."
+    },
+    {
+     "role": "user",
+     "text": "По сетям: поддерживаем Ethereum и Polygon. Solana обсуждали и отказались — в команде никто не писал под неё, а сроки сжатые.",
+     "facts": [
+      "F03",
+      "F03r"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Логично, Solana — это другой рантайм, другие программы, другие ключи (ed25519), пришлось бы и архитектуру подписей раздваивать. Для MVP двух EVM-сетей хватит.\n\nТогда всё в одном `ethers` v6, разница только в конфиге:\n\n```ts\nexport const CHAINS = {\n  ethereum: {\n    chainId: 1,\n    name: 'Ethereum',\n    rpc: 'https://eth.llamarpc.com',\n    native: 'ETH',\n    explorer: 'https://etherscan.io',\n  },\n  polygon: {\n    chainId: 137,\n    name: 'Polygon',\n    rpc: 'https://polygon-rpc.com',\n    native: 'POL',\n    explorer: 'https://polygonscan.com',\n  },\n} as const;\n```\n\nПровайдеры держи по одному на сеть, кешируй `JsonRpcProvider` с `staticNetwork`, иначе ethers будет переспрашивать chainId на каждый вызов и это заметно по батарее. Активный chain — в zustand, чтобы переключение сети не пересоздавало всё дерево."
+    },
+    {
+     "role": "user",
+     "text": "Кстати, настроил ESLint в монорепо, но он ругается на всё подряд, особенно на хуки в мобилке. Кинешь нормальный конфиг?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Скорее всего у тебя старый `.eslintrc` на flat config или наоборот. Сейчас RN-шаблон идёт на flat config, вот рабочий вариант для `packages/eslint-config`:\n\n```js\n// packages/eslint-config/react-native.mjs\nimport js from '@eslint/js';\nimport tseslint from 'typescript-eslint';\nimport reactHooks from 'eslint-plugin-react-hooks';\nimport react from 'eslint-plugin-react';\n\nexport default tseslint.config(\n  js.configs.recommended,\n  ...tseslint.configs.recommended,\n  {\n    files: ['**/*.{ts,tsx}'],\n    plugins: { 'react-hooks': reactHooks, react },\n    rules: {\n      ...reactHooks.configs.recommended.rules,\n      'react-hooks/exhaustive-deps': 'warn',\n      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],\n      '@typescript-eslint/no-explicit-any': 'warn',\n      'no-console': ['warn', { allow: ['warn', 'error'] }],\n    },\n  },\n  { ignores: ['**/node_modules/**', '**/dist/**', '**/build/**', '**/.turbo/**'] },\n);\n```\n\nИ в `apps/mobile/eslint.config.mjs` просто `export { default } from '@kladez/eslint-config/react-native';`.\n\nПро «ругается на хуки» — чаще всего это `react-hooks/exhaustive-deps` на анонимных колбэках в `useEffect`. Не глуши правило, лучше вынеси функцию в `useCallback` или в модуль. И добавь в `turbo.json` таску `lint` с `dependsOn: [\"^build\"]`, чтоб `shared` успевал собраться."
+    },
+    {
+     "role": "user",
+     "text": "Ещё по бэкенду. Бэкенд на NestJS нужен только для курсов валют и пуш-уведомлений. Аккаунтов пользователей нет, клиента узнаём по device id.",
+     "facts": [
+      "F04"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Хорошо, тогда API получается совсем тонким: два модуля и общий `DevicesModule`.\n\n```ts\n@Controller('rates')\nexport class RatesController {\n  constructor(private rates: RatesService) {}\n\n  @Get()\n  getRates(@Query('base') base = 'usd') {\n    return this.rates.getLatest(base);\n  }\n\n  @Get('history')\n  getHistory(@Query('asset') asset: string, @Query('days') days = '30') {\n    return this.rates.getHistory(asset, Number(days));\n  }\n}\n\n@Controller('devices')\nexport class DevicesController {\n  constructor(private devices: DevicesService) {}\n\n  @Post()\n  register(@Body() dto: RegisterDeviceDto, @Headers('x-device-id') deviceId: string) {\n    return this.devices.upsert(deviceId, dto.pushToken, dto.platform);\n  }\n\n  @Delete()\n  unregister(@Headers('x-device-id') deviceId: string) {\n    return this.devices.remove(deviceId);\n  }\n}\n```\n\n`deviceId` — тот, что генерит клиент при первом запуске и хранит в Keychain, не IDFA/Android ID. Никакого `AuthGuard` не вешаем, но обязательно `ThrottlerGuard` + валидация `x-device-id` по uuid-регекспу, иначе получим открытый релей пушей. Курсы тянем с CoinGecko по крону раз в минуту, кладём в кеш (Redis или in-memory), наружу отдаём уже нормализованное `{ asset, usd, updatedAt }`."
+    },
+    {
+     "role": "user",
+     "text": "А историю цен где держать? Хотим графики за 7/30/90 дней.",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Историю цен храним в PostgreSQL — отдельная таблица, не надо изобретать ничего экзотического на этом объёме.\n\n```prisma\nmodel PricePoint {\n  id        BigInt   @id @default(autoincrement())\n  asset     String\n  quote     String   @default(\"usd\")\n  price     Decimal  @db.Decimal(20, 8)\n  ts        DateTime\n\n  @@unique([asset, quote, ts])\n  @@index([asset, quote, ts(sort: Desc)])\n}\n```\n\nПишем снапшот раз в 5 минут (крон в Nest через `@nestjs/schedule`), за 90 дней это ~26к строк на актив — вообще ничто. Графики на клиенте агрегируем запросом `date_trunc('hour', ts)` для 30/90 дней, чтобы не тащить 26к точек в мобилку. Если потом захочется свечи — добавим materialized view, но не сейчас."
+    },
+    {
+     "role": "user",
+     "text": "Блин, баг на Android: иконки в нижнем табе не отображаются, вместо них квадратики. На iOS всё норм. Что смотреть?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Классика — шрифт иконок не подхватился в Android-сборке. По шагам:\n\n1. Если `react-native-vector-icons` — проверь, что в `android/app/build.gradle` есть\n\n```gradle\napply from: file(\"../../node_modules/react-native-vector-icons/fonts.gradle\")\n```\n\nи что после этого ты сделал `./gradlew clean && npx react-native run-android`, а не просто рестарт Metro.\n2. Проверь, что `fonts.gradle` находит модуль: в монорепо `node_modules` может быть в корне, тогда путь надо поменять на `../../../../node_modules/react-native-vector-icons/fonts.gradle`.\n3. Быстрая проверка: `adb shell ls android/app/src/main/assets/fonts` — если пусто, шрифты не скопировались, вот и квадратики.\n\nНо я бы вообще ушёл от шрифтовых иконок на таб-бар: `react-native-svg` + `lucide-react-native` — не надо возиться со шрифтами в CI, одинаково рендерится на обеих платформах и цвет через `color` проп.\n\n```tsx\n<Tab.Screen\n  name=\"Wallet\"\n  component={WalletScreen}\n  options={{ tabBarIcon: ({ color, size }) => <WalletIcon color={color} size={size} /> }}\n/>\n```"
+    },
+    {
+     "role": "user",
+     "text": "О, шрифты реально пустые были, спс. И последнее на сегодня, чтоб ты понимал контекст: команда — два разработчика, один из них джун. MVP нужен через три месяца.",
+     "facts": [
+      "F06"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Тогда режем скоуп жёстко, иначе три месяца не хватит.\n\nЧто реально нужно в MVP:\n- создание/импорт кошелька, сид-фраза, пин-код, биометрия;\n- балансы и история транзакций по Ethereum и Polygon;\n- отправка нативного токена + одного-двух ERC-20 (USDT/USDC на Polygon — самый частый кейс);\n- получение по QR;\n- курсы и график за 30 дней, пуши о входящих.\n\nЧто режем: NFT, WalletConnect, swap, мультиаккаунты, кастомные токены, аппаратный кошелёк. Всё это после релиза.\n\nПо людям: джуну отдай экраны и UI-компоненты (там как раз ESLint и типы помогут), себе — крипто-ядро, подписи, навигацию и бэкенд. Первые две недели — скелет монорепо + онбординг, дальше по две фичи в спринт. И заложи неделю в конце на ревью безопасности хранения ключей и стор-ревью, они всегда съедают больше, чем кажется."
+    },
+    {
+     "role": "user",
+     "text": "Согласен, WalletConnect точно за борт. А джуну что дать первым, чтобы он не застрял?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Дай ему что-то с быстрым фидбеком и без крипты: экран онбординга с показом сид-фразы + экран Unlock с пином и биометрией. Там чистая вёрстка, стейт-машина на zustand и понятные требования — идеально для разгона. Плюс попроси его сразу писать тесты на валидацию ввода пин-кода, это дешёво и сразу ловит регрессии.\n\nИ заведи правило: любые изменения в `packages/shared`, которые касаются подписей и ключей, ревьюишь только ты. Не из недоверия, а потому что там цена ошибки сильно выше, чем в вёрстке. Ещё договоритесь, что он не мержит сам в `main` первую неделю — PR с твоим апрувом, заодно привыкнет к процессу."
+    }
+   ],
+   "missing": [
+    "F05"
+   ],
+   "approx_tokens": 4083,
+   "generator": "deepseek/deepseek-flash",
+   "usage": {
+    "completion_tokens": 5818,
+    "prompt_tokens": 710,
+    "total_tokens": 6528,
+    "completion_tokens_details": {
+     "reasoning_tokens": 1687
+    },
+    "prompt_tokens_details": {
+     "cached_tokens": 0
+    },
+    "prompt_cache_hit_tokens": 0,
+    "prompt_cache_miss_tokens": 710
+   }
+  },
+  "S3": {
+   "turns": [
+    {
+     "role": "user",
+     "text": "Слушай, поднял dev-сборку, а прила не может достучаться до бэка — в консоли красным CORS error, мол Origin http://localhost:8081 не разрешён. Бэк NestJS локально на 3000. Чё чинить, бэк или прилу?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Чинить бэк, прила ни при чём — это браузер/вебвью так защищается. В dev-сборке RN на вебе (и в некоторых webview) реально шлёт Origin, а Nest по умолчанию его не пускает.\n\nВ `main.ts` до `app.listen()`:\n\n```ts\nconst app = await NestFactory.create(AppModule);\n\napp.enableCors({\n  origin: [\n    'http://localhost:8081',\n    'http://127.0.0.1:8081',\n  ],\n  methods: ['GET', 'POST', 'OPTIONS'],\n  allowedHeaders: ['Content-Type', 'X-Device-Id'],\n});\n\nawait app.listen(3000, '0.0.0.0');\n```\n\nДва момента: `X-Device-Id` обязательно в `allowedHeaders`, иначе preflight упадёт уже на заголовке, а не на Origin. И `0.0.0.0` вместо дефолтного локалхоста — иначе с телефона в той же сети не достучишься.\n\nНа проде список origin'ов лучше вынести в env и не открывать `*`, даже если аккаунтов у нас нет."
+    },
+    {
+     "role": "user",
+     "text": "Включил — с веба запросы прошли, спасибо. Но с Android-эмулятора опять фейл, уже не CORS, а просто connection refused. Там же localhost не тот, да?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Да, классика. Внутри Android-эмулятора `localhost` — это сам эмулятор, а не хост-машина. Хост доступен по `10.0.2.2`.\n\nЛучше не хардкодить, а вытащить базовый URL в конфиг:\n\n```ts\n// src/config/api.ts\nimport { Platform } from 'react-native';\nimport Config from 'react-native-config';\n\nexport const API_URL =\n  Config.API_URL ??\n  (Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000');\n```\n\nИ в `.env` держи `API_URL=http://10.0.2.2:3000` для android-эмулятора. На реальном девайсе это будет IP твоей машины в локальной сети, типа `http://192.168.1.42:3000`.\n\nЕщё на Android 9+ http по умолчанию может резаться — если увидишь `CLEARTEXT communication not permitted`, добавляй `android:usesCleartextTraffic=\"true\"` только в debug-манифест, в release не надо."
+    },
+    {
+     "role": "user",
+     "text": "Ок, завёл через env, работает. Кстати, по БД решили: отказываемся от PostgreSQL. Историю цен держим в SQLite на том же сервере, так дешевле и проще — отдельный сервис под постгрес нам ни к чему.",
+     "facts": [
+      "F05b"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Логично. У нас там данных-то — курсы по двум сетям да пара токенов, писать раз в минуту. Postgres ради этого поднимать реально оверкилл.\n\nЯ бы взял `better-sqlite3` — он синхронный, но у нас запросы копеечные, зато код проще и без пула соединений:\n\n```ts\nimport Database from 'better-sqlite3';\n\nexport const db = new Database('/data/kladez.sqlite');\ndb.pragma('journal_mode = WAL');\ndb.pragma('synchronous = NORMAL');\n\ndb.exec(`\n  CREATE TABLE IF NOT EXISTS price_history (\n    id INTEGER PRIMARY KEY AUTOINCREMENT,\n    asset TEXT NOT NULL,\n    price_usd REAL NOT NULL,\n    ts INTEGER NOT NULL\n  );\n  CREATE INDEX IF NOT EXISTS idx_price_asset_ts ON price_history(asset, ts);\n`);\n```\n\nWAL обязателен — иначе чтение будет блокироваться записью. И учти: SQLite любит одного писателя, так что вставку курсов делай из одного места (крон в Nest), а не из разных модулей параллельно.\n\nМиграции — либо `user_version` pragma руками, либо `umzug`. На нашем объёме я бы начал с `user_version`, там десяток строк."
+    },
+    {
+     "role": "user",
+     "text": "Понял, WAL включил. Теперь другой вопрос: курсы валют. Не хочу на каждый чих дёргать внешний API — у нас же ещё лимиты. Как правильно кэшировать?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Двухуровнево: память + SQLite.\n\n```ts\n@Injectable()\nexport class RatesService {\n  private cache = new Map<string, { value: number; ts: number }>();\n  private TTL = 60_000;\n\n  async getRate(asset: string): Promise<{ value: number; ts: number }> {\n    const hit = this.cache.get(asset);\n    if (hit && Date.now() - hit.ts < this.TTL) return hit;\n\n    try {\n      const fresh = await this.fetchFromProvider(asset);\n      this.cache.set(asset, fresh);\n      this.persist(asset, fresh); // в price_history\n      return fresh;\n    } catch (e) {\n      // провайдер лёг — отдаём устаревшее, но помечаем\n      const stale = this.cache.get(asset) ?? this.readLastFromDb(asset);\n      if (stale) return stale;\n      throw new ServiceUnavailableException('rates unavailable');\n    }\n  }\n}\n```\n\nСмысл — stale-while-revalidate: свежие данные отдаём пока TTL не вышел, а если провайдер упал, отдаём последнее известное с его timestamp. Клиент по этому timestamp сам решит, показывать «данные на 14:32» или скелетон.\n\nЕщё: не тяни курс на каждый запрос баланса. Лучше один крон раз в минуту обновляет пачку курсов и пишет в SQLite, а API читает из кэша. Тогда внешний API мы дёргаем ровно N раз в минуту, независимо от числа клиентов."
+    },
+    {
+     "role": "user",
+     "text": "Ага, крон сделаю. Ещё момент по блокчейну: узлы берём у Alchemy, бесплатный тариф. Там жёсткий лимит запросов в секунду, так что спамить нельзя — у нас же ещё и джун может налепить запросов в цикле.",
+     "facts": [
+      "F12"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Тогда сразу ставь ограничитель на уровне провайдера, а не надеясь на дисциплину. Простой семафор + очередь:\n\n```ts\n@Injectable()\nexport class RpcLimiter {\n  private queue: Array<() => void> = [];\n  private active = 0;\n  constructor(private readonly max = 4) {}\n\n  async run<T>(fn: () => Promise<T>): Promise<T> {\n    if (this.active >= this.max) {\n      await new Promise<void>((res) => this.queue.push(res));\n    }\n    this.active++;\n    try {\n      return await fn();\n    } finally {\n      this.active--;\n      this.queue.shift()?.();\n    }\n  }\n}\n```\n\nПлюс на 429 от Alchemy обязательный экспоненциальный бэкофф с джиттером — без него при лимите получишь шторм ретраев и вообще забанят на минуту.\n\nИ не опрашивай балансы каждого адреса по отдельности: у Alchemy есть batch-запросы (`eth_getBalance` пачкой в одном JSON-RPC). Один запрос на 20 адресов вместо 20 запросов — вот это и есть главная экономия лимита.\n\nЕщё посчитай бюджет заранее: бесплатный тариф даёт что-то вроде 330 запросов/сек в теории, но у них же ещё и дневной кап по compute units. Если polling у нас раз в 30 секунд на клиента — на 100 юзерах это уже 3 rps только на балансы, нормально, но лучше кэшировать на сервере секунд на 15."
+    },
+    {
+     "role": "user",
+     "text": "Ладно, лимитер закинул в очередь задач. Теперь по инфре: хостинг — один VPS в Hetzner, всё в Docker Compose. Kubernetes не берём, нам с двумя разрабами он нафиг не сдался.",
+     "facts": [
+      "F11"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Согласен на 100%. K8s на одном VPS — это способ потратить месяц на манифесты вместо фич.\n\nCompose примерно такой:\n\n```yaml\nservices:\n  api:\n    build: .\n    restart: unless-stopped\n    env_file: .env\n    ports:\n      - \"127.0.0.1:3000:3000\"\n    volumes:\n      - sqlite-data:/data\n    healthcheck:\n      test: [\"CMD\", \"wget\", \"-qO-\", \"http://localhost:3000/health\"]\n      interval: 30s\n\n  caddy:\n    image: caddy:2\n    restart: unless-stopped\n    ports: [\"80:80\", \"443:443\"]\n    volumes:\n      - ./Caddyfile:/etc/caddy/Caddyfile\n      - caddy-data:/data\n\nvolumes:\n  sqlite-data:\n  caddy-data:\n```\n\nПара вещей, которые потом больно чинить: API наружу не публикуй (`127.0.0.1`), только через Caddy с TLS — сертификаты он сам получит. И volume под SQLite обязателен, иначе при `docker compose up --build` потеряешь историю курсов. Файл БД держи вне контейнерного слоя, в именованном volume или бинде в `/srv/kladez/data`."
+    },
+    {
+     "role": "user",
+     "text": "Ок. И сразу вопрос: как это бэкапить? Файл SQLite же, а не база с репликацией. Не хочу однажды остаться без истории курсов.",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Три уровня, все простые.\n\n1) Снимок самой БД. Не копируй файл `cp` — при WAL получишь битую копию. Используй штатный бэкап:\n\n```bash\ndocker compose exec api sqlite3 /data/kladez.sqlite \".backup '/data/backup/kladez-$(date +%F).sqlite'\"\n```\n\n2) Инкрементальные бэкапы всего каталога через restic:\n\n```bash\nrestic backup /srv/kladez/data /srv/kladez/.env \\\n  --exclude '*.sqlite-wal' --exclude '*.sqlite-shm'\n```\n\n3) Выгрузка в другое место. Hetzner Storage Box или любой S3 — главное, чтобы не на тот же VPS. Бэкап, лежащий рядом с оригиналом, бэкапом не считается.\n\nРасписание — systemd timer или cron: БД раз в час, restic раз в сутки, `restic forget --keep-daily 7 --keep-weekly 4 --prune` раз в неделю. И раз в месяц руками проверь, что `restic restore` реально разворачивается — иначе узнаешь о проблеме в худший момент.\n\nЕщё не забудь, что `.env` тоже надо бэкапить, но он содержит ключи от Alchemy и FCM — шифруй restic-репозиторий паролем, который лежит не на этом же сервере."
+    },
+    {
+     "role": "user",
+     "text": "Понял, restic + storage box, проверку рестора поставлю в календарь. Теперь логирование в NestJS — что взять, чтоб не колхозить console.log?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "`nestjs-pino`. Он быстрый, JSON-структурированный и из коробки даёт request-id, что для нас критично — клиента мы узнаём по device id (F04), а не по аккаунту, так что в логах надо жёстко цеплять хотя бы `deviceId` и `requestId`, иначе разбирать инциденты будет невозможно.\n\n```ts\n// app.module.ts\nLoggerModule.forRoot({\n  pinoHttp: {\n    level: process.env.LOG_LEVEL ?? 'info',\n    redact: ['req.headers.authorization', 'req.headers[\"x-device-id\"]'],\n    customProps: (req) => ({ deviceId: req.headers['x-device-id'] }),\n    transport: process.env.NODE_ENV !== 'production'\n      ? { target: 'pino-pretty' }\n      : undefined,\n  },\n}),\n```\n\nИ в `main.ts`:\n\n```ts\nconst app = await NestFactory.create(AppModule, { bufferLogs: true });\napp.useLogger(app.get(Logger));\n```\n\nПравила, которые я бы зафиксировал в контриб-гайде: не логировать приватные ключи и сид-фразу никогда (даже случайно в объекте ошибки — поэтому `redact`), не логировать полные адреса кошельков в info (только префикс), а ошибки RPC писать с кодом и методом, но без тела ответа целиком.\n\nЛоги в проде — в stdout, Docker их сам соберёт. Ротацию сделай на уровне docker daemon (`max-size: 10m`, `max-file: 3`), иначе диск на VPS кончится тихо и внезапно."
+    },
+    {
+     "role": "user",
+     "text": "Ок, pino зашёл. И последнее по UX, важное: приложение должно показывать балансы без сети — из локального кэша, с отметкой времени обновления. Чтоб человек зашёл в метро, увидел свои цифры и понимал, что они старые.",
+     "facts": [
+      "F13"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Правильно, это и с точки зрения безопасности нормально — мы же показываем только то, что уже лежит на устройстве.\n\nСхема хранения — MMKV (быстрее AsyncStorage, синхронный):\n\n```ts\ntype BalanceEntry = {\n  asset: string;\n  network: 'ethereum' | 'polygon';\n  amount: string;   // строкой, чтобы не терять точность\n  priceUsd?: number;\n  updatedAt: number; // ms\n};\n\nconst key = `balance:${network}:${address}`;\nMMKV.set(key, JSON.stringify(entry));\n```\n\nКлюч обязательно с сетью и адресом в составе — иначе при переключении аккаунта покажешь чужие цифры.\n\nНа экране:\n\n```tsx\nconst stale = Date.now() - entry.updatedAt > 5 * 60_000;\n\n<Text style={stale ? styles.dim : undefined}>\n  {formatAmount(entry.amount)} {entry.asset}\n</Text>\n<Text style={styles.caption}>\n  обновлено {formatRelative(entry.updatedAt)}\n  {stale ? ' · данные устарели' : ''}\n</Text>\n```\n\nВажно: если кэш пустой и сети нет — не показывай нули, показывай честное «нет данных, нет соединения». Ноль и «неизвестно» пользователь воспринимает совершенно по-разному, и второй вариант его не пугает."
+    },
+    {
+     "role": "user",
+     "text": "Вот про пустой кэш — точно, сделаем отдельное состояние, а не нули. Тогда ещё вопрос: когда сеть вернулась, обновлять сразу всё или по кусочку?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "По кусочку, по приоритету видимого экрана.\n\nТриггеры: старт приложения, возврат из фона (AppState → active), pull-to-refresh руками и смена сети через NetInfo. На каждом триггере обновляй только то, что реально на экране — активный кошелёк, активная сеть, список токенов текущей вкладки. Не надо на старте тянуть балансы по всем сетям сразу: у нас лимит от Alchemy, и мы только что про это говорили.\n\nЕщё: обновление не должно блокировать UI. Сначала отдали кэш (мгновенно), потом в фоне пошёл запрос, пришли данные — тихо обновили `updatedAt` и перерисовали. Если запрос упал — оставляем старые данные и не показываем злую ошибку на весь экран, максимум тост."
+    },
+    {
+     "role": "user",
+     "text": "Логично. Слушай, а по CORS ещё — на прод-домене же отдельная история будет, там же прила нативная, CORS вообще не при чём?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Именно. CORS — это ограничение браузера, нативные запросы из RN идут через нативный сетевой стек, никакого preflight там нет. Так что на проде CORS тебе нужен только если появится веб-клиент, а мы его не планируем.\n\nНо оставлять `origin: '*'` всё равно не стоит, даже «на всякий»: безвредно, но потом кто-нибудь начнёт на этом строить и забудет. Пусть в проде будут только твои dev-домены, а в release-конфиге — пустой список.\n\nЗато на проде важнее другое: rate limiting на нашем API (`@nestjs/throttler`) по `deviceId`, чтобы один клиент с багом не выжрал весь лимит Alchemy за минуту. Вот это реальный риск, в отличие от CORS."
+    },
+    {
+     "role": "user",
+     "text": "Ок, throttler добавлю. Всё, у меня пока всё — иду писать кэш балансов, джун пусть миграции на SQLite добивает.",
+     "facts": []
+    }
+   ],
+   "missing": [],
+   "approx_tokens": 4573,
+   "generator": "deepseek/deepseek-flash",
+   "usage": {
+    "completion_tokens": 6212,
+    "prompt_tokens": 1015,
+    "total_tokens": 7227,
+    "completion_tokens_details": {
+     "reasoning_tokens": 1562
+    },
+    "prompt_tokens_details": {
+     "cached_tokens": 384
+    },
+    "prompt_cache_hit_tokens": 384,
+    "prompt_cache_miss_tokens": 631
+   }
+  },
+  "S5": {
+   "turns": [
+    {
+     "role": "user",
+     "text": "Привет. Начинаем готовить релиз в стор. Первым делом иконка и скриншоты — что там по требованиям, чтобы потом не переделывать два раза?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Привет! По иконке и скриншотам требования такие:\n\n**Иконка**\n- App Store: 1024×1024 PNG, без альфа-канала и без прозрачности (иначе реджект на загрузке).\n- Google Play: 512×512 PNG, альфа допускается, но лучше тоже без.\n- Плюс иконка в самом приложении (1024 для iOS AppIcon, adaptive icon для Android: foreground + background слои).\n\n**Скриншоты**\n- iOS: обязательны 6.9\" (iPhone 16 Pro Max) и 6.5\", остальные опционально, но лучше залить весь набор.\n- Android: минимум 2 скриншота на телефон, рекомендую 4–8.\n- Первые 2–3 скриншота — это то, что видно в поиске, на них стоит вынести главный экран с балансами, экран отправки и экран обмена.\n\n**Google Play** ещё нужен feature graphic 1024×500 — его часто забывают, а без него листинг не соберётся.\n\nИ совет: не тащи в скриншоты реальные балансы и адреса. Заполни тестовыми данными через мок-режим, иначе потом будешь перерисовывать каждый раз, когда поменяются цифры."
+    },
+    {
+     "role": "user",
+     "text": "Понял. Иконку дизайнер отдал, в фигме 1024 с альфой — уберу. По скриншотам: у нас интерфейс на русском и английском, значит скриншоты на обоих языках и листинги тоже на двух.",
+     "facts": [
+      "F17"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Да, правильно — раз интерфейс на русском и английском, то и в сторах делаем две локали: `ru-RU` и `en-US`. Это же касается описания, ключевых слов и what's new.\n\nЕсли strings уже вынесены в i18next, то переключение языка для скриншотов можно автоматизировать через fastlane snapshot:\n\n```ruby\n# fastlane/Snapfile\nlocales %w(en-US ru-RU)\ndevices [\"iPhone 16 Pro Max\", \"iPhone 15\"]\nlanguages %w(en-US ru-RU)\noutput_directory \"./fastlane/screenshots\"\nclear_previous_screenshots true\n```\n\nИ в тесте перед каждым снимком дёргаем переключение языка:\n\n```ts\nawait device.launchApp({\n  newInstance: true,\n  languageAndLocale: { language: 'ru', locale: 'ru_RU' },\n});\n```\n\nТак получишь два набора за один прогон и не будешь руками щёлкать."
+    },
+    {
+     "role": "user",
+     "text": "а как лутше хранить строки? у нас сейчас один js-обьект в i18n.ts, уже пухнет и все в одном файле",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Разложи по namespace'ам и файлам — i18next это поддерживает из коробки:\n\n```\nlocales/\n  ru/\n    common.json\n    wallet.json\n    swap.json\n    onboarding.json\n  en/\n    ...\n```\n\n```ts\nimport i18n from 'i18next';\nimport { initReactI18next } from 'react-i18next';\nimport ruCommon from './locales/ru/common.json';\nimport ruWallet from './locales/ru/wallet.json';\n\nawait i18n.use(initReactI18next).init({\n  compatibilityJSON: 'v3',\n  fallbackLng: 'en',\n  resources: {\n    ru: { common: ruCommon, wallet: ruWallet },\n    en: { common: enCommon, wallet: enWallet },\n  },\n  defaultNS: 'common',\n  interpolation: { escapeValue: false },\n});\n```\n\nПлюс пара практических правил:\n- ключи строить иерархически (`send.confirm.title`), а не плоским списком;\n- никогда не конкатенировать строки — для «Перевод на 0,5 ETH» делай интерполяцию `{{amount}}`, иначе на английском порядок слов поедет;\n- для чисел и дат — `Intl.NumberFormat` с текущей локалью, а не руками.\n\nЕщё поставь скрипт, который сверяет набор ключей ru и en и падает в CI, если где-то пропущен перевод. Экономит кучу времени."
+    },
+    {
+     "role": "user",
+     "text": "Ок, переделаю на i18next. Кстати, Detox на iOS начал падать, причём локально зелёный, а в CI красный. Скинуть лог?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Скидывай, но пока гадаю: локально у тебя приложение уже собрано и симулятор прогретый, а в CI Detox стартует холодный билд. Типичные причины:\n\n1. `detox build` собирает Debug, а конфиг в `.detoxrc.js` указывает на Release — приложение не находит бинарник.\n2. Тест ждёт `by.id('main-screen')` раньше, чем JS-бандл догрузился (в CI медленнее в разы).\n3. Симулятор, на котором гоняем, отличается по версии iOS от локального.\n\nПришли текст ошибки, скажу точнее."
+    },
+    {
+     "role": "user",
+     "text": "Вот: `Test Failed: Wait for com.kladez.wallet to become visible exceeded. Timeout 30000ms`",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Классика. Приложение либо не поднялось, либо упало на старте до появления первого экрана. Порядок проверки:\n\n**1. Посмотри, что вообще запустилось.** В артефактах CI есть `~/Library/Logs/DiagnosticReports` и логи симулятора:\n```bash\nxcrun simctl spawn booted log show --last 5m --predicate 'process == \"Kladez\"'\n```\nЕсли там краш на старте — Detox тут ни при чём.\n\n**2. Увеличь таймаут и убедись, что это не гонка:**\n```js\n// e2e/config.json\n{\n  \"setupTimeout\": 180000,\n  \"testTimeout\": 120000\n}\n```\n\n**3. Проверь, что билд тот самый:**\n```js\n// .detoxrc.js\nmodule.exports = {\n  configurations: {\n    'ios.sim.debug': {\n      device: { type: 'simulator', device: { type: 'iPhone 15' } },\n      app: { type: 'ios.app', build: 'xcodebuild ... -configuration Debug -sdk iphonesimulator' },\n    },\n  },\n};\n```\n\nЕсли в CI стоит образ с другой версией Xcode, чем локально, — симулятор iPhone 15 может просто не существовать в рантайме, и Detox будет висеть ровно до таймаута. Проверь `xcrun simctl list devices available` прямо в логе шага CI."
+    },
+    {
+     "role": "user",
+     "text": "Похоже на третий вариант, у нас ранер с xcode 15.4 а локально 16. Ладно, зафиксирую версию раннера. Ещё я тут обновил зависимости и iOS вообще перестал собираться, RN 0.74 -> 0.76.",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "0.74 → 0.76 это два мажора, там ломающих изменений прилично: новый архитектурный дефолт, изменения в `Podfile`, обновлённый `AppDelegate` (уже Swift), выпиливание части legacy-модулей.\n\nНе апгрейдь в лоб. Делай так:\n```bash\nnpx react-native@0.76.0 init KladezTmp --version 0.76.0\n```\nи сравни `ios/` и `android/` с нашим — глазами, файл за файлом. `AppDelegate.mm`/`.swift`, `Podfile`, `settings.gradle`, `build.gradle`, `MainApplication.kt` — это то, что чаще всего надо мержить руками.\n\nДальше:\n```bash\ncd ios && rm -rf Pods Podfile.lock && pod install --repo-update\n```\nи уже потом `npx react-native run-ios`, а не наоборот.\n\nЧто конкретно упало на сборке? Если `PhaseScriptExecution`, то это почти всегда старый кэш подов или несовместимая версия какого-то нативного модуля."
+    },
+    {
+     "role": "user",
+     "text": "да, что-то в подах. Ладно, откатил пока на 0.74, перед релизом не хочу большой апгрейд затевать",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Разумно. Перед релизом зависимости вообще лучше заморозить: только security-патчи, никаких мажоров. Зафиксируй версии в `package.json` (без `^`), закоммить `Podfile.lock` и `yarn.lock`, и добавь в CI шаг `yarn install --frozen-lockfile` — тогда сборка не начнёт внезапно тянуть новое.\n\nАпгрейд на 0.76 отложи на отдельную ветку и сделай его уже после публикации, спокойно, без дедлайна над головой. Заодно почистишь `patch-package`-патчи, если они есть — часть из них на 0.76 просто не накатится."
+    },
+    {
+     "role": "user",
+     "text": "Кстати, вопрос от инвестора всплыл: спрашивают про аудит смарт-контрактов. Я говорю — у нас своих смарт-контрактов нет вообще, мы только чужие вызываем. Правильно же отвечаю?",
+     "facts": [
+      "F16"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Абсолютно правильно. Своих контрактов у нас нет — мы только вызываем чужие: ERC-20 `transfer`/`approve`, роутер 0x для обмена, ну и всё. Аудировать нечего, аудит нужен тем, кто держит средства в собственном контракте.\n\nНо в разговоре с инвестором стоит уточнить, что мы всё-таки делаем для безопасности:\n\n- **Whitelist адресов контрактов.** Токены и роутер держим в конфиге, а не подтягиваем из ответа API, иначе подменённый ответ бэкенда уведёт approve на чужой адрес.\n- **Проверка chainId и адреса получателя** перед подписью.\n- **Показ human-readable суммы и списания газа** на экране подтверждения.\n- **`approve` с точной суммой**, а не `maxUint256` по умолчанию — для незнакомых токенов особенно.\n- Приватные ключи не покидают устройство, подпись происходит локально — это как раз наш главный аргумент.\n\nВот так и отвечай: «своих контрактов нет, поверхность атаки — только клиент и RPC-провайдер, и вот что мы там делаем»."
+    },
+    {
+     "role": "user",
+     "text": "Ок, так и скажу. Адреса реально в конфиге хардкодом лежат, approve через отдельный экран с суммой. Хорошо. Вернёмся к тестам: у нас E2E на Detox, гоняем в GitHub Actions, и вот этот iOS-прогон и падает. Может, стоит разделить на разные джобы?",
+     "facts": [
+      "F18"
+     ]
+    },
+    {
+     "role": "assistant",
+     "text": "Да, разделяй — так хотя бы падение iOS не блокирует Android и видно, что именно сломалось. Примерно так:\n\n```yaml\nname: e2e\non: [pull_request]\n\njobs:\n  android:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20, cache: yarn }\n      - run: yarn install --frozen-lockfile\n      - uses: reactivecircus/android-emulator-runner@v2\n        with:\n          api-level: 34\n          arch: x86_64\n          script: yarn detox test -c android.emu.debug --headless\n\n  ios:\n    runs-on: macos-14\n    timeout-minutes: 60\n    steps:\n      - uses: actions/checkout@v4\n      - uses: actions/setup-node@v4\n        with: { node-version: 20, cache: yarn }\n      - run: yarn install --frozen-lockfile\n      - run: xcrun simctl list devices available\n      - run: yarn detox build -c ios.sim.debug\n      - run: yarn detox test -c ios.sim.debug --headless\n```\n\nКлючевое: `macos-14` даёт фиксированный Xcode в образе (сейчас 15.4), и `xcrun simctl list devices available` в логе сразу покажет, есть ли вообще нужный симулятор. Если iPhone 15 нет — поменяй в `.detoxrc.js` на то, что реально доступно в образе.\n\nЕщё поставь `concurrency` с отменой предыдущего запуска, а то на каждый пуш в PR висит по три прогона."
+    },
+    {
+     "role": "user",
+     "text": "спасибо, попробую. ещё вопрос — скриншоты для сторов через fastlane snapshot делать или руками снимать?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Через snapshot, конечно. Руками ты их снимешь один раз, а потом будешь переснимать после каждого изменения UI — и обязательно забудешь поменять один из восьми.\n\nСхема такая: в проекте заводишь отдельный UI-тест `KladezScreenshots`, который проходит по экранам, наполняет их моковыми данными и дёргает `snapshot(\"01-balances\")`. Дальше `fastlane snapshot` прогоняет его на нужных девицах и локалях (Snapfile у нас уже набросан) и складывает в `fastlane/screenshots/<locale>/`.\n\nПара граблей, на которые уже наступали:\n- **Статус-бар.** Либо `snapshot` сам его подменяет на 9:41 (он умеет), либо прячь в тестовом режиме.\n- **Тёмная тема.** Реши заранее, снимаешь ли обе. Если да — добавляй в имя файла суффикс, иначе в листинге будет каша.\n- **Загрузка данных.** Ставь `sleep(1)` после появления экрана, иначе половина скриншотов будет со скелетонами."
+    },
+    {
+     "role": "user",
+     "text": "Ок. И последнее на сегодня — Google Play Data safety. Мы вроде ничего не собираем, кроме своей обезличенной статистики, и она только opt-in.",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Тут важно ответить точно, потому что расхождение с реальностью — частая причина реджекта.\n\nЧто декларируем:\n- **Данные собираются: да**, но — «App activity / Analytics», обезличенные, не привязанные к личности.\n- **Передаются третьим лицам: нет.** Своя статистика на своём сервере, FCM/APNs — это доставка, не аналитика.\n- **Шифрование при передаче: да** (HTTPS).\n- **Пользователь может запросить удаление:** обязателен пункт про удаление данных — добавь в приложении кнопку «Удалить мои данные» или хотя бы адрес почты в политике.\n- **Опциональность:** прямо укажи, что сбор статистики включается только по согласию, и что при отказе приложение работает полностью.\n\nИ проверь, что в приложении реально есть экран, где этот opt-in переключается, и что до согласия ни один запрос статистики не уходит. У Google бывает выборочная проверка, и они смотрят именно на это."
+    },
+    {
+     "role": "user",
+     "text": "а на iOS App Privacy тогда что отмечать? Там же ещё и биометрия — Face ID используется для разблокировки",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "На iOS в App Privacy:\n\n- **Data Not Collected** — не наш случай, у нас есть статистика.\n- Отмечай **Usage Data → Analytics**, «Not linked to the user», «Not used for tracking». Тогда приложение не обязано показывать ATT-запрос.\n- **Financial Info** не отмечай — мы не собираем платёжные данные, ключи и балансы остаются на устройстве.\n\nОтдельно про Face ID: это не сбор данных, а `NSFaceIDUsageDescription` в `Info.plist`. Формулировка должна объяснять, зачем:\n\n```xml\n<key>NSFaceIDUsageDescription</key>\n<string>Face ID используется для разблокировки кошелька. Ключи хранятся только на этом устройстве.</string>\n```\n\nЕсли этого ключа нет, приложение либо упадёт при первом `evaluatePolicy`, либо получит реджект на ревью — Apple такое ловит регулярно. Плюс убедись, что при отказе от биометрии есть фолбэк на пароль устройства, иначе пользователь запрётся снаружи."
+    },
+    {
+     "role": "user",
+     "text": "Кстати про сборку: в CI кэш подов не работает, каждый раз 12 минут собирается. Может есть смысл кэшировать?",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Есть, и это даёт минус минут восемь. Кэшируй две вещи: `Pods` и сам `DerivedData`.\n\n```yaml\n- uses: actions/cache@v4\n  with:\n    path: |\n      ios/Pods\n      ~/Library/Caches/CocoaPods\n    key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}\n\n- uses: actions/cache@v4\n  with:\n    path: ~/Library/Developer/Xcode/DerivedData\n    key: derived-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock', 'yarn.lock') }}\n```\n\nВажно, чтобы ключ был по `Podfile.lock` — если кэшировать просто по ветке, получишь устаревшие поды и загадочные ошибки линковки.\n\nВторой момент: `pod install` в CI запускай только если кэш не попал (`if: steps.pods-cache.outputs.cache-hit != 'true'`). Иначе весь выигрыш съедается самим `pod install`."
+    },
+    {
+     "role": "user",
+     "text": "Клёво, попробую. Ещё иконку надо проверить на тёмной теме в сторе — там же фон подстраивается. Ладно, мелочи. Думаю в пятницу отправляем на ревью.",
+     "facts": []
+    },
+    {
+     "role": "assistant",
+     "text": "Тогда вот короткий чеклист перед отправкой, чтобы не ловить реджект на ровном месте:\n\n1. **Иконка** — 1024 без альфы, adaptive icon для Android проверен на круглой и квадратной маске.\n2. **Скриншоты** — оба языка, оба размера, feature graphic для Play.\n3. **Локализация** — ключи ru/en сверены, нигде не торчит английский в русском билде и наоборот.\n4. **Privacy** — Data safety и App Privacy заполнены, `NSFaceIDUsageDescription` на месте, политика конфиденциальности доступна по ссылке.\n5. **Демо-доступ для ревьюера** — Apple любит просить рабочий аккаунт. У нас аккаунтов нет, но опиши в заметках для ревью, что вход — это подключение кошелька, и дай тестовый адрес в режиме read-only.\n6. **Версия и build number** — не забыть поднять, второй раз загрузить тот же номер не даст.\n\nПятый пункт — самый частый источник задержек, так что напиши заметки для ревью заранее, а не в момент загрузки. Удачи в пятницу!"
+    }
+   ],
+   "missing": [],
+   "approx_tokens": 5269,
+   "generator": "deepseek/deepseek-flash",
+   "usage": {
+    "completion_tokens": 7323,
+    "prompt_tokens": 1124,
+    "total_tokens": 8447,
+    "completion_tokens_details": {
+     "reasoning_tokens": 2265
+    },
+    "prompt_tokens_details": {
+     "cached_tokens": 128
+    },
+    "prompt_cache_hit_tokens": 128,
+    "prompt_cache_miss_tokens": 996
+   }
+  }
+ }
+}

@@ -1,0 +1,20 @@
+{
+  "id": "egor123hhh/ctxgraph-stage2-cpu",
+  "title": "ctxgraph-stage2-cpu",
+  "code_file": "run.py",
+  "language": "python",
+  "kernel_type": "script",
+  "is_private": true,
+  "enable_gpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "egor123hhh/ctxgraph-bench1",
+    "egor123hhh/ctxgraph-stage2-data",
+    "egor123hhh/ctxgraph-stage2-e5",
+    "egor123hhh/ctxgraph-planner-cache"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [
+    "egor123hhh/ctxgraph-stage2-cpu"
+  ]
+}

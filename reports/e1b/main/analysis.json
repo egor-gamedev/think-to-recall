@@ -1,0 +1,540 @@
+{
+ "fabrication_source": "ручная проверка с диалогом (v1.3)",
+ "n_answers": 324,
+ "n_judged": 324,
+ "missing_glm": [],
+ "table": {
+  "V1|recall": {
+   "inference": 0.21428571428571427,
+   "inappropriate": 0.7857142857142857,
+   "stale": 0.07142857142857142,
+   "fabrication": 0.14285714285714285,
+   "intrusion": 0.2857142857142857,
+   "support": 0.2261904761904762,
+   "n": 14
+  },
+  "V1|link": {
+   "inference": 0.05555555555555555,
+   "inappropriate": 0.5,
+   "stale": 0.1111111111111111,
+   "fabrication": 0.0,
+   "intrusion": 0.2777777777777778,
+   "support": 0.3055555555555556,
+   "n": 18
+  },
+  "V1|change": {
+   "inference": 0.13333333333333333,
+   "inappropriate": 0.6666666666666666,
+   "stale": 0.6,
+   "fabrication": 0.2,
+   "intrusion": 0.4,
+   "support": 0.39777777777777773,
+   "n": 15
+  },
+  "V1|clarify": {
+   "inference": 0.0,
+   "inappropriate": 1.0,
+   "stale": 0.14285714285714285,
+   "fabrication": 0.0,
+   "intrusion": 0.14285714285714285,
+   "support": 0.03571428571428571,
+   "n": 7
+  },
+  "V1|all": {
+   "inference": 0.1111111111111111,
+   "inappropriate": 0.6851851851851852,
+   "stale": 0.24074074074074073,
+   "fabrication": 0.09259259259259259,
+   "intrusion": 0.2962962962962963,
+   "support": 0.2756172839506173,
+   "n": 54
+  },
+  "V2|recall": {
+   "inference": 0.5,
+   "inappropriate": 0.5,
+   "stale": 0.0,
+   "fabrication": 0.0,
+   "intrusion": 0.2857142857142857,
+   "support": 0.41666666666666663,
+   "n": 14
+  },
+  "V2|link": {
+   "inference": 0.16666666666666666,
+   "inappropriate": 0.3888888888888889,
+   "stale": 0.16666666666666666,
+   "fabrication": 0.0,
+   "intrusion": 0.3333333333333333,
+   "support": 0.4027777777777778,
+   "n": 18
+  },
+  "V2|change": {
+   "inference": 0.2,
+   "inappropriate": 0.7333333333333333,
+   "stale": 0.7333333333333333,
+   "fabrication": 0.06666666666666667,
+   "intrusion": 0.26666666666666666,
+   "support": 0.3877777777777778,
+   "n": 15
+  },
+  "V2|clarify": {
+   "inference": 0.0,
+   "inappropriate": 1.0,
+   "stale": 0.2857142857142857,
+   "fabrication": 0.0,
+   "intrusion": 0.2857142857142857,
+   "support": 0.07142857142857142,
+   "n": 7
+  },
+  "V2|all": {
+   "inference": 0.24074074074074073,
+   "inappropriate": 0.5925925925925926,
+   "stale": 0.2962962962962963,
+   "fabrication": 0.018518518518518517,
+   "intrusion": 0.2962962962962963,
+   "support": 0.3592592592592592,
+   "n": 54
+  },
+  "V3|recall": {
+   "inference": 0.21428571428571427,
+   "inappropriate": 0.5714285714285714,
+   "stale": 0.07142857142857142,
+   "fabrication": 0.07142857142857142,
+   "intrusion": 0.42857142857142855,
+   "support": 0.20238095238095236,
+   "n": 14
+  },
+  "V3|link": {
+   "inference": 0.1111111111111111,
+   "inappropriate": 0.4444444444444444,
+   "stale": 0.05555555555555555,
+   "fabrication": 0.0,
+   "intrusion": 0.2777777777777778,
+   "support": 0.29629629629629634,
+   "n": 18
+  },
+  "V3|change": {
+   "inference": 0.3333333333333333,
+   "inappropriate": 0.4,
+   "stale": 0.4,
+   "fabrication": 0.13333333333333333,
+   "intrusion": 0.26666666666666666,
+   "support": 0.5399999999999999,
+   "n": 15
+  },
+  "V3|clarify": {
+   "inference": 0.0,
+   "inappropriate": 1.0,
+   "stale": 0.0,
+   "fabrication": 0.0,
+   "intrusion": 0.0,
+   "support": 0.03571428571428571,
+   "n": 7
+  },
+  "V3|all": {
+   "inference": 0.18518518518518517,
+   "inappropriate": 0.5370370370370371,
+   "stale": 0.14814814814814814,
+   "fabrication": 0.05555555555555555,
+   "intrusion": 0.2777777777777778,
+   "support": 0.3058641975308642,
+   "n": 54
+  },
+  "V4|recall": {
+   "inference": 0.07142857142857142,
+   "inappropriate": 0.5714285714285714,
+   "stale": 0.0,
+   "fabrication": 0.0,
+   "intrusion": 0.2857142857142857,
+   "support": 0.047619047619047616,
+   "n": 14
+  },
+  "V4|link": {
+   "inference": 0.2222222222222222,
+   "inappropriate": 0.5,
+   "stale": 0.16666666666666666,
+   "fabrication": 0.05555555555555555,
+   "intrusion": 0.2222222222222222,
+   "support": 0.2361111111111111,
+   "n": 18
+  },
+  "V4|change": {
+   "inference": 0.06666666666666667,
+   "inappropriate": 0.6666666666666666,
+   "stale": 0.5333333333333333,
+   "fabrication": 0.2,
+   "intrusion": 0.26666666666666666,
+   "support": 0.13777777777777775,
+   "n": 15
+  },
+  "V4|clarify": {
+   "inference": 0.0,
+   "inappropriate": 1.0,
+   "stale": 0.0,
+   "fabrication": 0.0,
+   "intrusion": 0.0,
+   "support": 0.03571428571428571,
+   "n": 7
+  },
+  "V4|all": {
+   "inference": 0.1111111111111111,
+   "inappropriate": 0.6296296296296297,
+   "stale": 0.2037037037037037,
+   "fabrication": 0.07407407407407407,
+   "intrusion": 0.2222222222222222,
+   "support": 0.1339506172839506,
+   "n": 54
+  },
+  "V5|recall": {
+   "inference": 0.2857142857142857,
+   "inappropriate": 0.8571428571428571,
+   "stale": 0.0,
+   "fabrication": 0.0,
+   "intrusion": 0.2857142857142857,
+   "support": 0.14285714285714285,
+   "n": 14
+  },
+  "V5|link": {
+   "inference": 0.2777777777777778,
+   "inappropriate": 0.4444444444444444,
+   "stale": 0.1111111111111111,
+   "fabrication": 0.0,
+   "intrusion": 0.2777777777777778,
+   "support": 0.32870370370370366,
+   "n": 18
+  },
+  "V5|change": {
+   "inference": 0.13333333333333333,
+   "inappropriate": 0.6,
+   "stale": 0.4,
+   "fabrication": 0.06666666666666667,
+   "intrusion": 0.5333333333333333,
+   "support": 0.25555555555555554,
+   "n": 15
+  },
+  "V5|clarify": {
+   "inference": 0.0,
+   "inappropriate": 1.0,
+   "stale": 0.0,
+   "fabrication": 0.0,
+   "intrusion": 0.2857142857142857,
+   "support": 0.07142857142857142,
+   "n": 7
+  },
+  "V5|all": {
+   "inference": 0.2037037037037037,
+   "inappropriate": 0.6666666666666666,
+   "stale": 0.14814814814814814,
+   "fabrication": 0.018518518518518517,
+   "intrusion": 0.35185185185185186,
+   "support": 0.22685185185185186,
+   "n": 54
+  },
+  "V6|recall": {
+   "inference": 0.42857142857142855,
+   "inappropriate": 0.42857142857142855,
+   "stale": 0.0,
+   "fabrication": 0.0,
+   "intrusion": 0.21428571428571427,
+   "support": 0.44642857142857145,
+   "n": 14
+  },
+  "V6|link": {
+   "inference": 0.3333333333333333,
+   "inappropriate": 0.3333333333333333,
+   "stale": 0.1111111111111111,
+   "fabrication": 0.05555555555555555,
+   "intrusion": 0.1111111111111111,
+   "support": 0.4166666666666667,
+   "n": 18
+  },
+  "V6|change": {
+   "inference": 0.26666666666666666,
+   "inappropriate": 0.7333333333333333,
+   "stale": 0.7333333333333333,
+   "fabrication": 0.13333333333333333,
+   "intrusion": 0.4666666666666667,
+   "support": 0.38555555555555554,
+   "n": 15
+  },
+  "V6|clarify": {
+   "inference": 0.0,
+   "inappropriate": 1.0,
+   "stale": 0.14285714285714285,
+   "fabrication": 0.0,
+   "intrusion": 0.2857142857142857,
+   "support": 0.03571428571428571,
+   "n": 7
+  },
+  "V6|all": {
+   "inference": 0.2962962962962963,
+   "inappropriate": 0.5555555555555556,
+   "stale": 0.25925925925925924,
+   "fabrication": 0.05555555555555555,
+   "intrusion": 0.25925925925925924,
+   "support": 0.366358024691358,
+   "n": 54
+  }
+ },
+ "H1": {
+  "link": {
+   "A_only": 4,
+   "B_only": 1,
+   "p": 0.375,
+   "diff": 0.16666666666666666,
+   "p_holm": 0.75,
+   "supported": false,
+   "support_diff": 0.013888888888888883,
+   "support_ci": [
+    -0.19444444444444445,
+    0.2222222222222222
+   ],
+   "inappropriate": {
+    "A_only": 2,
+    "B_only": 3,
+    "p": 1.0,
+    "diff": -0.05555555555555558
+   }
+  },
+  "change": {
+   "A_only": 1,
+   "B_only": 0,
+   "p": 1.0,
+   "diff": 0.06666666666666665,
+   "p_holm": 1.0,
+   "supported": false,
+   "support_diff": -0.0022222222222222144,
+   "support_ci": [
+    -0.2222222222222222,
+    0.22000000000000003
+   ],
+   "inappropriate": {
+    "A_only": 1,
+    "B_only": 1,
+    "p": 1.0,
+    "diff": 0.0
+   }
+  }
+ },
+ "H2": {
+  "tests": {
+   "V3>V1": {
+    "A_only": 7,
+    "B_only": 3,
+    "p": 0.34375,
+    "diff": 0.07407407407407407,
+    "p_holm": 1.0,
+    "better": false
+   },
+   "V3>V2": {
+    "A_only": 5,
+    "B_only": 8,
+    "p": 0.5810546875,
+    "diff": -0.05555555555555555,
+    "p_holm": 1.0,
+    "better": false
+   },
+   "V3>V5": {
+    "A_only": 5,
+    "B_only": 6,
+    "p": 1.0,
+    "diff": -0.018518518518518517,
+    "p_holm": 1.0,
+    "better": false
+   },
+   "V4>V1": {
+    "A_only": 4,
+    "B_only": 4,
+    "p": 1.0,
+    "diff": 0.0,
+    "p_holm": 1.0,
+    "better": false
+   },
+   "V4>V2": {
+    "A_only": 3,
+    "B_only": 10,
+    "p": 0.09228515625,
+    "diff": -0.12962962962962962,
+    "p_holm": 0.73828125,
+    "better": false
+   },
+   "V4>V5": {
+    "A_only": 1,
+    "B_only": 6,
+    "p": 0.125,
+    "diff": -0.09259259259259259,
+    "p_holm": 0.875,
+    "better": false
+   },
+   "V6>V1": {
+    "A_only": 13,
+    "B_only": 3,
+    "p": 0.021270751953125,
+    "diff": 0.18518518518518517,
+    "p_holm": 0.191436767578125,
+    "better": false
+   },
+   "V6>V2": {
+    "A_only": 6,
+    "B_only": 3,
+    "p": 0.5078125,
+    "diff": 0.05555555555555555,
+    "p_holm": 1.0,
+    "better": false
+   },
+   "V6>V5": {
+    "A_only": 11,
+    "B_only": 6,
+    "p": 0.332305908203125,
+    "diff": 0.09259259259259259,
+    "p_holm": 1.0,
+    "better": false
+   }
+  },
+  "fabrication_noninferiority": {
+   "V3vsV1": {
+    "diff": -0.037037037037037035,
+    "ci": [
+     -0.09259259259259259,
+     0.0
+    ],
+    "noninferior": true
+   },
+   "V3vsV2": {
+    "diff": 0.037037037037037035,
+    "ci": [
+     0.0,
+     0.09259259259259259
+    ],
+    "noninferior": false
+   },
+   "V3vsV5": {
+    "diff": 0.037037037037037035,
+    "ci": [
+     0.0,
+     0.09259259259259259
+    ],
+    "noninferior": false
+   },
+   "V4vsV1": {
+    "diff": -0.018518518518518517,
+    "ci": [
+     -0.09259259259259259,
+     0.05555555555555555
+    ],
+    "noninferior": false
+   },
+   "V4vsV2": {
+    "diff": 0.05555555555555555,
+    "ci": [
+     0.0,
+     0.12962962962962962
+    ],
+    "noninferior": false
+   },
+   "V4vsV5": {
+    "diff": 0.05555555555555555,
+    "ci": [
+     0.0,
+     0.12962962962962962
+    ],
+    "noninferior": false
+   },
+   "V6vsV1": {
+    "diff": -0.037037037037037035,
+    "ci": [
+     -0.1111111111111111,
+     0.037037037037037035
+    ],
+    "noninferior": true
+   },
+   "V6vsV2": {
+    "diff": 0.037037037037037035,
+    "ci": [
+     0.0,
+     0.09259259259259259
+    ],
+    "noninferior": false
+   },
+   "V6vsV5": {
+    "diff": 0.037037037037037035,
+    "ci": [
+     0.0,
+     0.09259259259259259
+    ],
+    "noninferior": false
+   }
+  },
+  "success": {
+   "V3": false,
+   "V4": false,
+   "V6": false
+  }
+ },
+ "H3": {
+  "diff": -0.07142857142857142,
+  "ci": [
+   -0.2857142857142857,
+   0.14285714285714285
+  ],
+  "n": 14
+ },
+ "descriptive": {
+  "V1": {
+   "truncated": 0.09259259259259259,
+   "expand_calls": 0,
+   "memory_tokens_mean": 0.0,
+   "memory_empty": 1.0,
+   "compressions_max": 16,
+   "retention": "0/3"
+  },
+  "V2": {
+   "truncated": 0.05555555555555555,
+   "expand_calls": 0,
+   "memory_tokens_mean": 518.1296296296297,
+   "memory_empty": 0.0,
+   "compressions_max": 16,
+   "retention": "0/3"
+  },
+  "V3": {
+   "truncated": 0.0,
+   "expand_calls": 0,
+   "memory_tokens_mean": 355.7037037037037,
+   "memory_empty": 0.018518518518518517,
+   "compressions_max": 15,
+   "retention": "0/3"
+  },
+  "V4": {
+   "truncated": 0.018518518518518517,
+   "expand_calls": 4,
+   "memory_tokens_mean": 133.57407407407408,
+   "memory_empty": 0.018518518518518517,
+   "compressions_max": 14,
+   "retention": "0/3"
+  },
+  "V5": {
+   "truncated": 0.0,
+   "expand_calls": 0,
+   "memory_tokens_mean": 338.05555555555554,
+   "memory_empty": 0.018518518518518517,
+   "compressions_max": 16,
+   "retention": "0/3"
+  },
+  "V6": {
+   "truncated": 0.05555555555555555,
+   "expand_calls": 0,
+   "memory_tokens_mean": 450.22222222222223,
+   "memory_empty": 0.0,
+   "compressions_max": 16,
+   "retention": "0/3"
+  }
+ },
+ "kappa": {
+  "n": 70,
+  "inference": 0.7856049004594181,
+  "inappropriate": 0.7647058823529411,
+  "stale": 0.5145631067961165,
+  "fabrication": 0.18018018018018034,
+  "intrusion": 0.40397350993377484,
+  "anchors": 0.7582222222222221
+ }
+}

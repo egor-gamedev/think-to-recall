@@ -1,0 +1,58 @@
+{
+ "project": "greenhouse-iot",
+ "kind": "load",
+ "compressions": [
+  {
+   "after_turn": "S1.5",
+   "turns": 6,
+   "tokens_out": 2018,
+   "summary_tokens": 530
+  },
+  {
+   "after_turn": "S1.11",
+   "turns": 6,
+   "tokens_out": 1430,
+   "summary_tokens": 529
+  },
+  {
+   "after_turn": "S2.7",
+   "turns": 10,
+   "tokens_out": 1779,
+   "summary_tokens": 529
+  },
+  {
+   "after_turn": "S3.1",
+   "turns": 8,
+   "tokens_out": 2025,
+   "summary_tokens": 526
+  },
+  {
+   "after_turn": "S3.9",
+   "turns": 8,
+   "tokens_out": 2013,
+   "summary_tokens": 526
+  },
+  {
+   "after_turn": "S4.7",
+   "turns": 10,
+   "tokens_out": 2238,
+   "summary_tokens": 528
+  },
+  {
+   "after_turn": "S5.3",
+   "turns": 10,
+   "tokens_out": 2063,
+   "summary_tokens": 517
+  },
+  {
+   "after_turn": "S5.11",
+   "turns": 8,
+   "tokens_out": 1779,
+   "summary_tokens": 519
+  }
+ ],
+ "summary": "- **Проект:** Автоматизация полива двух неотапливаемых поликарбонатных теплиц под Липецком.\n- **Теплица 1 (томаты, грунт):** Зоны Z1, Z2. **Теплица 2 (огурцы, кокос):** Зоны Z3, Z4.\n- **Архитектура (4 слоя):**\n  1. **Датчиковые узлы:** 2× ESP32 (воздух SHT31 + 2× почва ёмкостные v1.2 на теплицу). Код готов: неблокирующий MQTT/ESP-NOW, отправка каждые 30 с, медианный фильтр АЦП (9 замеров), калибровка почвы в % (линейно сухой/мокрый), `analogReadMilliVolts()`. SHT31 вынесен наружу в радиационный экран.\n  2. **Транспорт:** **Гибрид Wi-Fi + ESP-NOW.** Теплица 1 (RSSI −65) — Wi-Fi → MQTT (Mosquitto на RPi4). Теплица 2 (RSSI −90) — **ESP-NOW на фиксированном канале 6** → шлюз-ESP32 в теплице 1 → MQTT. Брокер защищён: `allow_anonymous false`, пароли на тип узла, ACL по топикам. Порт 1883 только LAN/localhost. TLS не используется.\n  3. **Сервер:** RPi 4 (4 ГБ) на **USB-SSD**: Mosquitto + `poliv.py` (Python, systemd) — логика, история (**InfluxDB 1.8**, RP `two_years` 104w), графики (Grafana, InfluxQL), **тревоги**. Логика полива **только на сервере**, узлы — «тупые» исполнители. SQLite и SD-карта исключены.\n  4. **Исполнение:** 4 соленоидных клапана 24 В AC",
+ "window_tokens": 2653,
+ "archive_turns": 66,
+ "seconds": 217.7
+}

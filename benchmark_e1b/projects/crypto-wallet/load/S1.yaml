@@ -1,0 +1,305 @@
+segment: S1
+author: Claude Opus 5.5 (2026-10-21), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [F01]
+    text: |
+      Привет. Начинаем новый проект — кошелёк «Кладезь». Делаем мобилку на React Native, сразу под iOS и Android. Веб-версию не планируем, это точно, не хочу распыляться. Первый вопрос простой: какую навигацию брать? Хочется что-то скучное и надёжное.
+  - role: assistant
+    facts: []
+    text: |
+      Для «скучно и надёжно» в React Native сейчас по сути один выбор — React Navigation. У него самая большая экосистема, нормальная документация и предсказуемые обновления.
+
+      Что конкретно поставить:
+
+      ```bash
+      npm i @react-navigation/native @react-navigation/native-stack @react-navigation/bottom-tabs
+      npm i react-native-screens react-native-safe-area-context
+      cd ios && pod install
+      ```
+
+      `native-stack` использует нативные контроллеры навигации (UINavigationController на iOS, Fragment на Android), поэтому переходы плавные и жесты «назад» работают как у системных приложений.
+
+      Типовой каркас:
+
+      ```tsx
+      const Stack = createNativeStackNavigator<RootStackParamList>();
+      const Tabs = createBottomTabNavigator<TabsParamList>();
+
+      function MainTabs() {
+        return (
+          <Tabs.Navigator screenOptions={{ headerShown: false }}>
+            <Tabs.Screen name="Wallet" component={WalletScreen} />
+            <Tabs.Screen name="Activity" component={ActivityScreen} />
+            <Tabs.Screen name="Settings" component={SettingsScreen} />
+          </Tabs.Navigator>
+        );
+      }
+
+      export function RootNavigator() {
+        return (
+          <NavigationContainer>
+            <Stack.Navigator>
+              <Stack.Screen name="Main" component={MainTabs} options={{ headerShown: false }} />
+              <Stack.Screen name="Send" component={SendScreen} />
+              <Stack.Screen name="Receive" component={ReceiveScreen} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        );
+      }
+      ```
+
+      Альтернатива — Expo Router (файловая маршрутизация), но он тянет за собой Expo-подход ко всему проекту. Если вы на bare React Native, проще остаться на React Navigation.
+  - role: user
+    facts: []
+    text: |
+      Мы на bare, без expo. Ок, берём React Navigation. Типизацию параметров экранов как лучше сделать, чтоб не было any везде?
+  - role: assistant
+    facts: []
+    text: |
+      Заведите один файл с типами всех стеков и объявите глобальный тип для `useNavigation`, тогда автокомплит будет везде без ручных дженериков.
+
+      ```ts
+      // src/navigation/types.ts
+      export type RootStackParamList = {
+        Main: NavigatorScreenParams<TabsParamList>;
+        Send: { asset: AssetId; prefillAddress?: string };
+        Receive: { asset: AssetId };
+      };
+
+      export type TabsParamList = {
+        Wallet: undefined;
+        Activity: { filter?: 'in' | 'out' };
+        Settings: undefined;
+      };
+
+      declare global {
+        namespace ReactNavigation {
+          interface RootParamList extends RootStackParamList {}
+        }
+      }
+      ```
+
+      В экране:
+
+      ```ts
+      type Props = NativeStackScreenProps<RootStackParamList, 'Send'>;
+      export function SendScreen({ route }: Props) {
+        const { asset, prefillAddress } = route.params; // уже типизировано
+      }
+      ```
+
+      И ещё совет: держите названия экранов только в этом файле и не передавайте в параметрах большие объекты (баланс, список транзакций) — только идентификаторы. Параметры сериализуются при восстановлении состояния, большие объекты там ни к чему.
+  - role: user
+    facts: [F06]
+    text: |
+      Понял. Чтобы ты понимал масштаб: нас двое, я и джун. MVP надо показать через три месяца. Так что всё, что требует отдельного человека на поддержку, сразу мимо. Думаю сделать монорепу, чтобы мобилка и бэк жили вместе. Норм идея?
+  - role: assistant
+    facts: []
+    text: |
+      Для двоих — да, монорепа хорошо подходит: один PR меняет и клиент, и сервер, общие типы не расходятся, один CI.
+
+      Минимальная структура:
+
+      ```
+      kladez/
+        apps/
+          mobile/        # React Native
+          api/           # бэкенд
+        packages/
+          shared/        # типы, константы сетей, утилиты форматирования
+          config/        # общий eslint/tsconfig/prettier
+        package.json
+        pnpm-workspace.yaml
+      ```
+
+      Инструменты: pnpm workspaces для зависимостей и, если захочется кешировать сборки, Turborepo. Но на старте можно и без Turborepo — это лишняя сущность для джуна.
+
+      Подводный камень с React Native в монорепе — Metro по умолчанию не видит пакеты вне `apps/mobile`. Нужно добавить `watchFolders` и запретить дубли React:
+
+      ```js
+      // apps/mobile/metro.config.js
+      const path = require('path');
+      const root = path.resolve(__dirname, '../..');
+      module.exports = {
+        watchFolders: [root],
+        resolver: {
+          nodeModulesPaths: [path.resolve(__dirname, 'node_modules'), path.resolve(root, 'node_modules')],
+          disableHierarchicalLookup: true,
+        },
+      };
+      ```
+
+      И в `.npmrc` для pnpm: `node-linker=hoisted` — React Native до сих пор плохо дружит с симлинками pnpm.
+  - role: user
+    facts: [F02]
+    text: |
+      Сделал так, metro завёлся со второго раза. Теперь главное, с чего вообще надо было начать. Кошелёк некастодиальный: приватные ключи и сид-фраза живут только на устройстве и на сервер не уходят никогда. Ни в логи, ни в крэш-репорты, никуда.
+  - role: assistant
+    facts: []
+    text: |
+      Это главное архитектурное ограничение, из него следует несколько практических правил.
+
+      1. **Где лежит секрет.** Никакого AsyncStorage и обычных файлов — только аппаратное хранилище платформы (Keychain на iOS, Keystore на Android). Детали подберём, когда дойдём до экрана создания кошелька.
+      2. **Крэш-репорты.** Если будете ставить Sentry или аналог, сразу включите `beforeSend`, который вырезает всё, похожее на мнемонику и приватный ключ. Лучше вообще не держать сид в state React — только в момент показа и подписи.
+      3. **Логи.** Запретите `console.log` в продовой сборке (babel-плагин `transform-remove-console`), чтобы джун случайно не залогировал ключ.
+      4. **Буфер обмена.** Если дадите копировать сид-фразу, очищайте буфер через 30–60 секунд.
+      5. **Скриншоты.** На экране показа сид-фразы — `FLAG_SECURE` на Android и затемнение превью в app switcher на iOS.
+
+      ```ts
+      // правило для eslint, чтобы ловить подозрительное логирование
+      'no-restricted-syntax': ['error', {
+        selector: "CallExpression[callee.object.name='console'][arguments.0.name=/mnemonic|seed|privateKey/i]",
+        message: 'Не логируйте секреты',
+      }],
+      ```
+  - role: user
+    facts: [F03, F03r]
+    text: |
+      Отлично, правило в линтер забираю. По сетям: поддерживаем Ethereum и Polygon. Solana обсуждали с ребятами и отказались — в команде никто под неё не писал, а со сроками экспериментировать не будем.
+  - role: assistant
+    facts: []
+    text: |
+      Ethereum и Polygon — это один EVM-стек, вторую сеть вы получаете почти бесплатно: те же адреса, тот же формат транзакций, отличаются `chainId`, RPC и нативный токен.
+
+      Библиотека для работы с сетью — `viem`: легче ethers, лучше типизирована, нормально работает в React Native (нужны полифилы `crypto.getRandomValues` и `TextEncoder`).
+
+      ```ts
+      // packages/shared/src/chains.ts
+      import { mainnet, polygon } from 'viem/chains';
+      export const SUPPORTED_CHAINS = { ethereum: mainnet, polygon } as const;
+      export type ChainKey = keyof typeof SUPPORTED_CHAINS;
+      ```
+
+      Для полифилов в мобилке:
+
+      ```ts
+      // apps/mobile/index.js — первой строкой
+      import 'react-native-get-random-values';
+      import 'text-encoding-polyfill';
+      ```
+
+      Не забудьте проверить на настоящем устройстве генерацию ключа: в симуляторе `getRandomValues` иногда работает через JS-фолбэк, и вы не заметите, что нативный модуль не подключился.
+  - role: user
+    facts: [F04]
+    text: |
+      Теперь бэк. Пишем на NestJS, но он нужен только для двух вещей: курсы валют и пуш-уведомления. Аккаунтов у пользователей нет, клиента узнаём по device id. Никакой регистрации.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда бэкенд получается очень тонким — и это хорошо для команды из двух человек.
+
+      ```ts
+      // apps/api/src/app.module.ts
+      @Module({
+        imports: [ConfigModule.forRoot({ isGlobal: true }), RatesModule, DevicesModule, PushModule],
+      })
+      export class AppModule {}
+      ```
+
+      Эндпоинты:
+
+      - `GET /rates?assets=eth,matic&fiat=eur` — отдаёт кэшированные курсы.
+      - `POST /devices` — регистрирует `deviceId` и push-токен, ничего больше.
+      - `PUT /devices/:id/watch` — список адресов, по которым слать пуши о входящих (адреса публичны, это не секрет, но всё равно не храните их дольше, чем нужно).
+
+      `deviceId` генерируйте на клиенте случайным UUID при первом запуске и храните в Keychain/Keystore, а не берите аппаратный идентификатор — так вы не собираете лишних персональных данных, а переустановка приложения честно даёт новое устройство.
+
+      Защитить эндпоинты от мусора можно лимитом запросов по IP и подписью запроса ключом устройства, но это уже на потом.
+  - role: user
+    facts: []
+    text: |
+      Да, пока без подписи запросов. Давай линтер нормально настроим, чтоб конфиг был один на всю монорепу и джун не писал var и не забывал зависимости в хуках.
+  - role: assistant
+    facts: []
+    text: |
+      Сделайте общий flat-config в `packages/config` и подключите его в каждом приложении.
+
+      ```js
+      // packages/config/eslint/base.mjs
+      import js from '@eslint/js';
+      import tseslint from 'typescript-eslint';
+      import reactHooks from 'eslint-plugin-react-hooks';
+
+      export default [
+        js.configs.recommended,
+        ...tseslint.configs.recommended,
+        {
+          plugins: { 'react-hooks': reactHooks },
+          rules: {
+            'no-var': 'error',
+            'prefer-const': 'error',
+            'react-hooks/rules-of-hooks': 'error',
+            'react-hooks/exhaustive-deps': 'warn',
+            '@typescript-eslint/no-explicit-any': 'warn',
+          },
+        },
+      ];
+      ```
+
+      ```js
+      // apps/mobile/eslint.config.mjs
+      import base from '@kladez/config/eslint/base.mjs';
+      export default [...base, { ignores: ['android/**', 'ios/**'] }];
+      ```
+
+      Добавьте `lint-staged` + `husky`, чтобы линтер запускался перед коммитом, — для джуна это лучший учитель: ошибки видны сразу, а не на ревью.
+  - role: user
+    facts: [F05]
+    text: |
+      Сделал. По данным: историю цен храним в PostgreSQL, хочу графики за месяц-год строить и агрегаты считать нормально.
+  - role: assistant
+    facts: []
+    text: |
+      Для истории цен в PostgreSQL достаточно одной таблицы с составным индексом:
+
+      ```sql
+      CREATE TABLE price_points (
+        asset      TEXT        NOT NULL,   -- 'eth' | 'matic'
+        fiat       TEXT        NOT NULL,   -- 'eur' | 'usd' | 'rub'
+        ts         TIMESTAMPTZ NOT NULL,
+        price      NUMERIC(20, 8) NOT NULL,
+        PRIMARY KEY (asset, fiat, ts)
+      );
+      ```
+
+      Для графиков удобно хранить точки раз в 5 минут, а для длинных периодов строить агрегаты на лету:
+
+      ```sql
+      SELECT date_trunc('day', ts) AS day, avg(price) AS price
+      FROM price_points
+      WHERE asset = 'eth' AND fiat = 'eur' AND ts > now() - interval '1 year'
+      GROUP BY 1 ORDER BY 1;
+      ```
+
+      Объём маленький: две монеты × три валюты × 288 точек в день — около 630 тысяч строк в год, это для PostgreSQL ничто. В NestJS подключайте через Prisma или TypeORM — для двоих разработчиков Prisma проще: схема в одном файле, миграции генерируются.
+  - role: user
+    facts: []
+    text: |
+      Возьмём Prisma. Слушай, а у нас баг на Android: иконки не показываются, вместо них квадратики. На iOS всё ок. Стоит react-native-vector-icons.
+  - role: assistant
+    facts: []
+    text: |
+      Классическая проблема: на Android шрифты иконок нужно явно подключить в Gradle, а в монорепе ещё и путь к `node_modules` другой.
+
+      1. В `apps/mobile/android/app/build.gradle` в самом конце:
+
+      ```gradle
+      apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
+      ```
+
+      Проверьте путь: если пакет поднят в корень монорепы, путь будет `../../../../node_modules/...`.
+
+      2. Если используете не все наборы, ограничьте их, чтобы не раздувать APK:
+
+      ```gradle
+      project.ext.vectoricons = [ iconFontNames: ['MaterialCommunityIcons.ttf', 'Feather.ttf'] ]
+      ```
+
+      3. Пересоберите с очисткой: `cd android && ./gradlew clean && cd .. && npx react-native run-android`.
+
+      Если квадратики остались — проверьте, что имя иконки существует именно в выбранном наборе: на Android несуществующее имя тоже рисуется квадратом.
+  - role: user
+    facts: []
+    text: |
+      Да, путь был от старой структуры, поправил на четыре уровня вверх — иконки появились. Завтра садимся за онбординг, на сегодня всё.

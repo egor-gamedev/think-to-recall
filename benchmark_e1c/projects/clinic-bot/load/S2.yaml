@@ -1,0 +1,223 @@
+segment: S2
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [C09]
+    text: |
+      Поговорил с главврачом, Олегом Викторовичем. Через бота записываются только к терапевтам и гигиенисту; к хирургам и имплантологам — через регистратуру, там надо сначала с человеком поговорить. Список врачей беру из таблицы DOCTORS, там есть поле SPEC с кодом специальности.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда фильтр по специальности — в одном месте, в репозитории, чтобы его не пришлось искать по хэндлерам:
+
+      ```python
+      # clinic_bot/clinic/doctors.py
+      from .repo import fetch
+      from ..config import settings
+
+      # коды из справочника SPECIALITY; сверить с базой
+      BOOKABLE_SPECS = settings.bookable_specs   # например {"TER", "GIG"}
+
+      DOCTORS_SQL = """
+          SELECT d.ID, d.FIO, d.SPEC
+          FROM DOCTORS d
+          WHERE d.IS_ACTIVE = 1
+          ORDER BY d.FIO
+      """
+
+      async def bookable_doctors(branch_id: int) -> list[dict]:
+          rows = await fetch(DOCTORS_SQL)
+          rows = [r for r in rows if r["SPEC"] in BOOKABLE_SPECS]
+          # врач показывается в филиале, только если у него там есть сетка
+          has_grid = {r["DOCTOR_ID"] for r in await fetch(
+              "SELECT DISTINCT DOCTOR_ID FROM SCHEDULE WHERE BRANCH_ID = ? AND START_TIME >= CURRENT_DATE",
+              (branch_id,),
+          )}
+          return [r for r in rows if r["ID"] in has_grid]
+      ```
+
+      Коды специальностей вынесены в `.env` (`BOOKABLE_SPECS=TER,GIG`) — если клиника передумает, это правка настройки, а не кода. FSM записи тогда выглядит так:
+
+      ```python
+      class Booking(StatesGroup):
+          card = State()      # кого записываем
+          branch = State()
+          doctor = State()
+          day = State()
+          time = State()
+          confirm = State()
+      ```
+  - role: user
+    facts: [C07]
+    text: |
+      Нашёл засаду с картами: на один телефон в учётке бывает несколько карт — члены семьи, муж записан на телефон жены, пожилые родители на телефоне сына. Пусть бот спрашивает, кого записать.
+  - role: assistant
+    facts: []
+    text: |
+      Да, `find_by_phone` и так возвращает список — показываем его кнопками. ФИО целиком в чате показывать не обязательно, достаточно имени и отчества с первой буквой фамилии — человек своих узнает:
+
+      ```python
+      class CardCb(CallbackData, prefix="card"):
+          id: int
+
+      def short_name(fio: str) -> str:
+          parts = fio.split()
+          if len(parts) >= 3:
+              return f"{parts[1]} {parts[2]} {parts[0][0]}."
+          return fio
+
+      async def ask_card(message: Message, state: FSMContext, card_ids: list[int]):
+          cards = await patients.get_cards(card_ids)   # ID, FIO, BIRTH_DATE
+          if len(cards) == 1:
+              await state.update_data(card_id=cards[0]["ID"])
+              await choose_branch(message, state)
+              return
+          kb = InlineKeyboardBuilder()
+          for c in cards:
+              kb.button(text=short_name(c["FIO"]), callback_data=CardCb(id=c["ID"]))
+          kb.adjust(1)
+          await state.set_state(Booking.card)
+          await message.answer("На этот номер несколько карт. Кого записываем?", reply_markup=kb.as_markup())
+      ```
+
+      В обработчике `CardCb` обязательно проверьте, что выбранный `id` действительно из списка этого телефона (храните список в `state`) — callback-данные можно подделать.
+  - role: user
+    facts: [C17]
+    text: |
+      Ок. Олег Викторович, кстати, по поводу карт сказал: всех, кому меньше 18, отправляем в «Карапуз» на Театральной, у нас даже детского кресла нет, и лицензию на детский приём не продлевали. BIRTH_DATE в карте есть, если что. Ладно, это потом. Сейчас другое: MemoryStorage для FSM теряет состояние при каждом рестарте, пациент посреди записи получает «не понимаю». Чем заменить?
+  - role: assistant
+    facts: []
+    text: |
+      В aiogram 3 из коробки есть `RedisStorage` — это самый частый выбор:
+
+      ```python
+      from aiogram.fsm.storage.redis import RedisStorage
+
+      storage = RedisStorage.from_url("redis://localhost:6379/1", state_ttl=3600, data_ttl=3600)
+      dp = Dispatcher(storage=storage)
+      ```
+
+      `state_ttl` и `data_ttl` в час — чтобы брошенные на середине записи состояния сами чистились и не висели неделями. Redis на том же VPS: `apt install redis-server`, слушать только `127.0.0.1`.
+
+      И на случай, если состояние всё же потерялось, сделайте «мягкий» обработчик последнего уровня: любой непонятный callback отвечает «Сессия устарела, начнём заново» и показывает главное меню, а не молчит.
+  - role: user
+    facts: [C08]
+    text: |
+      Сделал. Следующее: новых пациентов, у кого карты нет, бот записывает только на первичную консультацию 30 минут. Карту регистратура заводит, когда человек пришёл. Как записывать без PATIENT_ID?
+  - role: assistant
+    facts: []
+    text: |
+      Если в SCHEDULE есть поле под комментарий (часто `NOTE` или `COMMENT`), занимаем слот без карты и пишем туда, кто это:
+
+      ```python
+      BOOK_NEW_SQL = """
+          UPDATE SCHEDULE
+          SET PATIENT_ID = NULL, VISIT_TYPE = ?, NOTE = ?, IS_BLOCKED = 1
+          WHERE ID = ? AND PATIENT_ID IS NULL AND IS_BLOCKED = 0
+      """
+
+      async def book_new_patient(slot_id: int, name: str, phone: str) -> bool:
+          note = f"Бот: новый пациент {name}, {phone}"
+          n = await execute(BOOK_NEW_SQL, (settings.first_visit_type, note, slot_id))
+          return n == 1
+      ```
+
+      Условие `PATIENT_ID IS NULL AND IS_BLOCKED = 0` в самом `UPDATE` — защита от гонки: если двое нажали на один слот, обновится строка только у первого, второму `n == 0` — показываем «время только что заняли».
+
+      Первичная консультация — 30 минут, а у врачей сетка может быть по 15 минут. Тогда новичку нужно два подряд идущих свободных слота; функция подбора:
+
+      ```python
+      def pairs_for_30(slots: list[Slot]) -> list[Slot]:
+          out = []
+          for a, b in zip(slots, slots[1:]):
+              if a.minutes == 15 and b.start == a.start + timedelta(minutes=15):
+                  out.append(a)
+              elif a.minutes >= 30:
+                  out.append(a)
+          return out
+      ```
+
+      Как именно «СтомаОфис» хранит запись без карты, лучше посмотреть по уже существующим записям, которые регистратура вносила по телефону.
+  - role: user
+    facts: [C03]
+    text: |
+      Посмотрел, у них так и делают — NOTE с именем. Теперь напоминания. Пока делаем просто: одно сообщение в боте за 24 часа до приёма. Думал взять APScheduler и на каждую запись ставить job на «приём минус сутки».
+  - role: assistant
+    facts: []
+    text: |
+      Можно, но разовые job'ы на каждую запись — хрупкая схема: запись перенесли или отменили в регистратуре, а job остался; бот упал — job'ы из памяти пропали. Надёжнее одна периодическая задача, которая сама смотрит в расписание:
+
+      ```python
+      # clinic_bot/services/reminders.py
+      from datetime import datetime, timedelta
+
+      REMIND_SQL = """
+          SELECT s.ID, s.PATIENT_ID, s.START_TIME, s.BRANCH_ID, d.FIO AS DOCTOR
+          FROM SCHEDULE s JOIN DOCTORS d ON d.ID = s.DOCTOR_ID
+          WHERE s.START_TIME BETWEEN ? AND ? AND s.PATIENT_ID IS NOT NULL
+      """
+
+      async def tick(bot: Bot):
+          now = datetime.now()
+          rows = await fetch(REMIND_SQL, (now + timedelta(hours=23, minutes=50), now + timedelta(hours=24, minutes=10)))
+          for r in rows:
+              if await sent.was_sent(r["ID"], "24h"):
+                  continue
+              tg_id = await links.tg_for_card(r["PATIENT_ID"])
+              if not tg_id:
+                  continue
+              await bot.send_message(tg_id, f"Напоминаем: завтра в {r['START_TIME']:%H:%M} приём у врача {r['DOCTOR']}.")
+              await sent.mark(r["ID"], "24h")
+      ```
+
+      Запуск — каждые 5 минут:
+
+      ```python
+      scheduler = AsyncIOScheduler()
+      scheduler.add_job(tick, "interval", minutes=5, args=[bot])
+      scheduler.start()
+      ```
+
+      Окно ±10 минут перекрывает интервал в 5 минут, а флаг «уже отправлено» не даёт продублировать.
+  - role: user
+    facts: [C18]
+    text: |
+      Логично. Пара деталей по времени: в SCHEDULE START_TIME хранится просто TIMESTAMP без пояса — регистратура вбивает его так, как видит на часах в холле. А APScheduler у меня берёт пояс системы, на VPS я ничего не трогал, как Selectel поставил, так и стоит. Вопрос не про это: флаг «уже отправлено» где хранить? Добавить колонку в SCHEDULE?
+  - role: assistant
+    facts: []
+    text: |
+      Нет, в схему вендора колонок не добавляем: при обновлении «СтомаОфиса» их миграция может упасть на незнакомой колонке или молча её удалить, и вы окажетесь виноваты в сломанной учётке.
+
+      Своё состояние бота держим у себя на VPS. Хватит SQLite:
+
+      ```python
+      # clinic_bot/storage/sent.py
+      import aiosqlite
+
+      DB = "/var/lib/clinic-bot/bot.sqlite3"
+
+      INIT = """
+      CREATE TABLE IF NOT EXISTS sent (
+          schedule_id INTEGER NOT NULL,
+          kind TEXT NOT NULL,
+          sent_at TEXT NOT NULL DEFAULT (datetime('now')),
+          PRIMARY KEY (schedule_id, kind)
+      );
+      CREATE TABLE IF NOT EXISTS links (
+          card_id INTEGER PRIMARY KEY,
+          tg_id INTEGER NOT NULL
+      );
+      """
+
+      async def was_sent(schedule_id: int, kind: str) -> bool:
+          async with aiosqlite.connect(DB) as db:
+              cur = await db.execute("SELECT 1 FROM sent WHERE schedule_id=? AND kind=?", (schedule_id, kind))
+              return await cur.fetchone() is not None
+
+      async def mark(schedule_id: int, kind: str):
+          async with aiosqlite.connect(DB) as db:
+              await db.execute("INSERT OR IGNORE INTO sent(schedule_id, kind) VALUES (?, ?)", (schedule_id, kind))
+              await db.commit()
+      ```
+
+      Таблица `links` — связка карты с `telegram_id`, которую вы заполняете в момент опознания по контакту. Без неё бот не знает, кому слать напоминание. Раз в месяц можно чистить `sent` старше 30 дней.

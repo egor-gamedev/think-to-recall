@@ -1,0 +1,41 @@
+[project]
+name = "think-to-recall"
+version = "0.1.0"
+description = "Graph memory for LLMs, built without a generative model (research prototype)"
+requires-python = ">=3.11"
+dependencies = [
+    "pymorphy3>=2.0",
+    "yake>=0.4",
+    "nltk>=3.8",
+    "ruwordnet>=0.0.6",
+    "model2vec>=0.4",
+    "numpy>=1.26",
+    "requests>=2.31",
+    "mcp>=1.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "ruff>=0.5"]
+bench = ["spacy>=3.7,<4", "sentence-transformers>=3", "scipy>=1.11", "pyarrow>=15", "huggingface_hub>=0.23",
+         "python-dotenv>=1", "rank-bm25>=0.2", "everalgo-core==0.2.0", "everalgo-rank==0.3.0",
+         "everalgo-clustering==0.2.1"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ctxgraph*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+# Длину строк держит `ruff format`; оставшиеся длинные строки — регулярки, SQL и URL.
+ignore = ["E501", "SIM905"]  # SIM905: списки слов читаемее строкой со split()
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["network: tests that call Wikidata / download models (deselect with -m 'not network')"]

@@ -1,0 +1,192 @@
+segment: S4
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [C03b]
+    text: |
+      Клиника посмотрела на неявки за первые две недели тестового запуска — многие забывают. Решили: напоминаний два, за 24 часа и за 2 часа до приёма. Надо доделать.
+  - role: assistant
+    facts: []
+    text: |
+      Периодическая задача у вас уже есть, так что второе напоминание — это второе окно и второй вид флага. Обобщим `tick`, чтобы не копировать код:
+
+      ```python
+      # clinic_bot/services/reminders.py
+      REMINDERS = [
+          ("24h", timedelta(hours=24), "Напоминаем: завтра в {t:%H:%M} приём у врача {doctor}.\n{address}"),
+          ("2h",  timedelta(hours=2),  "Через два часа, в {t:%H:%M}, вас ждёт врач {doctor}.\n{address}"),
+      ]
+      WINDOW = timedelta(minutes=10)
+
+      async def tick(bot: Bot, api: StomaApi):
+          now = datetime.now()
+          for kind, before, template in REMINDERS:
+              visits = await upcoming_visits(api, now + before - WINDOW, now + before + WINDOW)
+              for v in visits:
+                  if await sent.was_sent(v.id, kind):
+                      continue
+                  tg_id = await links.tg_for_card(v.patient_id)
+                  if not tg_id:
+                      continue
+                  text = template.format(t=v.start, doctor=v.doctor, address=BRANCHES[v.branch_id])
+                  try:
+                      await bot.send_message(tg_id, text)
+                  except TelegramForbiddenError:
+                      await links.forget(tg_id)   # пациент заблокировал бота
+                  await sent.mark(v.id, kind)
+      ```
+
+      Обратите внимание: `upcoming_visits` теперь ходит в API, и это два запроса каждые 5 минут — в лимит укладывается спокойно, но если вендор даст метод «визиты за период», используйте его, а не перебор по врачам.
+
+      Ещё момент: запись, сделанная меньше чем за 24 часа до приёма, «перепрыгнет» первое окно — это нормально, человек и так только что записался.
+  - role: user
+    facts: [C14]
+    text: |
+      Ещё нужно: уведомления о новых записях и отменах бот шлёт в общий Telegram-чат регистратуры. Чат создали, бота туда добавили. Как узнать chat_id?
+  - role: assistant
+    facts: []
+    text: |
+      Самый простой способ — временный хэндлер, который печатает `chat.id` любого сообщения в группе:
+
+      ```python
+      @router.message(F.chat.type.in_({"group", "supergroup"}))
+      async def where_am_i(message: Message):
+          logging.info("chat_id=%s title=%s", message.chat.id, message.chat.title)
+      ```
+
+      Напишите что-нибудь в чат и посмотрите лог. Две ловушки:
+
+      1. **Privacy mode.** По умолчанию бот в группе видит только команды и ответы на свои сообщения. Для вывода `chat_id` достаточно написать в чат `/start@имя_бота`. Отключать privacy mode в BotFather для уведомлений не нужно — бот в чат только пишет.
+      2. **Миграция в супергруппу.** Если в группе включат историю для новых участников или сделают кого-то админом с особыми правами, Telegram превратит её в супергруппу с новым `chat_id` вида `-100…`. Старый id начнёт отдавать ошибку `migrate_to_chat_id`. Обработайте её:
+
+      ```python
+      async def notify_registry(bot: Bot, text: str):
+          try:
+              await bot.send_message(settings.registry_chat_id, text)
+          except TelegramMigrateToChat as e:
+              logging.warning("registry chat migrated to %s", e.migrate_to_chat_id)
+              await bot.send_message(e.migrate_to_chat_id, text)
+      ```
+
+      И новый id — в `.env`, иначе после рестарта всё повторится.
+  - role: user
+    facts: []
+    text: |
+      Нашёл id. Какой формат у уведомления, чтобы девочкам было удобно? Они смотрят его между звонками.
+  - role: assistant
+    facts: []
+    text: |
+      Главное — чтобы суть читалась по первой строке, а детали были ниже. Эмодзи в начале помогают отличать типы на глаз:
+
+      ```python
+      def fmt_new(v, patient) -> str:
+          return (
+              f"🟢 Новая запись · {BRANCHES_SHORT[v.branch_id]}\n"
+              f"{v.start:%d.%m, %a, %H:%M} — {v.doctor}\n"
+              f"{patient.fio}, {patient.phone}\n"
+              f"{'Первичный, карты нет' if patient.is_new else 'Карта №' + str(patient.card_id)}"
+          )
+
+      def fmt_cancel(v, patient) -> str:
+          return (
+              f"🔴 Отмена · {BRANCHES_SHORT[v.branch_id]}\n"
+              f"{v.start:%d.%m, %a, %H:%M} — {v.doctor}\n"
+              f"{patient.fio}, {patient.phone}"
+          )
+      ```
+
+      `%a` по умолчанию даст английские дни недели — либо поставьте локаль `ru_RU.UTF-8` на VPS, либо сделайте свой список «пн, вт…», как в календаре. Второе надёжнее: локаль на сервере кто-нибудь однажды поменяет.
+  - role: user
+    facts: [C20]
+    text: |
+      Скинул им пример, понравилось. Теперь описания услуг: «Гигиеническая чистка», «Консультация терапевта» и т. д., чтобы человек понимал, на что записывается. Ирина, управляющая, просила в описаниях ничего про стоимость не писать. Год назад у них в группе ВК висела старая сумма за отбеливание, пациентка пришла со скриншотом и написала жалобу в Роспотребнадзор — теперь у Олега Викторовича на этом пунктик. Ладно. Вопрос: где хранить эти тексты, чтобы Вадим мог их править без меня?
+  - role: assistant
+    facts: []
+    text: |
+      Вадиму проще всего будет обычный текстовый файл, который открывается в Блокноте. YAML подходит, если формат максимально простой:
+
+      ```yaml
+      # /etc/clinic-bot/services.yaml
+      # Тексты услуг для бота. После правки: sudo systemctl restart clinic-bot
+      TER_CONSULT:
+        title: Консультация терапевта
+        text: |
+          Осмотр, при необходимости снимок, план лечения.
+          Длительность — около 30 минут.
+      GIG_CLEAN:
+        title: Гигиеническая чистка
+        text: |
+          Ультразвук, Air Flow, полировка.
+          Длительность — около часа.
+      ```
+
+      В коде — загрузка с проверкой, чтобы опечатка в файле не роняла бота:
+
+      ```python
+      def load_services(path="/etc/clinic-bot/services.yaml") -> dict:
+          try:
+              with open(path, encoding="utf-8") as f:
+                  data = yaml.safe_load(f)
+              assert isinstance(data, dict)
+              return data
+          except Exception:
+              logging.exception("services.yaml сломан, оставляю прежние тексты")
+              return _last_good
+      ```
+
+      И скажите Вадиму сохранять файл в UTF-8: Блокнот в новых Windows так и делает, а вот старые редакторы могут сохранить в 1251.
+  - role: user
+    facts: [C21]
+    text: |
+      Сделаю. По календарю: админ в СтомаОфисе по пятницам выставляет докторам расписание на 14 дней. Вопрос по интерфейсу: когда у врача на выбранной неделе вообще ничего нет, что показывать — пустой список выглядит как поломка.
+  - role: assistant
+    facts: []
+    text: |
+      Пустой экран действительно читается как «сломалось». Лучше всегда давать человеку следующий шаг:
+
+      ```python
+      async def show_days(cb: CallbackQuery, doctor_id: int, branch_id: int, api: StomaApi):
+          days = await days_with_slots(api, doctor_id, branch_id)
+          if not days:
+              kb = InlineKeyboardBuilder()
+              kb.button(text="Другой врач", callback_data="back:doctor")
+              kb.button(text="Другой филиал", callback_data="back:branch")
+              kb.adjust(1)
+              await cb.message.edit_text(
+                  "У этого врача сейчас нет свободного времени для записи через бот.\n"
+                  "Можно выбрать другого врача или позвонить в регистратуру.",
+                  reply_markup=kb.as_markup(),
+              )
+              return
+          await cb.message.edit_text("Выберите день:", reply_markup=days_kb(days, page=0))
+      ```
+
+      Текст без обещаний вроде «появится завтра» — вы не знаете, когда появится. Кнопки «Другой врач» и «Другой филиал» возвращают на предыдущий шаг FSM, а не в начало, чтобы не выбирать карту заново.
+  - role: user
+    facts: [C24r]
+    text: |
+      Ещё: пациенты присылают в бот фото снимков и зубов, спрашивают «что это у меня». Приём фото и рентгеновских снимков через бот отказались делать — Олег Викторович сказал, медданные в Telegram не гоняем. Что бот должен отвечать на фото?
+  - role: assistant
+    facts: []
+    text: |
+      Отдельный хэндлер на любые медиа, без скачивания файла:
+
+      ```python
+      @router.message(F.photo | F.document | F.video)
+      async def media(message: Message):
+          await message.answer(
+              "Мы не принимаем снимки и фотографии через бот.\n"
+              "Возьмите их с собой на приём — врач посмотрит.",
+              reply_markup=main_menu_kb(),
+          )
+          try:
+              await message.delete()
+          except TelegramBadRequest:
+              pass
+      ```
+
+      Пояснения:
+
+      - `bot.download` не вызываем — файл не попадает на ваш сервер вообще.
+      - Удалить сообщение пользователя в личном чате бот может (в течение 48 часов) — так снимок не останется висеть в переписке, если телефон увидит кто-то ещё. Если клиника против удаления — просто уберите `delete`.
+      - Хэндлер ставьте выше fallback-роутера, иначе фото с подписью уйдёт в обработчик текста.

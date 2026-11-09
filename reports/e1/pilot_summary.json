@@ -1,0 +1,117 @@
+{
+ "phase": "pilot",
+ "variants": {
+  "1": {
+   "runs": 5,
+   "errors": 0,
+   "in_tok": 491,
+   "out_tok": 2034,
+   "rub_per_run": 0.391,
+   "calls": 1.0,
+   "expanded": 0.0,
+   "noticed": "9/9",
+   "initiative": "1/5",
+   "off_topic": "0/5",
+   "judge_missing": 0
+  },
+  "2": {
+   "runs": 5,
+   "errors": 0,
+   "in_tok": 1124,
+   "out_tok": 1642,
+   "rub_per_run": 0.359,
+   "calls": 1.0,
+   "expanded": 0.0,
+   "noticed": "9/9",
+   "initiative": "1/5",
+   "off_topic": "0/5",
+   "judge_missing": 0
+  },
+  "3": {
+   "runs": 5,
+   "errors": 0,
+   "in_tok": 1432,
+   "out_tok": 1617,
+   "rub_per_run": 0.372,
+   "calls": 1.0,
+   "expanded": 0.0,
+   "noticed": "9/9",
+   "initiative": "0/5",
+   "off_topic": "0/5",
+   "judge_missing": 0
+  },
+  "4": {
+   "runs": 5,
+   "errors": 0,
+   "in_tok": 1878,
+   "out_tok": 1635,
+   "rub_per_run": 0.402,
+   "calls": 1.0,
+   "expanded": 0.0,
+   "noticed": "9/9",
+   "initiative": "1/5",
+   "off_topic": "0/5",
+   "judge_missing": 0
+  },
+  "5": {
+   "runs": 5,
+   "errors": 0,
+   "in_tok": 2268,
+   "out_tok": 1633,
+   "rub_per_run": 0.424,
+   "calls": 1.0,
+   "expanded": 0.0,
+   "noticed": "9/9",
+   "initiative": "1/5",
+   "off_topic": "0/5",
+   "judge_missing": 0
+  },
+  "6": {
+   "runs": 5,
+   "errors": 0,
+   "in_tok": 2633,
+   "out_tok": 1644,
+   "rub_per_run": 0.448,
+   "calls": 1.0,
+   "expanded": 0.0,
+   "noticed": "9/9",
+   "initiative": "0/5",
+   "off_topic": "0/5",
+   "judge_missing": 0
+  },
+  "7": {
+   "runs": 5,
+   "errors": 0,
+   "in_tok": 1384,
+   "out_tok": 1720,
+   "rub_per_run": 0.388,
+   "calls": 1.0,
+   "expanded": 0.0,
+   "noticed": "9/9",
+   "initiative": "1/5",
+   "off_topic": "0/5",
+   "judge_missing": 0
+  },
+  "8": {
+   "runs": 5,
+   "errors": 0,
+   "in_tok": 1499,
+   "out_tok": 2536,
+   "rub_per_run": 0.54,
+   "calls": 2.0,
+   "expanded": 0.0,
+   "noticed": "7/9",
+   "initiative": "2/5",
+   "off_topic": "0/5",
+   "judge_missing": 0
+  }
+ },
+ "judge_rub_per_answer": 0.0763,
+ "spent_phase_rub": 19.67,
+ "spent_total_rub": 19.67,
+ "forecast_main_rub": 237.8,
+ "limit_rub": 310.0,
+ "fingerprints": [
+  "e72d3c7f663d3e1383b00b3884cb4501"
+ ]
+}

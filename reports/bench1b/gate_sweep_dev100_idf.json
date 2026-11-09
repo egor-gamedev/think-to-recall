@@ -1,0 +1,36 @@
+[
+ {
+  "config": "a_dense|idf|a3|m3|s2",
+  "base": "a_dense",
+  "signal": 99,
+  "changed": 59,
+  "wins": 5,
+  "losses": 3,
+  "q_wins": 5,
+  "q_losses": 3,
+  "r5_base": 0.595,
+  "r5_gate": 0.6025,
+  "diff": [
+   0.0075000000000000015,
+   -0.011666666666666665,
+   0.028333333333333335
+  ]
+ },
+ {
+  "config": "r_dense|idf|a3|m3|s2",
+  "base": "r_dense",
+  "signal": 99,
+  "changed": 66,
+  "wins": 2,
+  "losses": 6,
+  "q_wins": 2,
+  "q_losses": 5,
+  "r5_base": 0.65,
+  "r5_gate": 0.6375,
+  "diff": [
+   -0.0125,
+   -0.04083333333333334,
+   0.0125
+  ]
+ }
+]

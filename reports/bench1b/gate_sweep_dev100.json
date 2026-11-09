@@ -1,0 +1,3402 @@
+[
+ {
+  "config": "a_dense|df2|a2|m0|s1",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a2|m0|s2",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a2|m0.25|s1",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a2|m0.25|s2",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a2|m1|s1",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a2|m1|s2",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a2|m3|s1",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a2|m3|s2",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a2|m10|s1",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a2|m10|s2",
+  "base": "a_dense",
+  "signal": 2,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m0|s1",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 3,
+  "wins": 0,
+  "losses": 1,
+  "q_wins": 0,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5924999999999999,
+  "diff": [
+   -0.0025,
+   -0.0075,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m0|s2",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 3,
+  "wins": 0,
+  "losses": 1,
+  "q_wins": 0,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5924999999999999,
+  "diff": [
+   -0.0025,
+   -0.0075,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m0.25|s1",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 3,
+  "wins": 0,
+  "losses": 1,
+  "q_wins": 0,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5924999999999999,
+  "diff": [
+   -0.0025,
+   -0.0075,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m0.25|s2",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 3,
+  "wins": 0,
+  "losses": 1,
+  "q_wins": 0,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5924999999999999,
+  "diff": [
+   -0.0025,
+   -0.0075,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m1|s1",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 3,
+  "wins": 0,
+  "losses": 1,
+  "q_wins": 0,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5924999999999999,
+  "diff": [
+   -0.0025,
+   -0.0075,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m1|s2",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 3,
+  "wins": 0,
+  "losses": 1,
+  "q_wins": 0,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5924999999999999,
+  "diff": [
+   -0.0025,
+   -0.0075,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m3|s1",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m3|s2",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m10|s1",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df2|a3|m10|s2",
+  "base": "a_dense",
+  "signal": 4,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m0|s1",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 8,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m0|s2",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 8,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m0.25|s1",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 8,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m0.25|s2",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 8,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m1|s1",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 8,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m1|s2",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 8,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m3|s1",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 8,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m3|s2",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 8,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m10|s1",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 7,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a2|m10|s2",
+  "base": "a_dense",
+  "signal": 10,
+  "changed": 7,
+  "wins": 1,
+  "losses": 0,
+  "q_wins": 1,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025,
+   0.0,
+   0.0075
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m0|s1",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 13,
+  "wins": 2,
+  "losses": 1,
+  "q_wins": 2,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5983333333333334,
+  "diff": [
+   0.0033333333333333335,
+   -0.005,
+   0.013333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m0|s2",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 13,
+  "wins": 2,
+  "losses": 1,
+  "q_wins": 2,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5983333333333334,
+  "diff": [
+   0.0033333333333333335,
+   -0.005,
+   0.013333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m0.25|s1",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 13,
+  "wins": 2,
+  "losses": 1,
+  "q_wins": 2,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5983333333333334,
+  "diff": [
+   0.0033333333333333335,
+   -0.005,
+   0.013333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m0.25|s2",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 13,
+  "wins": 2,
+  "losses": 1,
+  "q_wins": 2,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5983333333333334,
+  "diff": [
+   0.0033333333333333335,
+   -0.005,
+   0.013333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m1|s1",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 12,
+  "wins": 2,
+  "losses": 1,
+  "q_wins": 2,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5983333333333334,
+  "diff": [
+   0.0033333333333333335,
+   -0.005,
+   0.013333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m1|s2",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 12,
+  "wins": 2,
+  "losses": 1,
+  "q_wins": 2,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.5983333333333334,
+  "diff": [
+   0.0033333333333333335,
+   -0.005,
+   0.013333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m3|s1",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 11,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6008333333333333,
+  "diff": [
+   0.005833333333333334,
+   0.0,
+   0.015
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m3|s2",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 11,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6008333333333333,
+  "diff": [
+   0.005833333333333334,
+   0.0,
+   0.015
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m10|s1",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 9,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6008333333333333,
+  "diff": [
+   0.005833333333333334,
+   0.0,
+   0.015
+  ]
+ },
+ {
+  "config": "a_dense|df3|a3|m10|s2",
+  "base": "a_dense",
+  "signal": 20,
+  "changed": 9,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6008333333333333,
+  "diff": [
+   0.005833333333333334,
+   0.0,
+   0.015
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m0|s1",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 21,
+  "wins": 3,
+  "losses": 1,
+  "q_wins": 3,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6024999999999999,
+  "diff": [
+   0.0075,
+   -0.01,
+   0.025
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m0|s2",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 21,
+  "wins": 3,
+  "losses": 2,
+  "q_wins": 3,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.5991666666666666,
+  "diff": [
+   0.0041666666666666675,
+   -0.014166666666666666,
+   0.023333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m0.25|s1",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 17,
+  "wins": 3,
+  "losses": 0,
+  "q_wins": 3,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6074999999999999,
+  "diff": [
+   0.0125,
+   0.0,
+   0.03
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m0.25|s2",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 17,
+  "wins": 3,
+  "losses": 1,
+  "q_wins": 3,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6041666666666666,
+  "diff": [
+   0.009166666666666667,
+   -0.004999999999999999,
+   0.02666666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m1|s1",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 16,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6024999999999999,
+  "diff": [
+   0.0075,
+   0.0,
+   0.02
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m1|s2",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 16,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6024999999999999,
+  "diff": [
+   0.0075,
+   0.0,
+   0.02
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m3|s1",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 15,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6024999999999999,
+  "diff": [
+   0.0075,
+   0.0,
+   0.02
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m3|s2",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 15,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6024999999999999,
+  "diff": [
+   0.0075,
+   0.0,
+   0.02
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m10|s1",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 15,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6024999999999999,
+  "diff": [
+   0.0075,
+   0.0,
+   0.02
+  ]
+ },
+ {
+  "config": "a_dense|df5|a2|m10|s2",
+  "base": "a_dense",
+  "signal": 25,
+  "changed": 15,
+  "wins": 2,
+  "losses": 0,
+  "q_wins": 2,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6024999999999999,
+  "diff": [
+   0.0075,
+   0.0,
+   0.02
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m0|s1",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 33,
+  "wins": 4,
+  "losses": 2,
+  "q_wins": 4,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.6033333333333334,
+  "diff": [
+   0.008333333333333333,
+   -0.01,
+   0.028333333333333335
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m0|s2",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 33,
+  "wins": 5,
+  "losses": 3,
+  "q_wins": 5,
+  "q_losses": 3,
+  "r5_base": 0.595,
+  "r5_gate": 0.6025,
+  "diff": [
+   0.0075000000000000015,
+   -0.01333333333333333,
+   0.02916666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m0.25|s1",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 28,
+  "wins": 3,
+  "losses": 1,
+  "q_wins": 3,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6033333333333334,
+  "diff": [
+   0.008333333333333333,
+   -0.0025,
+   0.023333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m0.25|s2",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 28,
+  "wins": 4,
+  "losses": 2,
+  "q_wins": 4,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.6025,
+  "diff": [
+   0.0075,
+   -0.007499999999999999,
+   0.02416666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m1|s1",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 26,
+  "wins": 3,
+  "losses": 1,
+  "q_wins": 3,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6033333333333334,
+  "diff": [
+   0.008333333333333333,
+   -0.0025,
+   0.023333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m1|s2",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 26,
+  "wins": 4,
+  "losses": 1,
+  "q_wins": 4,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6058333333333333,
+  "diff": [
+   0.010833333333333335,
+   -0.0025,
+   0.02666666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m3|s1",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 24,
+  "wins": 3,
+  "losses": 0,
+  "q_wins": 3,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6058333333333333,
+  "diff": [
+   0.010833333333333335,
+   0.0,
+   0.025000000000000005
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m3|s2",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 24,
+  "wins": 4,
+  "losses": 0,
+  "q_wins": 4,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6083333333333334,
+  "diff": [
+   0.013333333333333334,
+   0.0025,
+   0.028333333333333335
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m10|s1",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 20,
+  "wins": 3,
+  "losses": 0,
+  "q_wins": 3,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6058333333333333,
+  "diff": [
+   0.010833333333333335,
+   0.0,
+   0.025000000000000005
+  ]
+ },
+ {
+  "config": "a_dense|df5|a3|m10|s2",
+  "base": "a_dense",
+  "signal": 43,
+  "changed": 20,
+  "wins": 4,
+  "losses": 0,
+  "q_wins": 4,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6083333333333334,
+  "diff": [
+   0.013333333333333334,
+   0.0025,
+   0.028333333333333335
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m0|s1",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 47,
+  "wins": 7,
+  "losses": 5,
+  "q_wins": 7,
+  "q_losses": 5,
+  "r5_base": 0.595,
+  "r5_gate": 0.6008333333333333,
+  "diff": [
+   0.0058333333333333345,
+   -0.024166666666666666,
+   0.035833333333333335
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m0|s2",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 47,
+  "wins": 8,
+  "losses": 8,
+  "q_wins": 7,
+  "q_losses": 7,
+  "r5_base": 0.595,
+  "r5_gate": 0.5925,
+  "diff": [
+   -0.0024999999999999988,
+   -0.034999999999999996,
+   0.03
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m0.25|s1",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 40,
+  "wins": 7,
+  "losses": 1,
+  "q_wins": 7,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6191666666666666,
+  "diff": [
+   0.02416666666666667,
+   0.0016666666666666674,
+   0.05
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m0.25|s2",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 40,
+  "wins": 8,
+  "losses": 3,
+  "q_wins": 7,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.6141666666666666,
+  "diff": [
+   0.01916666666666667,
+   -0.005833333333333333,
+   0.04583333333333333
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m1|s1",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 38,
+  "wins": 6,
+  "losses": 1,
+  "q_wins": 6,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6141666666666666,
+  "diff": [
+   0.01916666666666667,
+   -0.0016666666666666663,
+   0.0425
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m1|s2",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 38,
+  "wins": 7,
+  "losses": 2,
+  "q_wins": 7,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.6141666666666666,
+  "diff": [
+   0.01916666666666667,
+   -0.006666666666666665,
+   0.04666666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m3|s1",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 31,
+  "wins": 6,
+  "losses": 0,
+  "q_wins": 6,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6191666666666666,
+  "diff": [
+   0.02416666666666667,
+   0.006666666666666667,
+   0.04583333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m3|s2",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 31,
+  "wins": 7,
+  "losses": 0,
+  "q_wins": 7,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6241666666666666,
+  "diff": [
+   0.02916666666666667,
+   0.01,
+   0.05333333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m10|s1",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 26,
+  "wins": 6,
+  "losses": 0,
+  "q_wins": 6,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6191666666666666,
+  "diff": [
+   0.02416666666666667,
+   0.006666666666666667,
+   0.04583333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df10|a2|m10|s2",
+  "base": "a_dense",
+  "signal": 61,
+  "changed": 26,
+  "wins": 6,
+  "losses": 0,
+  "q_wins": 6,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6191666666666666,
+  "diff": [
+   0.02416666666666667,
+   0.006666666666666667,
+   0.04583333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m0|s1",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 57,
+  "wins": 7,
+  "losses": 6,
+  "q_wins": 7,
+  "q_losses": 6,
+  "r5_base": 0.595,
+  "r5_gate": 0.5958333333333333,
+  "diff": [
+   0.0008333333333333348,
+   -0.029999999999999995,
+   0.030833333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m0|s2",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 57,
+  "wins": 10,
+  "losses": 9,
+  "q_wins": 9,
+  "q_losses": 8,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   1.6653345369377347e-18,
+   -0.03333333333333333,
+   0.03416666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m0.25|s1",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 48,
+  "wins": 6,
+  "losses": 1,
+  "q_wins": 6,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6125,
+  "diff": [
+   0.0175,
+   -0.0025,
+   0.03916666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m0.25|s2",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 48,
+  "wins": 8,
+  "losses": 3,
+  "q_wins": 7,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.61,
+  "diff": [
+   0.015,
+   -0.0075,
+   0.03916666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m1|s1",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 44,
+  "wins": 6,
+  "losses": 1,
+  "q_wins": 6,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6125,
+  "diff": [
+   0.0175,
+   -0.0025,
+   0.03916666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m1|s2",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 44,
+  "wins": 8,
+  "losses": 2,
+  "q_wins": 8,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.615,
+  "diff": [
+   0.02,
+   -0.004999999999999999,
+   0.04666666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m3|s1",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 37,
+  "wins": 6,
+  "losses": 0,
+  "q_wins": 6,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6175,
+  "diff": [
+   0.0225,
+   0.006666666666666667,
+   0.0425
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m3|s2",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 37,
+  "wins": 8,
+  "losses": 0,
+  "q_wins": 8,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.625,
+  "diff": [
+   0.03,
+   0.010833333333333335,
+   0.0525
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m10|s1",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 32,
+  "wins": 6,
+  "losses": 0,
+  "q_wins": 6,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.6175,
+  "diff": [
+   0.0225,
+   0.006666666666666667,
+   0.0425
+  ]
+ },
+ {
+  "config": "a_dense|df10|a3|m10|s2",
+  "base": "a_dense",
+  "signal": 71,
+  "changed": 32,
+  "wins": 7,
+  "losses": 0,
+  "q_wins": 7,
+  "q_losses": 0,
+  "r5_base": 0.595,
+  "r5_gate": 0.62,
+  "diff": [
+   0.025,
+   0.008333333333333333,
+   0.045
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m0|s1",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 63,
+  "wins": 6,
+  "losses": 7,
+  "q_wins": 6,
+  "q_losses": 7,
+  "r5_base": 0.595,
+  "r5_gate": 0.5916666666666667,
+  "diff": [
+   -0.0033333333333333327,
+   -0.03416666666666666,
+   0.02666666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m0|s2",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 63,
+  "wins": 7,
+  "losses": 12,
+  "q_wins": 6,
+  "q_losses": 11,
+  "r5_base": 0.595,
+  "r5_gate": 0.5775000000000001,
+  "diff": [
+   -0.017499999999999998,
+   -0.05083333333333334,
+   0.015833333333333338
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m0.25|s1",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 56,
+  "wins": 6,
+  "losses": 4,
+  "q_wins": 6,
+  "q_losses": 4,
+  "r5_base": 0.595,
+  "r5_gate": 0.605,
+  "diff": [
+   0.01,
+   -0.01583333333333333,
+   0.0375
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m0.25|s2",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 56,
+  "wins": 7,
+  "losses": 8,
+  "q_wins": 6,
+  "q_losses": 7,
+  "r5_base": 0.595,
+  "r5_gate": 0.5941666666666666,
+  "diff": [
+   -0.0008333333333333326,
+   -0.03,
+   0.029166666666666664
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m1|s1",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 52,
+  "wins": 4,
+  "losses": 3,
+  "q_wins": 4,
+  "q_losses": 3,
+  "r5_base": 0.595,
+  "r5_gate": 0.5974999999999999,
+  "diff": [
+   0.0025000000000000005,
+   -0.019999999999999997,
+   0.0241874999999997
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m1|s2",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 52,
+  "wins": 5,
+  "losses": 6,
+  "q_wins": 5,
+  "q_losses": 6,
+  "r5_base": 0.595,
+  "r5_gate": 0.5916666666666667,
+  "diff": [
+   -0.003333333333333333,
+   -0.03083333333333333,
+   0.02416666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m3|s1",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 43,
+  "wins": 4,
+  "losses": 2,
+  "q_wins": 4,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.6024999999999999,
+  "diff": [
+   0.0075,
+   -0.011666666666666665,
+   0.028333333333333335
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m3|s2",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 43,
+  "wins": 4,
+  "losses": 4,
+  "q_wins": 4,
+  "q_losses": 4,
+  "r5_base": 0.595,
+  "r5_gate": 0.5966666666666667,
+  "diff": [
+   0.0016666666666666668,
+   -0.019166666666666665,
+   0.02416666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m10|s1",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 37,
+  "wins": 4,
+  "losses": 2,
+  "q_wins": 4,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.6024999999999999,
+  "diff": [
+   0.0075,
+   -0.011666666666666665,
+   0.028333333333333335
+  ]
+ },
+ {
+  "config": "a_dense|df20|a2|m10|s2",
+  "base": "a_dense",
+  "signal": 80,
+  "changed": 37,
+  "wins": 4,
+  "losses": 3,
+  "q_wins": 4,
+  "q_losses": 3,
+  "r5_base": 0.595,
+  "r5_gate": 0.6,
+  "diff": [
+   0.005,
+   -0.015,
+   0.02585416666666637
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m0|s1",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 71,
+  "wins": 7,
+  "losses": 7,
+  "q_wins": 7,
+  "q_losses": 7,
+  "r5_base": 0.595,
+  "r5_gate": 0.595,
+  "diff": [
+   1.1102230246251566e-18,
+   -0.030833333333333334,
+   0.030833333333333338
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m0|s2",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 71,
+  "wins": 8,
+  "losses": 12,
+  "q_wins": 7,
+  "q_losses": 11,
+  "r5_base": 0.595,
+  "r5_gate": 0.5783333333333334,
+  "diff": [
+   -0.016666666666666666,
+   -0.04999999999999999,
+   0.016666666666666666
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m0.25|s1",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 65,
+  "wins": 6,
+  "losses": 4,
+  "q_wins": 6,
+  "q_losses": 4,
+  "r5_base": 0.595,
+  "r5_gate": 0.6033333333333334,
+  "diff": [
+   0.008333333333333335,
+   -0.016666666666666666,
+   0.03416666666666667
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m0.25|s2",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 65,
+  "wins": 7,
+  "losses": 8,
+  "q_wins": 6,
+  "q_losses": 7,
+  "r5_base": 0.595,
+  "r5_gate": 0.5900000000000001,
+  "diff": [
+   -0.004999999999999999,
+   -0.032499999999999994,
+   0.0216874999999997
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m1|s1",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 53,
+  "wins": 5,
+  "losses": 2,
+  "q_wins": 5,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.6058333333333333,
+  "diff": [
+   0.010833333333333335,
+   -0.008333333333333333,
+   0.0325
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m1|s2",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 53,
+  "wins": 6,
+  "losses": 5,
+  "q_wins": 6,
+  "q_losses": 5,
+  "r5_base": 0.595,
+  "r5_gate": 0.5975,
+  "diff": [
+   0.002500000000000002,
+   -0.0225,
+   0.028333333333333335
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m3|s1",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 48,
+  "wins": 5,
+  "losses": 2,
+  "q_wins": 5,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.6058333333333333,
+  "diff": [
+   0.010833333333333335,
+   -0.008333333333333333,
+   0.0325
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m3|s2",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 48,
+  "wins": 6,
+  "losses": 4,
+  "q_wins": 6,
+  "q_losses": 4,
+  "r5_base": 0.595,
+  "r5_gate": 0.6025,
+  "diff": [
+   0.007500000000000002,
+   -0.014999999999999998,
+   0.030833333333333334
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m10|s1",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 41,
+  "wins": 5,
+  "losses": 1,
+  "q_wins": 5,
+  "q_losses": 1,
+  "r5_base": 0.595,
+  "r5_gate": 0.6091666666666666,
+  "diff": [
+   0.014166666666666668,
+   -0.004166666666666667,
+   0.035
+  ]
+ },
+ {
+  "config": "a_dense|df20|a3|m10|s2",
+  "base": "a_dense",
+  "signal": 88,
+  "changed": 41,
+  "wins": 6,
+  "losses": 2,
+  "q_wins": 6,
+  "q_losses": 2,
+  "r5_base": 0.595,
+  "r5_gate": 0.6091666666666666,
+  "diff": [
+   0.014166666666666668,
+   -0.005833333333333333,
+   0.035833333333333335
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m0|s1",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m0|s2",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m0.25|s1",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m0.25|s2",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m1|s1",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m1|s2",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m3|s1",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m3|s2",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 1,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m10|s1",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 0,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a2|m10|s2",
+  "base": "r_dense",
+  "signal": 1,
+  "changed": 0,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m0|s1",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 3,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m0|s2",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 3,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m0.25|s1",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 3,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m0.25|s2",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 3,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m1|s1",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 3,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m1|s2",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 3,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m3|s1",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 3,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m3|s2",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 3,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m10|s1",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df2|a3|m10|s2",
+  "base": "r_dense",
+  "signal": 3,
+  "changed": 2,
+  "wins": 0,
+  "losses": 0,
+  "q_wins": 0,
+  "q_losses": 0,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m0|s1",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 10,
+  "wins": 1,
+  "losses": 1,
+  "q_wins": 1,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.0075,
+   0.015
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m0|s2",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 10,
+  "wins": 1,
+  "losses": 1,
+  "q_wins": 1,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.0075,
+   0.015
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m0.25|s1",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 9,
+  "wins": 1,
+  "losses": 1,
+  "q_wins": 1,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.0075,
+   0.015
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m0.25|s2",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 9,
+  "wins": 1,
+  "losses": 1,
+  "q_wins": 1,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.0075,
+   0.015
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m1|s1",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 9,
+  "wins": 1,
+  "losses": 1,
+  "q_wins": 1,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.0075,
+   0.015
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m1|s2",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 9,
+  "wins": 1,
+  "losses": 1,
+  "q_wins": 1,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.0075,
+   0.015
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m3|s1",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 9,
+  "wins": 1,
+  "losses": 1,
+  "q_wins": 1,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.0075,
+   0.015
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m3|s2",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 9,
+  "wins": 1,
+  "losses": 1,
+  "q_wins": 1,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.0075,
+   0.015
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m10|s1",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 7,
+  "wins": 0,
+  "losses": 1,
+  "q_wins": 0,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0075,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df3|a2|m10|s2",
+  "base": "r_dense",
+  "signal": 12,
+  "changed": 7,
+  "wins": 0,
+  "losses": 1,
+  "q_wins": 0,
+  "q_losses": 1,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0075,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m0|s1",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 23,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m0|s2",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 23,
+  "wins": 3,
+  "losses": 2,
+  "q_wins": 3,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.655,
+  "diff": [
+   0.005,
+   -0.0125,
+   0.025
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m0.25|s1",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 23,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m0.25|s2",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 23,
+  "wins": 3,
+  "losses": 2,
+  "q_wins": 3,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.655,
+  "diff": [
+   0.005,
+   -0.0125,
+   0.025
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m1|s1",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 23,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m1|s2",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 23,
+  "wins": 3,
+  "losses": 2,
+  "q_wins": 3,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.655,
+  "diff": [
+   0.005,
+   -0.0125,
+   0.025
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m3|s1",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 19,
+  "wins": 0,
+  "losses": 2,
+  "q_wins": 0,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.02,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m3|s2",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 19,
+  "wins": 0,
+  "losses": 2,
+  "q_wins": 0,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.02,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m10|s1",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 16,
+  "wins": 0,
+  "losses": 2,
+  "q_wins": 0,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.02,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df3|a3|m10|s2",
+  "base": "r_dense",
+  "signal": 28,
+  "changed": 16,
+  "wins": 0,
+  "losses": 2,
+  "q_wins": 0,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.02,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m0|s1",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 24,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m0|s2",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 24,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m0.25|s1",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 23,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m0.25|s2",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 23,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m1|s1",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 22,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m1|s2",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 22,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m3|s1",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 20,
+  "wins": 1,
+  "losses": 2,
+  "q_wins": 1,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0175,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m3|s2",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 20,
+  "wins": 1,
+  "losses": 2,
+  "q_wins": 1,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0175,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m10|s1",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 15,
+  "wins": 0,
+  "losses": 2,
+  "q_wins": 0,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.02,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df5|a2|m10|s2",
+  "base": "r_dense",
+  "signal": 32,
+  "changed": 15,
+  "wins": 0,
+  "losses": 2,
+  "q_wins": 0,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.02,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m0|s1",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 45,
+  "wins": 3,
+  "losses": 2,
+  "q_wins": 3,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6575,
+  "diff": [
+   0.0075,
+   -0.0125,
+   0.03
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m0|s2",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 45,
+  "wins": 4,
+  "losses": 4,
+  "q_wins": 4,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   -0.03,
+   0.0275
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m0.25|s1",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 44,
+  "wins": 3,
+  "losses": 2,
+  "q_wins": 3,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6575,
+  "diff": [
+   0.0075,
+   -0.0125,
+   0.03
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m0.25|s2",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 44,
+  "wins": 4,
+  "losses": 4,
+  "q_wins": 4,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   -0.03,
+   0.0275
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m1|s1",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 42,
+  "wins": 3,
+  "losses": 2,
+  "q_wins": 3,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6575,
+  "diff": [
+   0.0075,
+   -0.0125,
+   0.03
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m1|s2",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 42,
+  "wins": 4,
+  "losses": 4,
+  "q_wins": 4,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   -0.03,
+   0.0275
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m3|s1",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 32,
+  "wins": 0,
+  "losses": 2,
+  "q_wins": 0,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.02,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m3|s2",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 32,
+  "wins": 0,
+  "losses": 4,
+  "q_wins": 0,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.6325,
+  "diff": [
+   -0.0175,
+   -0.0425,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m10|s1",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 24,
+  "wins": 0,
+  "losses": 2,
+  "q_wins": 0,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.02,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df5|a3|m10|s2",
+  "base": "r_dense",
+  "signal": 54,
+  "changed": 24,
+  "wins": 0,
+  "losses": 3,
+  "q_wins": 0,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6375,
+  "diff": [
+   -0.0125,
+   -0.035,
+   0.0
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m0|s1",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 50,
+  "wins": 3,
+  "losses": 3,
+  "q_wins": 3,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.016666666666666666,
+   0.023333333333333334
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m0|s2",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 50,
+  "wins": 5,
+  "losses": 5,
+  "q_wins": 5,
+  "q_losses": 5,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   -0.025,
+   0.025
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m0.25|s1",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 47,
+  "wins": 3,
+  "losses": 3,
+  "q_wins": 3,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.016666666666666666,
+   0.023333333333333334
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m0.25|s2",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 47,
+  "wins": 5,
+  "losses": 5,
+  "q_wins": 5,
+  "q_losses": 5,
+  "r5_base": 0.65,
+  "r5_gate": 0.65,
+  "diff": [
+   0.0,
+   -0.025,
+   0.025
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m1|s1",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 42,
+  "wins": 2,
+  "losses": 3,
+  "q_wins": 2,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.6491666666666667,
+  "diff": [
+   -0.0008333333333333337,
+   -0.01916666666666667,
+   0.019166666666666665
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m1|s2",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 42,
+  "wins": 3,
+  "losses": 5,
+  "q_wins": 3,
+  "q_losses": 5,
+  "r5_base": 0.65,
+  "r5_gate": 0.6433333333333334,
+  "diff": [
+   -0.006666666666666666,
+   -0.03,
+   0.016666666666666666
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m3|s1",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 36,
+  "wins": 1,
+  "losses": 2,
+  "q_wins": 1,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0175,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m3|s2",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 36,
+  "wins": 2,
+  "losses": 3,
+  "q_wins": 2,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.645,
+  "diff": [
+   -0.005,
+   -0.025,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m10|s1",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 31,
+  "wins": 1,
+  "losses": 2,
+  "q_wins": 1,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0175,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df10|a2|m10|s2",
+  "base": "r_dense",
+  "signal": 59,
+  "changed": 31,
+  "wins": 1,
+  "losses": 3,
+  "q_wins": 1,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.025,
+   0.01
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m0|s1",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 63,
+  "wins": 5,
+  "losses": 4,
+  "q_wins": 5,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6591666666666666,
+  "diff": [
+   0.009166666666666667,
+   -0.01416666666666667,
+   0.035
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m0|s2",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 63,
+  "wins": 6,
+  "losses": 7,
+  "q_wins": 6,
+  "q_losses": 6,
+  "r5_base": 0.65,
+  "r5_gate": 0.6491666666666666,
+  "diff": [
+   -0.0008333333333333332,
+   -0.035,
+   0.03166666666666667
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m0.25|s1",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 60,
+  "wins": 5,
+  "losses": 4,
+  "q_wins": 5,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6591666666666666,
+  "diff": [
+   0.009166666666666667,
+   -0.01416666666666667,
+   0.035
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m0.25|s2",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 60,
+  "wins": 5,
+  "losses": 7,
+  "q_wins": 5,
+  "q_losses": 6,
+  "r5_base": 0.65,
+  "r5_gate": 0.6458333333333335,
+  "diff": [
+   -0.004166666666666667,
+   -0.0375,
+   0.0275
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m1|s1",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 58,
+  "wins": 5,
+  "losses": 4,
+  "q_wins": 5,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6591666666666666,
+  "diff": [
+   0.009166666666666667,
+   -0.01416666666666667,
+   0.035
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m1|s2",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 58,
+  "wins": 5,
+  "losses": 7,
+  "q_wins": 5,
+  "q_losses": 6,
+  "r5_base": 0.65,
+  "r5_gate": 0.6458333333333335,
+  "diff": [
+   -0.004166666666666667,
+   -0.0375,
+   0.0275
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m3|s1",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 47,
+  "wins": 1,
+  "losses": 2,
+  "q_wins": 1,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0175,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m3|s2",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 47,
+  "wins": 1,
+  "losses": 5,
+  "q_wins": 1,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6341666666666668,
+  "diff": [
+   -0.01583333333333333,
+   -0.04416666666666666,
+   0.006666666666666667
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m10|s1",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 32,
+  "wins": 1,
+  "losses": 2,
+  "q_wins": 1,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0175,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df10|a3|m10|s2",
+  "base": "r_dense",
+  "signal": 76,
+  "changed": 32,
+  "wins": 1,
+  "losses": 3,
+  "q_wins": 1,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.025,
+   0.01
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m0|s1",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 69,
+  "wins": 5,
+  "losses": 4,
+  "q_wins": 5,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6583333333333334,
+  "diff": [
+   0.008333333333333331,
+   -0.015,
+   0.034166666666666665
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m0|s2",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 69,
+  "wins": 6,
+  "losses": 8,
+  "q_wins": 6,
+  "q_losses": 7,
+  "r5_base": 0.65,
+  "r5_gate": 0.6433333333333334,
+  "diff": [
+   -0.006666666666666666,
+   -0.04166666666666667,
+   0.0275
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m0.25|s1",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 64,
+  "wins": 3,
+  "losses": 4,
+  "q_wins": 3,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6483333333333334,
+  "diff": [
+   -0.0016666666666666674,
+   -0.02166666666666667,
+   0.019166666666666665
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m0.25|s2",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 64,
+  "wins": 4,
+  "losses": 8,
+  "q_wins": 4,
+  "q_losses": 7,
+  "r5_base": 0.65,
+  "r5_gate": 0.6333333333333333,
+  "diff": [
+   -0.016666666666666666,
+   -0.04999999999999999,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m1|s1",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 58,
+  "wins": 3,
+  "losses": 4,
+  "q_wins": 3,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6483333333333334,
+  "diff": [
+   -0.0016666666666666674,
+   -0.02166666666666667,
+   0.019166666666666665
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m1|s2",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 58,
+  "wins": 3,
+  "losses": 7,
+  "q_wins": 3,
+  "q_losses": 6,
+  "r5_base": 0.65,
+  "r5_gate": 0.635,
+  "diff": [
+   -0.015,
+   -0.04583333333333333,
+   0.011666666666666667
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m3|s1",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 49,
+  "wins": 1,
+  "losses": 2,
+  "q_wins": 1,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0175,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m3|s2",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 49,
+  "wins": 1,
+  "losses": 5,
+  "q_wins": 1,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6341666666666668,
+  "diff": [
+   -0.01583333333333333,
+   -0.04416666666666666,
+   0.006666666666666667
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m10|s1",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 39,
+  "wins": 1,
+  "losses": 2,
+  "q_wins": 1,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6475,
+  "diff": [
+   -0.0025,
+   -0.0175,
+   0.0125
+  ]
+ },
+ {
+  "config": "r_dense|df20|a2|m10|s2",
+  "base": "r_dense",
+  "signal": 82,
+  "changed": 39,
+  "wins": 1,
+  "losses": 3,
+  "q_wins": 1,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6425,
+  "diff": [
+   -0.0075,
+   -0.0325,
+   0.010062499999999091
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m0|s1",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 78,
+  "wins": 6,
+  "losses": 4,
+  "q_wins": 6,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6633333333333333,
+  "diff": [
+   0.01333333333333333,
+   -0.0125,
+   0.04083333333333333
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m0|s2",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 78,
+  "wins": 8,
+  "losses": 8,
+  "q_wins": 8,
+  "q_losses": 7,
+  "r5_base": 0.65,
+  "r5_gate": 0.6516666666666666,
+  "diff": [
+   0.0016666666666666674,
+   -0.035,
+   0.0375
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m0.25|s1",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 72,
+  "wins": 4,
+  "losses": 4,
+  "q_wins": 4,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6533333333333334,
+  "diff": [
+   0.0033333333333333327,
+   -0.018333333333333333,
+   0.026666666666666665
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m0.25|s2",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 72,
+  "wins": 5,
+  "losses": 8,
+  "q_wins": 5,
+  "q_losses": 7,
+  "r5_base": 0.65,
+  "r5_gate": 0.6383333333333333,
+  "diff": [
+   -0.011666666666666667,
+   -0.04583333333333334,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m1|s1",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 70,
+  "wins": 4,
+  "losses": 4,
+  "q_wins": 4,
+  "q_losses": 4,
+  "r5_base": 0.65,
+  "r5_gate": 0.6533333333333334,
+  "diff": [
+   0.0033333333333333327,
+   -0.018333333333333333,
+   0.026666666666666665
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m1|s2",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 70,
+  "wins": 5,
+  "losses": 8,
+  "q_wins": 5,
+  "q_losses": 7,
+  "r5_base": 0.65,
+  "r5_gate": 0.6383333333333333,
+  "diff": [
+   -0.011666666666666667,
+   -0.04583333333333334,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m3|s1",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 58,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m3|s2",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 58,
+  "wins": 3,
+  "losses": 6,
+  "q_wins": 3,
+  "q_losses": 5,
+  "r5_base": 0.65,
+  "r5_gate": 0.6375,
+  "diff": [
+   -0.0125,
+   -0.04416666666666666,
+   0.015
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m10|s1",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 42,
+  "wins": 2,
+  "losses": 2,
+  "q_wins": 2,
+  "q_losses": 2,
+  "r5_base": 0.65,
+  "r5_gate": 0.6525,
+  "diff": [
+   0.0025,
+   -0.015,
+   0.02
+  ]
+ },
+ {
+  "config": "r_dense|df20|a3|m10|s2",
+  "base": "r_dense",
+  "signal": 92,
+  "changed": 42,
+  "wins": 3,
+  "losses": 4,
+  "q_wins": 3,
+  "q_losses": 3,
+  "r5_base": 0.65,
+  "r5_gate": 0.6458333333333333,
+  "diff": [
+   -0.004166666666666667,
+   -0.0325,
+   0.020833333333333336
+  ]
+ }
+]

@@ -1,0 +1,19 @@
+[
+ {
+  "config": "a_dense|idf|a3|m3|s2",
+  "base": "a_dense",
+  "signal": 199,
+  "changed": 142,
+  "wins": 24,
+  "losses": 10,
+  "q_wins": 24,
+  "q_losses": 9,
+  "r5_base": 0.5683333333333332,
+  "r5_gate": 0.5925,
+  "diff": [
+   0.02416666666666667,
+   0.00375,
+   0.045
+  ]
+ }
+]

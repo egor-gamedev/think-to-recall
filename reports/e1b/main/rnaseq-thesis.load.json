@@ -1,0 +1,28 @@
+{
+ "project": "rnaseq-thesis",
+ "kind": "load",
+ "compressions": [
+  {
+   "after_turn": "S1.11",
+   "turns": 12,
+   "tokens_out": 1859,
+   "summary_tokens": 176
+  },
+  {
+   "after_turn": "S3.0",
+   "turns": 13,
+   "tokens_out": 1697,
+   "summary_tokens": 333
+  },
+  {
+   "after_turn": "S3.12",
+   "turns": 12,
+   "tokens_out": 1872,
+   "summary_tokens": 437
+  }
+ ],
+ "summary": "- **Project**: Bulk RNA-seq analysis for liver samples from mice under control and fasting conditions.\n- **Samples**: 24 samples (12 per group, 2 groups).\n- **Pipeline**: nf-core/rnaseq using Salmon for counting, skipping alignment with STAR.\n- **References**: GRCm39 with GENCODE M33 annotation.\n- **Samplesheet**: CSV with columns: sample, fastq_1, fastq_2, strandedness.\n- **SLURM Cluster**: Internet access required for downloading; use Singularity containers.\n- **Preparation**: Download nf-core/rnaseq, reference files, and samplesheet on login node.\n- **MultiQC**: General Statistics, Alignment Rate, Gene Body Coverage, Strandedness, Sample Correlation/PCA.\n- **Open Questions**: Time management, ensuring all steps are correctly followed, and interpreting results.\n- **Sample Quality**: Excluded sample F3 due to low RIN (4.1) and 3' bias, leaving 11 samples per group.\n- **Batch Effect**: Accounted for batch effect by including it in the DESeq2 design formula.\n- **Results Loading**: Loaded Salmon counts into DESeq2 using `tximport`.\n- **Gene Symbols**: Mapped Ensembl IDs to gene symbols using `tx2gene.tsv`.\n- **PCA Plot**: Created PCA plot using top 500 variable genes, showing clear separation between fasting and control groups.\n- **Disk Quota**: Facing disk quota issues, caused by BAM files; switched to Salmon only mode.\n- **New Reference**: Updated to GRCm39 with GENCODE M33 annotation.\n- **DESeq2 Filters**: FDR < 0.05 and |log2FC| > 1.\n- **Volcano Plot**: Created using Python.\n- **Significant Genes**: 812 up-regulated, 640 down-regulated.\n- **Reproducibility**: Fixed R environment using `saveRDS` and `sessionInfo`, and used Singularity containers for reproducibility across Python and R.",
+ "window_tokens": 3210,
+ "archive_turns": 37,
+ "seconds": 19.3
+}

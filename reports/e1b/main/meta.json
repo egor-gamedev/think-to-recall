@@ -1,0 +1,28 @@
+{
+ "backend": "server",
+ "model": "Qwen/Qwen2.5-7B-Instruct-AWQ",
+ "encoder": "e5:intfloat/multilingual-e5-base",
+ "limits": {
+  "context": 6600,
+  "answer": 1500,
+  "memory": 600,
+  "summary": 500,
+  "system": 250,
+  "window": 3750
+ },
+ "variants": [
+  1,
+  2,
+  3,
+  4,
+  5,
+  6
+ ],
+ "questions": null,
+ "projects": [
+  "crypto-wallet",
+  "django-shop",
+  "rnaseq-thesis"
+ ],
+ "started": "2026-10-22 10:20:57"
+}

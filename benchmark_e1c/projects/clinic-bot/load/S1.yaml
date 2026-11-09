@@ -1,0 +1,311 @@
+segment: S1
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: [C10, C01]
+    text: |
+      Привет. Взял заказ на аутсорсе: Telegram-бот записи для стоматологии «Белая линия». Договор с фиксированной суммой, сдача 15 декабря, затем 3 месяца гарантийной поддержки. Бот на Python и aiogram 3, работает через вебхук, VPS уже взял в Selectel (Москва). Подскажи нормальную структуру проекта, чтобы потом не было каши.
+  - role: assistant
+    facts: []
+    text: |
+      Для бота такого размера хватит плоской структуры по слоям: хэндлеры отдельно, работа с учётной системой отдельно, клавиатуры отдельно.
+
+      ```
+      clinic_bot/
+        __main__.py        # запуск: aiohttp-приложение + вебхук
+        config.py          # настройки из .env (pydantic-settings)
+        handlers/
+          start.py         # /start, опознание пациента
+          booking.py       # сценарий записи
+          my_visits.py     # мои записи, отмена
+        keyboards/
+          calendar.py
+          common.py
+        clinic/            # всё, что касается учётной системы
+          repo.py
+          models.py
+        services/
+          reminders.py
+      ```
+
+      Запуск через вебхук на aiohttp:
+
+      ```python
+      # clinic_bot/__main__.py
+      from aiohttp import web
+      from aiogram import Bot, Dispatcher
+      from aiogram.webhook.aiohttp_server import SimpleRequestHandler, setup_application
+
+      from .config import settings
+      from .handlers import start, booking, my_visits
+
+      async def on_startup(bot: Bot):
+          await bot.set_webhook(
+              f"{settings.base_url}/tg/webhook",
+              secret_token=settings.webhook_secret,
+              drop_pending_updates=True,
+          )
+
+      def main():
+          bot = Bot(settings.bot_token)
+          dp = Dispatcher()
+          dp.include_routers(start.router, booking.router, my_visits.router)
+          dp.startup.register(on_startup)
+
+          app = web.Application()
+          SimpleRequestHandler(dp, bot, secret_token=settings.webhook_secret).register(app, path="/tg/webhook")
+          setup_application(app, dp, bot=bot)
+          web.run_app(app, host="127.0.0.1", port=8080)
+
+      if __name__ == "__main__":
+          main()
+      ```
+
+      Наружу — nginx с сертификатом Let's Encrypt, проксирует `/tg/webhook` на `127.0.0.1:8080`. `secret_token` обязателен: Telegram кладёт его в заголовок `X-Telegram-Bot-Api-Secret-Token`, и `SimpleRequestHandler` отбрасывает чужие запросы.
+  - role: user
+    facts: [C02]
+    text: |
+      Ок. Теперь самое интересное. Учётная система у клиники — «СтомаОфис», стоит на сервере в самой клинике, под ней база Firebird. Договорились так: расписание читаем и записи создаём напрямую в базе, через туннель WireGuard от VPS до сервера клиники. Туннель айтишник клиники уже поднял. Как к Firebird подключаться из асинхронного aiogram?
+  - role: assistant
+    facts: []
+    text: |
+      Нормальных асинхронных драйверов для Firebird нет, поэтому берём официальный синхронный `firebird-driver` и выносим вызовы в поток, чтобы не блокировать event loop.
+
+      ```python
+      # clinic_bot/clinic/repo.py
+      import asyncio
+      from contextlib import contextmanager
+      from firebird.driver import connect, driver_config
+
+      from ..config import settings
+
+      driver_config.server_defaults.host.value = settings.fb_host   # адрес сервера внутри WireGuard, например 10.8.0.2
+      driver_config.server_defaults.port.value = "3050"
+
+      @contextmanager
+      def _conn():
+          con = connect(settings.fb_database, user=settings.fb_user, password=settings.fb_password, charset="WIN1251")
+          try:
+              yield con
+          finally:
+              con.close()
+
+      def _fetch(sql: str, params: tuple = ()):
+          with _conn() as con:
+              cur = con.cursor()
+              cur.execute(sql, params)
+              cols = [d[0] for d in cur.description]
+              return [dict(zip(cols, row)) for row in cur.fetchall()]
+
+      async def fetch(sql: str, params: tuple = ()):
+          return await asyncio.to_thread(_fetch, sql, params)
+      ```
+
+      Пара замечаний:
+
+      - Кодировка: старые учётные системы почти всегда в `WIN1251`. Если увидите кракозябры в ФИО — дело в `charset`.
+      - Соединение на каждый запрос через туннель — это 30–80 мс накладных. Для начала нормально; если станет узким местом, сделаем небольшой пул на `queue.Queue` из 3–4 соединений.
+      - Проверьте с VPS: `nc -vz 10.8.0.2 3050`. Если порт закрыт — брандмауэр Windows на сервере клиники, туда нужно правило для интерфейса WireGuard.
+  - role: user
+    facts: [C04]
+    text: |
+      Подключился, ФИО читаются. Ещё деталь: у клиники два филиала — Калининград (ул. Горького) и Зеленоградск. Часть врачей работает в обоих, например терапевт Соколова: пн–ср на Горького, чт–пт в Зеленоградске. В таблице SCHEDULE филиал — поле BRANCH_ID.
+  - role: assistant
+    facts: []
+    text: |
+      Тогда филиал — полноценный параметр каждого запроса к расписанию, а не свойство врача. Модель слота:
+
+      ```python
+      # clinic_bot/clinic/models.py
+      from dataclasses import dataclass
+      from datetime import datetime
+
+      @dataclass(frozen=True)
+      class Slot:
+          doctor_id: int
+          branch_id: int
+          start: datetime
+          minutes: int
+      ```
+
+      Запрос свободных слотов врача за день:
+
+      ```python
+      SLOTS_SQL = """
+          SELECT s.DOCTOR_ID, s.BRANCH_ID, s.START_TIME, s.DURATION
+          FROM SCHEDULE s
+          WHERE s.DOCTOR_ID = ? AND s.BRANCH_ID = ?
+            AND s.START_TIME >= ? AND s.START_TIME < ?
+            AND s.PATIENT_ID IS NULL AND s.IS_BLOCKED = 0
+          ORDER BY s.START_TIME
+      """
+      ```
+
+      Имена колонок я пишу по вашему описанию — сверьте с реальной схемой (`SHOW TABLE SCHEDULE` в isql). Адреса филиалов держите в конфиге, а не в базе:
+
+      ```python
+      BRANCHES = {
+          1: "Калининград, ул. Горького",
+          2: "Зеленоградск",
+      }
+      ```
+  - role: user
+    facts: [C05]
+    text: |
+      Дальше — как опознавать пациента. Решили: по номеру из кнопки «Поделиться контактом», и ищем карту в учётке по телефону. Набросай клавиатуру и хэндлер.
+  - role: assistant
+    facts: []
+    text: |
+      ```python
+      # clinic_bot/handlers/start.py
+      from aiogram import Router, F
+      from aiogram.filters import CommandStart
+      from aiogram.types import Message, KeyboardButton, ReplyKeyboardMarkup, ReplyKeyboardRemove
+
+      from ..clinic import patients
+
+      router = Router()
+
+      contact_kb = ReplyKeyboardMarkup(
+          keyboard=[[KeyboardButton(text="📱 Поделиться контактом", request_contact=True)]],
+          resize_keyboard=True, one_time_keyboard=True,
+      )
+
+      @router.message(CommandStart())
+      async def start(message: Message):
+          await message.answer(
+              "Здравствуйте! Чтобы записаться, нажмите кнопку ниже — по номеру мы найдём вашу карту.",
+              reply_markup=contact_kb,
+          )
+
+      @router.message(F.contact)
+      async def got_contact(message: Message):
+          if message.contact.user_id != message.from_user.id:
+              await message.answer("Пожалуйста, отправьте свой контакт кнопкой, а не чужой.")
+              return
+          cards = await patients.find_by_phone(message.contact.phone_number)
+          ...
+      ```
+
+      Проверка `contact.user_id == from_user.id` важна: иначе можно переслать чужой контакт и увидеть чужие записи. Кнопка `request_contact` работает только в личном чате с ботом и только в мобильных клиентах и десктопе — в веб-версии Telegram она иногда не отображается, на это стоит дать текстовую подсказку.
+  - role: user
+    facts: [C06]
+    text: |
+      Сделал поиск WHERE PHONE = ? — находит меньше половины. Полез смотреть: телефоны в учётке записаны вразнобой — 8…, +7…, с пробелами и скобками, где-то вообще «8 (4012) …». Договорились с регистратурой сравнивать по последним 10 цифрам.
+  - role: assistant
+    facts: []
+    text: |
+      Сравнение по последним 10 цифрам — разумно, но в SQL это делать неудобно: в Firebird нет нормальной регулярки, а вычисляемый индекс на таблицу вендора добавлять не стоит — это их схема, при обновлении учётки может слететь или сломать что-то у них.
+
+      Проще держать индекс в памяти бота: при старте и раз в час читать `ID, PHONE` всех карт и строить словарь.
+
+      ```python
+      # clinic_bot/clinic/patients.py
+      import re
+      from collections import defaultdict
+
+      from .repo import fetch
+
+      _index: dict[str, list[int]] = defaultdict(list)
+
+      def norm(phone: str) -> str | None:
+          digits = re.sub(r"\D", "", phone or "")
+          return digits[-10:] if len(digits) >= 10 else None
+
+      async def rebuild_index():
+          rows = await fetch("SELECT ID, PHONE FROM PATIENTS WHERE PHONE IS NOT NULL")
+          new = defaultdict(list)
+          for r in rows:
+              key = norm(r["PHONE"])
+              if key:
+                  new[key].append(r["ID"])
+          _index.clear()
+          _index.update(new)
+
+      async def find_by_phone(phone: str) -> list[int]:
+          key = norm(phone)
+          return list(_index.get(key, [])) if key else []
+      ```
+
+      Для ~8 тысяч карт это доли мегабайта памяти и один запрос в час. Городские номера вида «8 (4012) 12-34-56» тоже дадут 10 цифр, но с мобильным Telegram они не совпадут — это нормально.
+  - role: user
+    facts: [C22r]
+    text: |
+      Работает, нашлись почти все. Теперь выбор даты. Заказчик просил «красивый календарь как в приложении». Я думал про Telegram Mini App на React для выбора слота, но отказались делать: после сдачи его некому поддерживать. Так что только inline-кнопки. Накидай календарь на inline-кнопках.
+  - role: assistant
+    facts: []
+    text: |
+      Сделаем календарь на `CallbackData` — aiogram сам упакует и распакует данные кнопки.
+
+      ```python
+      # clinic_bot/keyboards/calendar.py
+      import calendar
+      from datetime import date
+      from aiogram.filters.callback_data import CallbackData
+      from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+      class DayCb(CallbackData, prefix="day"):
+          y: int
+          m: int
+          d: int
+
+      class MonthCb(CallbackData, prefix="mon"):
+          y: int
+          m: int
+
+      MONTHS = ["", "Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+                "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
+
+      def month_kb(y: int, m: int, available: set[date]):
+          kb = InlineKeyboardBuilder()
+          kb.button(text=f"{MONTHS[m]} {y}", callback_data="noop")
+          for wd in ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"]:
+              kb.button(text=wd, callback_data="noop")
+          for week in calendar.monthcalendar(y, m):
+              for d in week:
+                  if d and date(y, m, d) in available:
+                      kb.button(text=str(d), callback_data=DayCb(y=y, m=m, d=d))
+                  else:
+                      kb.button(text=" " if not d else "·", callback_data="noop")
+          prev_y, prev_m = (y, m - 1) if m > 1 else (y - 1, 12)
+          next_y, next_m = (y, m + 1) if m < 12 else (y + 1, 1)
+          kb.button(text="◀", callback_data=MonthCb(y=prev_y, m=prev_m))
+          kb.button(text="▶", callback_data=MonthCb(y=next_y, m=next_m))
+          kb.adjust(1, 7, *[7] * len(calendar.monthcalendar(y, m)), 2)
+          return kb.as_markup()
+      ```
+
+      Дни без свободных слотов показываются точкой и не кликаются. Не забудьте пустой хэндлер на `noop`, иначе у пользователя будет крутиться часик:
+
+      ```python
+      @router.callback_query(F.data == "noop")
+      async def noop(cb: CallbackQuery):
+          await cb.answer()
+      ```
+  - role: user
+    facts: []
+    text: |
+      Глянул на телефоне — кнопок многовато, 31 день плюс заголовки, экран целиком. Пациенты у клиники в основном 40+, им мелко.
+  - role: assistant
+    facts: []
+    text: |
+      Для аудитории 40+ месячная сетка действительно перебор. Лучше показывать неделю и только дни, где есть свободное время, — крупными кнопками по одной-две в ряд:
+
+      ```python
+      WD = ["пн", "вт", "ср", "чт", "пт", "сб", "вс"]
+
+      def days_kb(days: list[date], page: int):
+          kb = InlineKeyboardBuilder()
+          chunk = days[page * 6:(page + 1) * 6]
+          for d in chunk:
+              kb.button(text=f"{WD[d.weekday()]}, {d.day} {MONTHS_GEN[d.month]}",
+                        callback_data=DayCb(y=d.year, m=d.month, d=d.day))
+          if page > 0:
+              kb.button(text="◀ Раньше", callback_data=PageCb(p=page - 1))
+          if (page + 1) * 6 < len(days):
+              kb.button(text="Позже ▶", callback_data=PageCb(p=page + 1))
+          kb.adjust(2, 2, 2, 2)
+          return kb.as_markup()
+      ```
+
+      Подписи вида «чт, 14 ноября» читаются без напряжения, а пустые дни просто не попадают в список. Время внутри дня — тоже кнопками, по три в ряд: «09:00 10:30 12:00».

@@ -1,0 +1,237 @@
+[
+{
+"pair": 1,
+"requirement_id": "offline-for-days",
+"run_id": "auth-offline-field-app|v2|r1"
+},
+{
+"pair": 1,
+"requirement_id": "pooled-tablets",
+"run_id": "auth-offline-field-app|v2|r1"
+},
+{
+"pair": 1,
+"requirement_id": "revocation-reaches-devices",
+"run_id": "auth-offline-field-app|v2|r1"
+},
+{
+"pair": 2,
+"requirement_id": "phi-in-bodies",
+"run_id": "request-logging-lab|v3|r1"
+},
+{
+"pair": 2,
+"requirement_id": "volume-budget",
+"run_id": "request-logging-lab|v3|r1"
+},
+{
+"pair": 3,
+"requirement_id": "heic",
+"run_id": "profile-photo-upload|v8|r2"
+},
+{
+"pair": 3,
+"requirement_id": "exif-gps",
+"run_id": "profile-photo-upload|v8|r2"
+},
+{
+"pair": 3,
+"requirement_id": "parental-approval",
+"run_id": "profile-photo-upload|v8|r2"
+},
+{
+"pair": 4,
+"requirement_id": "heic",
+"run_id": "profile-photo-upload|v4|r1"
+},
+{
+"pair": 4,
+"requirement_id": "exif-gps",
+"run_id": "profile-photo-upload|v4|r1"
+},
+{
+"pair": 4,
+"requirement_id": "parental-approval",
+"run_id": "profile-photo-upload|v4|r1"
+},
+{
+"pair": 5,
+"requirement_id": "npd-limit",
+"run_id": "freelance-taxes|v7|r3"
+},
+{
+"pair": 5,
+"requirement_id": "foreign-account",
+"run_id": "freelance-taxes|v7|r3"
+},
+{
+"pair": 6,
+"requirement_id": "no-email",
+"run_id": "password-reset-warehouse|v6|r1"
+},
+{
+"pair": 6,
+"requirement_id": "sso-users",
+"run_id": "password-reset-warehouse|v6|r1"
+},
+{
+"pair": 7,
+"requirement_id": "nut-allergy",
+"run_id": "kids-birthday-party|v1|r2"
+},
+{
+"pair": 7,
+"requirement_id": "wheelchair",
+"run_id": "kids-birthday-party|v1|r2"
+},
+{
+"pair": 8,
+"requirement_id": "lockscreen-privacy",
+"run_id": "push-notifications-support|v1|r1"
+},
+{
+"pair": 8,
+"requirement_id": "huawei-no-gms",
+"run_id": "push-notifications-support|v1|r1"
+},
+{
+"pair": 9,
+"requirement_id": "regional-visibility",
+"run_id": "hard-catalog-search|v2|r1"
+},
+{
+"pair": 9,
+"requirement_id": "russian-kazakh-text",
+"run_id": "hard-catalog-search|v2|r1"
+},
+{
+"pair": 9,
+"requirement_id": "single-small-server",
+"run_id": "hard-catalog-search|v2|r1"
+},
+{
+"pair": 10,
+"requirement_id": "celiac",
+"run_id": "diet-plan-half-marathon|v8|r3"
+},
+{
+"pair": 10,
+"requirement_id": "night-shifts",
+"run_id": "diet-plan-half-marathon|v8|r3"
+},
+{
+"pair": 10,
+"requirement_id": "microwave-only",
+"run_id": "diet-plan-half-marathon|v8|r3"
+},
+{
+"pair": 11,
+"requirement_id": "huge-table",
+"run_id": "add-not-null-column|v1|r2"
+},
+{
+"pair": 11,
+"requirement_id": "old-clients",
+"run_id": "add-not-null-column|v1|r2"
+},
+{
+"pair": 12,
+"requirement_id": "four-weeks-not-six",
+"run_id": "ielts-study-plan|v3|r1"
+},
+{
+"pair": 12,
+"requirement_id": "writing-band",
+"run_id": "ielts-study-plan|v3|r1"
+},
+{
+"pair": 12,
+"requirement_id": "limited-weekdays",
+"run_id": "ielts-study-plan|v3|r1"
+},
+{
+"pair": 13,
+"requirement_id": "heic",
+"run_id": "profile-photo-upload|v5|r1"
+},
+{
+"pair": 13,
+"requirement_id": "exif-gps",
+"run_id": "profile-photo-upload|v5|r1"
+},
+{
+"pair": 13,
+"requirement_id": "parental-approval",
+"run_id": "profile-photo-upload|v5|r1"
+},
+{
+"pair": 14,
+"requirement_id": "no-email",
+"run_id": "password-reset-warehouse|v5|r1"
+},
+{
+"pair": 14,
+"requirement_id": "sso-users",
+"run_id": "password-reset-warehouse|v5|r1"
+},
+{
+"pair": 15,
+"requirement_id": "five-second-deadline",
+"run_id": "webhook-retries-payments|v4|r1"
+},
+{
+"pair": 15,
+"requirement_id": "duplicate-deliveries",
+"run_id": "webhook-retries-payments|v4|r1"
+},
+{
+"pair": 16,
+"requirement_id": "no-email",
+"run_id": "password-reset-warehouse|v3|r2"
+},
+{
+"pair": 16,
+"requirement_id": "sso-users",
+"run_id": "password-reset-warehouse|v3|r2"
+},
+{
+"pair": 17,
+"requirement_id": "huge-table",
+"run_id": "add-not-null-column|v6|r1"
+},
+{
+"pair": 17,
+"requirement_id": "old-clients",
+"run_id": "add-not-null-column|v6|r1"
+},
+{
+"pair": 18,
+"requirement_id": "lead-soil",
+"run_id": "vegetable-garden|v7|r3"
+},
+{
+"pair": 18,
+"requirement_id": "short-northern-season",
+"run_id": "vegetable-garden|v7|r3"
+},
+{
+"pair": 19,
+"requirement_id": "huge-table",
+"run_id": "add-not-null-column|v4|r1"
+},
+{
+"pair": 19,
+"requirement_id": "old-clients",
+"run_id": "add-not-null-column|v4|r1"
+},
+{
+"pair": 20,
+"requirement_id": "no-email",
+"run_id": "password-reset-warehouse|v2|r1"
+},
+{
+"pair": 20,
+"requirement_id": "sso-users",
+"run_id": "password-reset-warehouse|v2|r1"
+}
+]

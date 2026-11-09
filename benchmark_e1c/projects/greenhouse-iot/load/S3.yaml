@@ -1,0 +1,214 @@
+segment: S3
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: []
+    text: |
+      Калибровал почву. Датчик в сухом воздухе даёт около 2800, в стакане воды около 1250. В грунте у томатов после полива 1500–1600, к вечеру 2000. Как это перевести в проценты и почему значения прыгают на ±40 от замера к замеру?
+  - role: assistant
+    facts: []
+    text: |
+      Линейно между двумя точками, с ограничением на края:
+
+      ```cpp
+      const int RAW_DRY = 2800, RAW_WET = 1250;
+
+      float soilPercent(int raw) {
+        float p = 100.0f * (RAW_DRY - raw) / (RAW_DRY - RAW_WET);
+        return constrain(p, 0.0f, 100.0f);
+      }
+      ```
+
+      Это «проценты шкалы датчика», а не объёмная влажность почвы — для решения «поливать или нет» этого достаточно, главное — одинаково для всех зон. Хорошо бы откалибровать каждый датчик отдельно: разброс между экземплярами v1.2 бывает 100–200 отсчётов.
+
+      Скачки ±40 — это шум АЦП ESP32, он у него заметный. Лечится медианой из нескольких замеров:
+
+      ```cpp
+      int readSoilRaw(int pin) {
+        int s[9];
+        for (int i = 0; i < 9; i++) { s[i] = analogRead(pin); delay(5); }
+        std::sort(s, s + 9);
+        return s[4];               // медиана
+      }
+      ```
+
+      Ещё лучше — `analogReadMilliVolts()`: она использует заводскую калибровку АЦП конкретного чипа, тогда калибровочные точки переносимы между узлами.
+  - role: user
+    facts: [G06b]
+    text: |
+      Поставил медиану, стало ровно. Раз датчики работают — перехожу с расписания на полив по датчикам: зона открывается, когда влажность почвы ниже 30 %, и закрывается на 45 %. Cron убираю, пусть решает poliv.py.
+  - role: assistant
+    facts: []
+    text: |
+      Гистерезис 30/45 — правильно, иначе клапан будет дёргаться около одного порога. Пара защит, которые стоит заложить сразу:
+
+      - **Свежесть данных.** Если от зоны давно нет показаний, решение по ней не принимаем.
+      - **Минимальная пауза** между поливами одной зоны — влага доходит до датчика не сразу, и без паузы можно перелить.
+      - **Длительность в команде.** Узел полива и так закрывает по таймеру — передаём ему верхнюю границу.
+
+      ```python
+      # poliv.py (фрагмент)
+      import json, time
+      import paho.mqtt.client as mqtt
+
+      LOW, HIGH = 30.0, 45.0
+      STALE = 180          # с
+      MIN_PAUSE = 2 * 3600 # с между поливами одной зоны
+      MAX_OPEN = 3600      # с — верхняя граница для узла
+
+      state = {z: {"soil": None, "seen": 0, "open": False, "last": 0} for z in (1, 2, 3, 4)}
+
+      def on_message(cl, ud, msg):
+          parts = msg.topic.split("/")             # teplica/1/z2/soil
+          if len(parts) == 4 and parts[3] == "soil":
+              z = int(parts[2][1:])
+              state[z]["soil"] = json.loads(msg.payload)["v"]
+              state[z]["seen"] = time.time()
+              decide(cl, z)
+
+      def decide(cl, z):
+          s, now = state[z], time.time()
+          if now - s["seen"] > STALE:
+              return
+          if not s["open"] and s["soil"] < LOW and now - s["last"] > MIN_PAUSE:
+              cl.publish(f"poliv/z{z}/set", MAX_OPEN)
+              s["open"], s["last"] = True, now
+          elif s["open"] and s["soil"] >= HIGH:
+              cl.publish(f"poliv/z{z}/set", 0)
+              s["open"] = False
+      ```
+
+      Узлы теперь шлют проценты, поэтому в `on_message` они приходят уже готовыми.
+  - role: user
+    facts: [G17]
+    text: |
+      Запустил. Теперь хранение для Grafana. Не хочу пока возиться с серьёзными базами — пусть показания пишутся в SQLite на SD-карте Raspberry Pi.
+  - role: assistant
+    facts: []
+    text: |
+      Для начала годится. Отдельный маленький сервис-писатель, чтобы падение poliv.py не останавливало запись истории:
+
+      ```python
+      # logger.py
+      import json, sqlite3
+      import paho.mqtt.client as mqtt
+
+      db = sqlite3.connect("/home/pi/teplica.db", check_same_thread=False)
+      db.execute("PRAGMA journal_mode=WAL")
+      db.execute("""CREATE TABLE IF NOT EXISTS readings(
+          ts INTEGER, teplica INTEGER, place TEXT, sensor TEXT, v REAL)""")
+      db.execute("CREATE INDEX IF NOT EXISTS i_ts ON readings(ts)")
+
+      def on_message(cl, ud, msg):
+          _, n, place, sensor = msg.topic.split("/")
+          d = json.loads(msg.payload)
+          db.execute("INSERT INTO readings VALUES(?,?,?,?,?)",
+                     (d["ts"], int(n), place, sensor, d["v"]))
+          db.commit()
+
+      cl = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, "logger")
+      cl.username_pw_set("poliv_py", open("/etc/teplica/mqtt.pass").read().strip())
+      cl.on_message = on_message
+      cl.connect("localhost", 1883)
+      cl.subscribe("teplica/+/+/+")
+      cl.loop_forever()
+      ```
+
+      И юнит `/etc/systemd/system/logger.service` по образцу poliv.service, с `Restart=always`. Узлы статуса (`teplica/1/node/...`) приходят не в JSON — `json.loads` на них упадёт, отфильтруйте по `place != "node"`.
+  - role: user
+    facts: [G15]
+    text: |
+      Плохо дело. В четверг батя звонит: в первой теплице весь проход залит. Разобрался в выходные: poliv.py упал на исключении — от Z2 пришёл nan, сравнение сломалось, — и клапан Z2 простоял открытым почти час, пока таймер на узле не закрыл. Решили так: клапан нельзя держать открытым дольше 40 минут подряд, после этого закрывать аварийно. Узел полива пока трогать не хочу, он под потолком в коробке — давай сделаем это в poliv.py.
+  - role: assistant
+    facts: []
+    text: |
+      Неприятно, но хорошо, что таймер узла всё же сработал. Делаем три вещи в poliv.py.
+
+      **1. Не падать на мусоре.**
+
+      ```python
+      import math
+
+      def on_message(cl, ud, msg):
+          try:
+              ...
+              v = json.loads(msg.payload)["v"]
+              if v is None or not math.isfinite(v):
+                  log.warning("zone %s: bad value %r", z, v)
+                  return
+              ...
+          except Exception:
+              log.exception("bad message on %s", msg.topic)
+      ```
+
+      **2. Предел 40 минут.** В команду — не больше 2400 секунд, плюс независимая проверка раз в минуту:
+
+      ```python
+      MAX_OPEN = 40 * 60
+
+      def watchdog(cl):
+          now = time.time()
+          for z, s in state.items():
+              if s["open"] and now - s["last"] >= MAX_OPEN:
+                  cl.publish(f"poliv/z{z}/set", 0)
+                  s["open"] = False
+                  log.error("zone %s: аварийно закрыта по пределу 40 мин", z)
+      ```
+
+      Запускать из основного цикла каждые 60 с (`cl.loop_start()` и `while True: watchdog(cl); time.sleep(60)`).
+
+      **3. Перезапуск сервиса.** В `poliv.service`:
+
+      ```ini
+      [Service]
+      Restart=always
+      RestartSec=5
+      ```
+
+      Так сервис после исключения поднимется через 5 секунд, а не будет лежать до вашего приезда.
+  - role: user
+    facts: [G16]
+    text: |
+      Внёс, работает. В следующие выходные всё равно полезу в узел полива — ставлю на общую трубу полива импульсный водомер, 1 импульс = 10 литров. Подключу его к свободному GPIO узла полива. Как правильно считать импульсы?
+  - role: assistant
+    facts: []
+    text: |
+      У таких водомеров обычно геркон или «сухой контакт»: замыкание на каждые 10 литров. Подключение: один провод на GPIO, второй на GND, подтяжка к 3,3 В — внутренняя (`INPUT_PULLUP`) на длинном проводе слабовата, лучше внешняя 10 кОм. И RC-фильтр 1 кОм + 100 нФ у входа — провод идёт рядом с проводами клапанов на 24 В AC и будет ловить наводки.
+
+      Геркон дребезжит, поэтому прерывание с антидребезгом:
+
+      ```cpp
+      const int METER_PIN = 27;
+      volatile uint32_t pulses = 0;
+      volatile uint32_t lastPulseUs = 0;
+
+      void IRAM_ATTR onPulse() {
+        uint32_t now = micros();
+        if (now - lastPulseUs > 200000) {   // 200 мс: при 10 л/имп быстрее не бывает
+          pulses++;
+          lastPulseUs = now;
+        }
+      }
+
+      void setup() {
+        pinMode(METER_PIN, INPUT);
+        attachInterrupt(digitalPinToInterrupt(METER_PIN), onPulse, FALLING);
+      }
+      ```
+
+      Публикуйте нарастающий счётчик, а не «литры за период» — если сообщение потеряется, разница между соседними значениями всё равно даст верный расход. Счётчик держите в RTC-памяти ESP32 (`RTC_NOINIT_ATTR`), чтобы он не обнулялся при программной перезагрузке.
+  - role: user
+    facts: [G14]
+    text: |
+      Ещё странное заметил в субботу. Утром по датчикам открылись сразу все четыре зоны — подсохло везде одинаково. И в конце рядов огурцов капельницы почти сухие, еле сочатся. А когда тёща в доме стирку затеяла — там вообще капать перестало. Вода у нас из своей скважины, одна на всё хозяйство. Может, капельницы забились?
+  - role: assistant
+    facts: []
+    text: |
+      Похоже на то, особенно в кокосовых матах — там капельницы забиваются быстрее, чем в грунте. Скважинная вода часто содержит железо, которое окисляется и оседает в узких лабиринтах капельниц, плюс соли от подкормок. Что проверить:
+
+      1. **Фильтр на входе линии.** Дисковый или сетчатый фильтр 120 меш перед зонами — если его нет, поставьте; если есть — промойте, он мог забиться за сезон.
+      2. **Промывка линий.** Откройте торцевые заглушки на концах лент и пустите воду на пару минут — выйдет осадок.
+      3. **Капельницы.** Снимите пару с конца ряда и посмотрите на свет: рыжий налёт — железо, белый — соли. Помогает промывка слабым раствором лимонной кислоты (pH 3–4) с часовой выдержкой в линии, потом чистой водой.
+      4. **Компенсированные капельницы.** Если ставили обычные, в конце длинного ряда они действительно дают меньше; капельницы с компенсацией давления выравнивают расход по длине.
+
+      Если вода заметно рыжеет в ведре, имеет смысл подумать об обезжелезивании хотя бы для полива — например, аэрация в накопительной ёмкости.

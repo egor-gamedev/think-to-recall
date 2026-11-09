@@ -1,0 +1,46 @@
+{
+ "project": "crypto-wallet",
+ "kind": "load",
+ "compressions": [
+  {
+   "after_turn": "S1.9",
+   "turns": 10,
+   "tokens_out": 2055,
+   "summary_tokens": 526
+  },
+  {
+   "after_turn": "S2.1",
+   "turns": 11,
+   "tokens_out": 1689,
+   "summary_tokens": 518
+  },
+  {
+   "after_turn": "S2.12",
+   "turns": 11,
+   "tokens_out": 1847,
+   "summary_tokens": 518
+  },
+  {
+   "after_turn": "S3.6",
+   "turns": 11,
+   "tokens_out": 1869,
+   "summary_tokens": 516
+  },
+  {
+   "after_turn": "S3.15",
+   "turns": 9,
+   "tokens_out": 1724,
+   "summary_tokens": 516
+  },
+  {
+   "after_turn": "S4.9",
+   "turns": 11,
+   "tokens_out": 1827,
+   "summary_tokens": 516
+  }
+ ],
+ "summary": "- **Проект**: Некастодиальный кошелёк «Кладезь» (React Native bare, iOS + Android) + веб-дашборд (Next.js, App Router, только просмотр). Команда: 2 человека. Дедлайн MVP — 3 месяца. Всё, что требует отдельного человека на поддержку, отбрасывается.\n- **Архитектура**: Монорепа на pnpm workspaces (`apps/mobile`, `apps/api`, `apps/web`, `packages/shared`, `packages/config`). Без Turborepo. Metro: `watchFolders` + `disableHierarchicalLookup: true`. `.npmrc`: `node-linker=hoisted`.\n- **Навигация (mobile)**: React Navigation (native-stack, bottom-tabs). Expo Router отклонён. Типизация: единый `src/navigation/types.ts` (`RootStackParamList`, `TabsParamList`), глобальное расширение `ReactNavigation.RootParamList`. В параметрах только идентификаторы.\n- **Сети**: Ethereum, Polygon (EVM). Solana отклонена (нет компетенций, риск сроков). Общие типы в `packages/shared/src/chains.ts` через `viem/chains`.\n- **Блокчейн**: `viem` + полифилы `react-native-get-random-values`, `text-encoding-polyfill` (первой строкой в `index.js`). Проверить генерацию ключа на реальном устройстве.\n- **Бэкенд (NestJS)**:\n  - **Эндпоинты**: `GET /rates`, `POST /devices`, `PUT /devices/:id/watch` (мобильный); `GET /auth/nonce`, `POST /auth/verify` (веб SIWE); `GET /rates/history` (графики).\n  - **Авторизация веба**: Sign-In with Ethereum (EIP-4361) через `viem/siwe`. Nonce одноразовый, TTL ~2 мин, хранится на сервере. После проверки подписи выдаётся JWT (15 мин) в `httpOnly`-cookie (`secure`, `sameSite: 'lax'`). Мобильное приложение не использует эту сессию —",
+ "window_tokens": 2793,
+ "archive_turns": 63,
+ "seconds": 0.1
+}

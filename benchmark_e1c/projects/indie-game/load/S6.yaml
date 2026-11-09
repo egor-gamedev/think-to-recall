@@ -1,0 +1,180 @@
+segment: S6
+author: Claude Opus 5.5 (2026-10-22), по скелету spec.yaml
+turns:
+  - role: user
+    facts: []
+    text: |
+      Новая тема. Плейтестеры начали делиться сейвами в Discord — «вот слот перед последней головоломкой второй главы, кто застрял». Мило, но кто-то в чате написал, что .tres — это дыра: в сейв можно подсунуть скрипт. Это правда или паранойя?
+  - role: assistant
+    facts: []
+    text: |
+      Правда, и это известная проблема Godot. Файл `.tres` — это не просто данные, а описание ресурса, и в нём может быть встроенный `GDScript` (подресурс с `script/source`). `ResourceLoader.load()` такой файл честно загрузит, а скрипт выполнится при создании объекта. Для своих файлов в `res://` это нормально, для файлов, которые пришли от незнакомцев, — нет.
+
+      Варианты, от простого к надёжному:
+
+      1. **Бинарный формат через `FileAccess.store_var` / `get_var`** с запретом объектов. `get_var(false)` (по умолчанию `allow_objects = false`) не создаёт объекты, только примитивы, массивы и словари. Это безопасно и компактно.
+      2. **JSON** — тоже безопасен, но возвращается проблема с `float` и ручной валидацией типов.
+      3. **Проверка `.tres` перед загрузкой** (искать `script` в тексте) — ненадёжно, легко обойти.
+
+      Для вашей ситуации — первый вариант. Главное — не передавать `true` в `get_var` и не хранить в сейве объекты.
+  - role: user
+    facts: [I07c]
+    text: |
+      Убедил. От .tres отказался: загрузка .tres может выполнить встроенный скрипт, а сейвы игроки пересылают в Discord. Теперь бинарный файл через FileAccess.store_var/get_var без объектов, с полем версии; три слота остаются, синхронизация через Steam Cloud. Глянь код:
+
+      ```gdscript
+      const SAVE_VERSION := 3
+
+      func slot_path(i: int) -> String:
+          return "user://slot_%d.sav" % i
+
+      func save_slot(i: int, room: String) -> void:
+          var data := {
+              "v": SAVE_VERSION,
+              "chapter": GameState.chapter,
+              "room": room,
+              "flags": GameState.to_dict()["flags"],
+              "playtime": GameState.playtime,
+          }
+          var f := FileAccess.open(slot_path(i), FileAccess.WRITE)
+          f.store_var(data)
+
+      func load_slot(i: int) -> Dictionary:
+          var f := FileAccess.open(slot_path(i), FileAccess.READ)
+          if f == null:
+              return {}
+          var data = f.get_var(false)
+          if typeof(data) != TYPE_DICTIONARY or data.get("v", 0) > SAVE_VERSION:
+              return {}
+          return data
+      ```
+  - role: assistant
+    facts: []
+    text: |
+      Код хороший. Несколько доработок:
+
+      1. **Флаги-ключи** у вас `StringName`. `store_var` их сохраняет, но после загрузки сравнение `StringName` и `String` в словаре может дать промах при поиске ключа. Надёжнее при сохранении конвертировать ключи в `String`, а в `from_dict` — обратно.
+      2. **Атомарная запись**, как раньше с JSON: писать в `slot_N.sav.tmp`, закрыть файл (`f.close()` или выход из области видимости), потом переименовать.
+      3. **Миграция**: раз есть поле `v`, добавьте функцию, которая поднимает старые версии:
+
+      ```gdscript
+      func migrate(d: Dictionary) -> Dictionary:
+          if d.get("v", 1) < 3:
+              d["playtime"] = d.get("playtime", 0.0)
+              d["v"] = 3
+          return d
+      ```
+
+      4. Старые `.tres` у тестеров — **не загружайте их** для конвертации (это ровно та дыра), просто удалите или переименуйте и предложите начать главу заново. Тестеры поймут.
+  - role: user
+    facts: []
+    text: |
+      Сделал всё четыре пункта, старые .tres переименовываю в .old. Теперь Steam Cloud. Включил Auto-Cloud в Steamworks. Что туда вписывать?
+  - role: assistant
+    facts: []
+    text: |
+      В Auto-Cloud указываете, где на диске игрока лежат сейвы, и Steam сам синхронизирует их при запуске и выходе.
+
+      В App Admin → Steam Cloud:
+
+      - **Byte quota** и **number of files** — поставьте с запасом: 1 МБ и 10 файлов хватит на три слота и настройки.
+      - **Root Paths**:
+        - Root: `WinAppDataRoaming`, Subdirectory: `Smotritel`, Pattern: `*.sav`, OS: Windows.
+      - **Root Overrides** — для Linux, иначе Steam будет искать путь Windows:
+        - Original Root: `WinAppDataRoaming`, New Root: `LinuxHome`, Add/Replace Path: `.local/share/Smotritel`, OS: Linux.
+
+      Так как у вас `use_custom_user_dir` с именем `Smotritel`, путь на Windows — `%APPDATA%\Smotritel`, на Linux — `~/.local/share/Smotritel`.
+
+      Файл настроек (громкость, язык, вспышки) тоже можно синхронизировать — но многие предпочитают держать настройки локальными: на Deck и на ПК удобны разные.
+
+      Проверка: сохранитесь на ПК, выйдите, запустите на Deck — слот должен появиться. Если нет — в логах Steam (`~/.steam/steam/logs/cloud_log.txt` на Deck) видно, какой путь он искал.
+  - role: user
+    facts: []
+    text: |
+      Windows-путь вписал, проверил между двумя ПК — работает. Override для Linux добавлю на выходных, сейчас нет сил. Последнее на сегодня — сборки. Надоело собирать руками и заливать через SteamPipe GUI.
+  - role: assistant
+    facts: []
+    text: |
+      Автоматизировать имеет смысл: при 15 часах в неделю полчаса на ручную заливку — заметная доля.
+
+      Общая схема: CI экспортирует Godot 4.3 в headless-режиме, затем `steamcmd` заливает билд по `app_build.vdf`.
+
+      ```yaml
+      # .github/workflows/build.yml
+      jobs:
+        export:
+          runs-on: ubuntu-22.04
+          container: barichello/godot-ci:4.3
+          steps:
+            - uses: actions/checkout@v4
+              with: { lfs: true }
+            - run: |
+                mkdir -p build/win build/linux
+                godot --headless --export-release "Windows Desktop" build/win/Smotritel.exe
+                godot --headless --export-release "Linux" build/linux/Smotritel.x86_64
+            - uses: actions/upload-artifact@v4
+              with: { name: builds, path: build }
+        deploy:
+          needs: export
+          runs-on: ubuntu-22.04
+          steps:
+            - uses: actions/download-artifact@v4
+              with: { name: builds, path: build }
+            - uses: game-ci/steam-deploy@v3
+              with:
+                username: ${{ secrets.STEAM_USERNAME }}
+                configVdf: ${{ secrets.STEAM_CONFIG_VDF }}
+                appId: ${{ vars.STEAM_APP_ID }}
+                buildDescription: ${{ github.sha }}
+                rootPath: build
+                depot1Path: win
+                depot2Path: linux
+                releaseBranch: beta
+      ```
+
+      Важно:
+
+      - `lfs: true` в checkout — иначе вместо текстур придут указатели LFS, и экспорт соберёт игру с битыми картинками.
+      - Аккаунт для CI — отдельный Steam-аккаунт с правами только на заливку билдов, не ваш основной.
+      - `releaseBranch: beta` — билд не попадёт в default, его можно проверить и выставить вручную.
+  - role: user
+    facts: [I22]
+    text: |
+      Отлично, ровно то, что нужно. Репозиторий на GitHub с Git LFS у меня уже — текстуры и музыка там. Так что CI в GitHub Actions экспортирует сборки и заливает их через steamcmd в ветку beta, а в default я выставляю руками после проверки на Deck. Завёл отдельный аккаунт для заливки. Первый прогон упал на LFS-квоте, докупил пакет, второй прошёл.
+  - role: assistant
+    facts: []
+    text: |
+      Хороший результат. Чтобы не упираться в квоту LFS снова, добавьте кэш LFS-объектов в CI:
+
+      ```yaml
+      - uses: actions/cache@v4
+        with:
+          path: .git/lfs
+          key: lfs-${{ hashFiles('.lfs-assets-id') }}
+      ```
+
+      где `.lfs-assets-id` — список хэшей LFS-файлов (`git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id`). Тогда скачиваются только изменившиеся ассеты.
+
+      И ещё: последний шаг удобно сопровождать уведомлением в ваш Discord — «билд такой-то в beta», чтобы видеть, что всё прошло, не заходя в Actions.
+  - role: user
+    facts: []
+    text: |
+      Кэш добавил, уведомление в Discord тоже. Последний баг: на Deck после выхода из спящего режима звук иногда пропадает до перезапуска.
+  - role: assistant
+    facts: []
+    text: |
+      Известное поведение на Linux: после сна аудиоустройство переинициализируется, а Godot продолжает писать в старое. Обходной путь — ловить возврат фокуса и перезапускать вывод:
+
+      ```gdscript
+      func _notification(what: int) -> void:
+          if what == NOTIFICATION_APPLICATION_FOCUS_IN:
+              var dev := AudioServer.output_device
+              AudioServer.output_device = "Default"
+              AudioServer.output_device = dev
+      ```
+
+      Переключение устройства туда-обратно заставляет драйвер переоткрыть поток. Проверьте на Deck: усыпить, разбудить, пройти комнату с эмбиентом.
+  - role: user
+    facts: []
+    text: |
+      Помогло, звук возвращается. На этом закрываю неделю.

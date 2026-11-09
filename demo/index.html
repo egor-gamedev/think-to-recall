@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ctxgraph v2 demo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/cytoscape/3.30.2/cytoscape.min.js"></script>
+<style>
+:root { --bg:#fbfaf7; --fg:#1d1d1b; --muted:#6b6a65; --line:#e3e1da; --card:#ffffff;
+        --concept:#3b6fb6; --frag:#c2793a; --cooc:#9aa3ad; --syn:#5a9e6f; --repl:#c0392b; --inter:#8e44ad; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg:#17181a; --fg:#e8e6e1; --muted:#9a988f; --line:#2c2e31; --card:#1f2124; --cooc:#5b636c; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--fg); font:14px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif; }
+header { padding:12px 16px; border-bottom:1px solid var(--line); display:flex; gap:16px; align-items:center; flex-wrap:wrap; }
+header h1 { font-size:16px; margin:0; }
+nav button { background:none; border:1px solid var(--line); color:var(--fg); padding:6px 12px; border-radius:6px; cursor:pointer; }
+nav button.on { background:var(--fg); color:var(--bg); }
+.counts { color:var(--muted); font-size:12px; }
+main { padding:12px 16px; }
+.tab { display:none; } .tab.on { display:block; }
+.row { display:flex; gap:12px; flex-wrap:wrap; }
+#cy, #cyq { flex:1 1 640px; height:68vh; min-height:420px; border:1px solid var(--line); border-radius:8px; background:var(--card); }
+.side { flex:0 1 380px; max-height:68vh; overflow:auto; border:1px solid var(--line); border-radius:8px; padding:10px; background:var(--card); }
+.legend span { display:inline-flex; align-items:center; gap:4px; margin-right:12px; font-size:12px; color:var(--muted); }
+.dot { width:10px; height:10px; border-radius:50%; display:inline-block; }
+.sq { width:10px; height:10px; display:inline-block; }
+.ln { width:18px; height:0; border-top:2px solid; display:inline-block; }
+input[type=range] { width:100%; }
+textarea, input[type=text] { width:100%; background:var(--card); color:var(--fg); border:1px solid var(--line); border-radius:6px; padding:8px; font:inherit; }
+button.act { background:var(--concept); color:#fff; border:0; padding:7px 14px; border-radius:6px; cursor:pointer; }
+button.act:disabled { opacity:.5; }
+pre { white-space:pre-wrap; background:var(--card); border:1px solid var(--line); border-radius:6px; padding:8px; font-size:12.5px; }
+h3 { font-size:14px; margin:14px 0 6px; }
+small, .muted { color:var(--muted); }
+table { border-collapse:collapse; width:100%; font-size:12.5px; }
+td, th { border-bottom:1px solid var(--line); padding:4px 6px; text-align:left; vertical-align:top; }
+.pill { display:inline-block; padding:1px 6px; border-radius:10px; border:1px solid var(--line); font-size:11.5px; margin:1px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ctxgraph v2 — <span id="proj">…</span></h1>
+  <nav>
+    <button data-t="graph" class="on">Граф и время</button>
+    <button data-t="query">Вопрос</button>
+    <button data-t="privacy">Приватность</button>
+  </nav>
+  <span class="counts" id="counts"></span>
+</header>
+<main>
+<section class="tab on" id="t-graph">
+  <div class="legend">
+    <span><i class="dot" style="background:var(--concept)"></i>понятие</span>
+    <span><i class="sq" style="background:var(--frag)"></i>предложение</span>
+    <span><i class="ln" style="border-color:var(--cooc)"></i>встречаются вместе</span>
+    <span><i class="ln" style="border-color:var(--syn)"></i>синоним</span>
+    <span><i class="ln" style="border-color:var(--repl)"></i>заменяет</span>
+    <span><i class="ln" style="border-color:var(--cooc);border-top-style:dashed"></i>недействительна (с номера реплики)</span>
+    <span class="muted">новое на этом шаге — с обводкой</span>
+  </div>
+  <div style="margin:8px 0">
+    Реплика: <b id="seqv"></b> из <span id="seqmax"></span> · <span id="epinfo" class="muted"></span>
+    <input type="range" id="seq" min="0" value="0">
+    <small>Показаны 120 самых частых понятий на этот момент и все смены решений. Граф только растёт: при смене решения старая связь гаснет (пунктир), не исчезает.</small>
+  </div>
+  <div class="row">
+    <div id="cy"></div>
+    <div class="side" id="detail"><span class="muted">Нажмите на узел или ребро — откуда взято и когда.</span></div>
+  </div>
+</section>
+
+<section class="tab" id="t-query">
+  <div class="row">
+    <div style="flex:1 1 520px">
+      <label>Вопрос</label>
+      <input type="text" id="q" list="qs" placeholder="например: Пользователи просят Solana. Добавим?">
+      <datalist id="qs"></datalist>
+      <label style="margin-top:8px;display:block">Текст шага мышления (откуда берутся рукава; пусто — из вопроса)</label>
+      <textarea id="step" rows="2" placeholder="например: Нужно вспомнить, какие сети поддерживаем и почему отказались от Solana"></textarea>
+      <div style="margin:8px 0;display:flex;gap:10px;align-items:center">
+        <button class="act" id="go">Искать</button>
+        <label><input type="checkbox" id="rerank"> переранжировать (bge-reranker-v2-m3, CPU, медленно)</label>
+        <button class="act" id="ans" disabled>Ответ модели (NVIDIA, бесплатно)</button>
+        <span id="qstat" class="muted"></span>
+      </div>
+    </div>
+  </div>
+  <div class="row">
+    <div id="cyq"></div>
+    <div class="side" id="qside"><span class="muted">Стартовые узлы → PPR → рукава и их мини-графы → пересечения → блок памяти.</span></div>
+  </div>
+  <h3>Что ушло в память модели (блок целиком: поиск по вопросу + мини-графы рукавов)</h3>
+  <pre id="mem"></pre>
+  <h3>Периферия рукавов (необязательно)</h3>
+  <pre id="peri"></pre>
+  <h3>Ответ модели</h3>
+  <pre id="answer" class="muted">—</pre>
+</section>
+
+<section class="tab" id="t-privacy">
+  <p>Фильтр работает <b>до записи</b>: в граф попадает только очищенный текст. Ниже — что было отброшено при построении графа (тип и место, без значения).</p>
+  <table id="redtab"><tr><th>реплика</th><th>тип</th><th>позиция в очищенном тексте</th></tr></table>
+  <h3>Проверить фильтр на своём тексте (ничего не записывается)</h3>
+  <textarea id="ptext" rows="3">Ключ: sk-abcdefghijklmnop1234567890, пароль: hunter2, почта ivan@example.com, тел. +7 912 345-67-89</textarea>
+  <button class="act" id="pgo" style="margin-top:6px">Проверить</button>
+  <pre id="pout"></pre>
+</section>
+
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+let META = null, cy = null, cyq = null, lastQ = null;
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("on", t.id === "t-" + b.dataset.t));
+  if (b.dataset.t === "query" && cyq) { cyq.resize(); cyq.fit(); }
+  if (b.dataset.t === "graph" && cy) { cy.resize(); cy.fit(); }
+});
+const style = () => [
+  { selector: "node", style: { "label": "data(label)", "font-size": 9, "color": css("--fg"), "text-wrap": "ellipsis", "text-max-width": 110,
+      "background-color": css("--concept"), "width": "mapData(n,1,30,8,26)", "height": "mapData(n,1,30,8,26)" } },
+  { selector: "node[type='fragment']", style: { "shape": "round-rectangle", "background-color": css("--frag"), "width": 14, "height": 10 } },
+  { selector: "node.new", style: { "border-width": 3, "border-color": "#f1c40f" } },
+  { selector: "node.hl", style: { "border-width": 3, "border-color": css("--inter") } },
+  { selector: "edge", style: { "width": "mapData(w,1,10,0.6,3)", "line-color": css("--cooc"), "curve-style": "haystack", "opacity": 0.55 } },
+  { selector: "edge[rel='synonym']", style: { "line-color": css("--syn") } },
+  { selector: "edge[rel='replaces']", style: { "line-color": css("--repl"), "width": 3, "target-arrow-shape": "triangle", "target-arrow-color": css("--repl"), "curve-style": "bezier", "opacity": 1 } },
+  { selector: "edge[rel='contains']", style: { "line-color": css("--frag"), "line-style": "dotted" } },
+  { selector: "edge[?invalid]", style: { "line-style": "dashed", "line-color": css("--repl"), "opacity": 0.9 } },
+];
+async function j(u, body) {
+  const r = body ? await fetch(u, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }) : await fetch(u);
+  return r.json();
+}
+function esc(s) { return String(s ?? "").replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c])); }
+
+async function loadGraph(upto) {
+  const d = await j(`/api/graph?upto=${upto}&top=120`);
+  $("#seqv").textContent = upto;
+  const ep = META.episodes[upto]; const lg = META.log[upto] || {};
+  $("#epinfo").textContent = ep ? `${ep.id} [${ep.role}] ${ep.preview}…` + (lg.changes && lg.changes.length ? " · СМЕНА РЕШЕНИЯ" : "") : "";
+  const c = d.counts_at; $("#counts").textContent = c ? `на этот момент: реплик ${c.episodes}, предложений ${c.fragments}, понятий ${c.concepts}, рёбер ${c.edges} (недействительных ${c.edges_invalid})` : "";
+  const els = d.nodes.map(n => ({ data: n, classes: n.first_seq === upto ? "new" : "" }))
+    .concat(d.edges.map((e, i) => ({ data: { id: "e" + i, ...e } })));
+  if (!cy) {
+    cy = cytoscape({ container: $("#cy"), elements: els, style: style(), layout: { name: "cose", animate: false, nodeRepulsion: 9000, idealEdgeLength: 70 } });
+    cy.on("tap", "node", ev => showNode(ev.target.id()));
+    cy.on("tap", "edge", ev => showEdge(ev.target.data()));
+  } else {
+    const pos = {}; cy.nodes().forEach(n => pos[n.id()] = n.position());
+    cy.elements().remove(); cy.add(els);
+    const fresh = cy.nodes().filter(n => !pos[n.id()]);
+    cy.nodes().forEach(n => { if (pos[n.id()]) n.position(pos[n.id()]); });
+    if (fresh.length) cy.layout({ name: "cose", animate: false, randomize: false, nodeRepulsion: 9000, idealEdgeLength: 70 }).run();
+  }
+}
+async function showNode(id) {
+  const d = await j(`/api/node?id=${encodeURIComponent(id)}`);
+  if (d.type === "fragment") {
+    $("#detail").innerHTML = `<b>Предложение</b> <span class="pill">${esc(d.id)}</span><p>${esc(d.text)}</p><small>эпизод ${esc(d.episode)} · реплика №${d.seq} · ${esc(d.role)}</small>`;
+  } else {
+    $("#detail").innerHTML = `<b>${esc(d.label)}</b> <span class="pill">${esc(d.kind)}</span> <span class="pill">${esc(d.id)}</span>
+      <p class="muted">впервые: реплика №${d.first_seq} · в ${d.n_fragments} предложениях${d.qid ? " · " + d.qid : " · без Wikidata QID"}</p>
+      <h3>Откуда взято</h3>` + d.fragments.map(f => `<p><span class="pill">${esc(f.episode)} · №${f.seq}</span> ${esc(f.text)}</p>`).join("");
+  }
+}
+function showEdge(e) {
+  let h = `<b>${esc(e.rel)}</b>: ${esc(e.source)} — ${esc(e.target)}<p class="muted">действует с реплики №${e.t_valid}` +
+    (e.t_invalid != null ? `; <b>недействительна с №${e.t_invalid}</b>` : "") + `; вес ${(+e.w).toFixed(2)}</p>`;
+  if (e.episodes) h += `<p>эпизоды: ${e.episodes.map(x => `<span class="pill">${esc(x)}</span>`).join(" ")}</p>`;
+  if (e.evidence) h += `<p>фраза смены: «${esc(e.evidence.sentence)}»<br>заменено: <b>${esc(e.evidence.x)}</b></p>`;
+  $("#detail").innerHTML = h;
+}
+
+async function runQuery() {
+  const q = $("#q").value.trim(); if (!q) return;
+  $("#go").disabled = true; $("#qstat").textContent = "ищу…";
+  const d = await j("/api/query", { q, step: $("#step").value.trim(), rerank: $("#rerank").checked });
+  $("#go").disabled = false;
+  if (d.error) { $("#qstat").textContent = d.error; return; }
+  lastQ = d; $("#ans").disabled = false;
+  $("#qstat").textContent = `поиск ${d.seconds} с${d.rerank ? " (с переранжированием)" : ""}; память ${d.memory_tokens} токенов`;
+  $("#mem").textContent = d.memory || "(пусто)";
+  $("#peri").textContent = d.periphery || "(пусто: ничего не прошло якорь цели и бюджет)";
+  let h = `<h3>Стартовые понятия</h3>` + (d.concept_seeds.map(s => `<span class="pill">${esc(s.label)} ${s.w}</span>`).join(" ") || "<span class='muted'>нет</span>");
+  h += `<h3>Стартовые предложения (dense + BM25 → RRF)</h3>` + d.fragment_seeds.map(s => `<p><small>${s.w}</small> ${esc(s.label)}</p>`).join("");
+  h += `<h3>Рукава (из текста шага: «${esc(d.step)}»)</h3>`;
+  d.sleeves.forEach((s, i) => { const st = s.stats || {};
+    h += `<p><b>${i + 1}. «${esc(s.phrase)}»</b> <small>разброс весов без стартовых понятий: max/min ${st.max_min ?? "—"}, CV ${st.cv ?? "—"}</small><br>мини-граф: ` + s.nodes.slice(0, 8).map(n => `<span class="pill">${esc(n.label.slice(0, 40))} ${n.w}</span>`).join(" ") + "</p>"; });
+  const inter = Object.entries(d.intersections);
+  h += `<h3>Пересечения рукавов</h3>` + (inter.length ? inter.map(([k, v]) => `<p>${esc(k)} <small>← ${v.map(esc).join(" + ")}</small></p>`).join("") : "<span class='muted'>нет</span>");
+  $("#qside").innerHTML = h;
+  // mini-graph view: PPR top + sleeve nodes
+  const nodes = {}, edges = [];
+  d.ppr_top.forEach(n => nodes[n.id] = { id: n.id, label: n.label.slice(0, 40), type: n.type, n: 4 + n.w * 400 });
+  d.sleeves.forEach((s, i) => {
+    const sid = "sleeve" + i; nodes[sid] = { id: sid, label: "рукав: " + s.phrase, type: "concept", n: 30 };
+    s.nodes.slice(0, 10).forEach(n => { if (!nodes[n.id]) nodes[n.id] = { id: n.id, label: n.label.slice(0, 40), type: n.type, n: 4 + n.w * 10 };
+      edges.push({ id: sid + n.id, source: sid, target: n.id, rel: "cooccur", w: 1 + 4 * n.w }); });
+  });
+  const interIds = new Set();
+  d.sleeves.forEach(s => s.nodes.forEach(n => { if (Object.keys(d.intersections).includes(n.label)) interIds.add(n.id); }));
+  const els = Object.values(nodes).map(n => ({ data: n, classes: interIds.has(n.id) ? "hl" : "" })).concat(edges.map(e => ({ data: e })));
+  if (cyq) cyq.destroy();
+  cyq = cytoscape({ container: $("#cyq"), elements: els, style: style(), layout: { name: "cose", animate: false, nodeRepulsion: 8000 } });
+  cyq.on("tap", "node", ev => { if (!ev.target.id().startsWith("sleeve")) { document.querySelector("nav button[data-t=graph]").click(); showNode(ev.target.id()); } });
+}
+$("#go").onclick = runQuery;
+$("#q").addEventListener("keydown", e => { if (e.key === "Enter") runQuery(); });
+$("#ans").onclick = async () => {
+  $("#answer").textContent = "жду модель…";
+  const d = await j("/api/answer", { q: lastQ.query + (lastQ.step && lastQ.step !== lastQ.query ? "\n\nМои мысли: " + lastQ.step : ""), memory: lastQ.memory_for_model });
+  $("#answer").textContent = d.error ? d.error : `${d.model}, ${d.seconds} с, finish=${d.finish_reason}, рассуждения ${d.reasoning_tokens ?? "—"} ток.\n\n${d.answer}`;
+};
+$("#pgo").onclick = async () => {
+  const d = await j("/api/privacy", { text: $("#ptext").value });
+  $("#pout").textContent = JSON.stringify(d.redactions, null, 1) + "\n\nочищено: " + d.clean_preview;
+};
+
+(async () => {
+  META = await j("/api/meta");
+  $("#proj").textContent = META.project;
+  $("#seq").max = META.episodes.length - 1; $("#seqmax").textContent = META.episodes.length - 1;
+  $("#seq").value = META.episodes.length - 1;
+  $("#seq").oninput = e => loadGraph(+e.target.value);
+  $("#qs").innerHTML = META.questions.map(q => `<option value="${esc(q)}">`).join("");
+  const rows = META.episodes.flatMap(e => e.redactions.map(r => `<tr><td>${esc(e.id)}</td><td>${esc(r.type)}</td><td>${r.offset}</td></tr>`));
+  $("#redtab").innerHTML += rows.join("") || "<tr><td colspan=3 class='muted'>в этом проекте фильтр ничего не нашёл — проверьте ниже на своём тексте</td></tr>";
+  loadGraph(META.episodes.length - 1);
+})();
+</script>
+</body>
+</html>
