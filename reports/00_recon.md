@@ -11,7 +11,7 @@
 - Таблицы свойств отношений (транзитивность и т.п.) в коде не нашёл — есть `algebra.py`, `verify.py`, `analogy.py`; для ctxgraph это не нужно до ленивой типизации.
 - Как источник подсказок для E1 SIL почти бесполезен: граф про детские понятия и математику, а задачи E1 — про бэкенд.
 
-**widethink** — `Projects/thinkingLlm/` (репозиторий `egor-gamedev/widethink`)
+**widethink** — `Projects/thinkingLlm/` (репозиторий `egor-ml-research/widethink`)
 - Бенчмарк Hidden Requirements: 9 YAML-задач (`benchmark/tasks/`), 2 контрольные. Формат: `task`, `context[]` (id, kind, content), `standard_solution`, `hidden_requirements[]` с `evidence` и вопросами `noticed` / `addressed`. Беру формат без изменений; 21+ новых задач пишу в нём же.
 - Судья: `src/widethink/bench/judge.py` (промпт `2026-09-30.1`), вердикты noticed / addressed / asked + выдуманные требования + `kept_standard`. Переиспользую; нужна рубрика «инициатива» и «уход от темы».
 - Клиент `llm/deepseek.py` (OpenAI-совместимый, thinking выключен, JSON mode) — подходит для timeweb, если поменять `base_url`.
