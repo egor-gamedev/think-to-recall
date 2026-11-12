@@ -34,6 +34,8 @@ Recall@5, difference in percentage points [95 % bootstrap]. p is a one-sided pai
 
 Earlier exploratory reports (E1–E1d, E3, architecture notes, debug reports) are in Russian. `docs/history/` holds the original task statements and research notes; the `reports/` of the early stages E1–E1c are a research archive.
 
+**IMLogic rows** are reported with the authors' permission (2026-11-12): summary Recall only, with attribution. Benchmark — IMLogic: Ding, Yu, Wang, Xiao, Bao, Wang, He, *Towards Root Memory: Benchmarking and Enhancing Implicit Logical Memory Retrieval for Personalized LLMs*, [arXiv 2606.23283v2](https://arxiv.org/abs/2606.23283v2); data and code: [github.com/ThisIsCosine/IMLogic](https://github.com/ThisIsCosine/IMLogic). Data: CC BY-NC-ND 4.0 (inherited from HaluMem); code: MIT. The data and question texts are not redistributed here.
+
 **The gate** adds or raises a graph candidate in the dense top-5 only on a strong signal. Without a signal, its output is identical to the base ranking (an invariant checked on every question).
 
 **The planner** is one LLM call per question (Mistral Large 4), which returns at most three short search queries about the user's past facts that could change the answer.
@@ -103,8 +105,8 @@ Code is Apache-2.0 (`LICENSE`). The repository contains no datasets; get them fr
 | dataset | where | how it reaches a run |
 |---|---|---|
 | ImplexConv | [Hugging Face: Kaylee0501/ImplexConv](https://huggingface.co/datasets/Kaylee0501/ImplexConv), revision `baf436948f4b` | downloaded by the scripts |
-| IMLogic | [authors' repository: ThisIsCosine/IMLogic](https://github.com/ThisIsCosine/IMLogic) (`HaluMem-Medium.jsonl`, `qa/`), paper [arXiv 2606.23283](https://arxiv.org/abs/2606.23283) | placed manually in `.cache/bench/imlogic/` |
+| IMLogic | [authors' repository: ThisIsCosine/IMLogic](https://github.com/ThisIsCosine/IMLogic) (`dataset/dialogue/HaluMem-Medium.jsonl`, `dataset/qa/`), paper [arXiv 2606.23283v2](https://arxiv.org/abs/2606.23283v2); our copy (downloaded 2026-10-30) is identical to the repository at commit `8823def` (v2) apart from line endings; SHA-256 with LF line endings: `HaluMem-Medium.jsonl` 39d284f936c5130a…, the 20 `qa/qa_userNN.json` files concatenated in order bde5fc6027e03346… | placed manually in `.cache/bench/imlogic/` |
 | MuSiQue, 2WikiMultiHopQA | [Hugging Face: osunlp/HippoRAG_2](https://huggingface.co/datasets/osunlp/HippoRAG_2) (test), [dgslibisey/MuSiQue](https://huggingface.co/datasets/dgslibisey/MuSiQue) (dev) | downloaded by the scripts (`scripts/bench1_run.py`) |
 
-- **IMLogic has no license**, and the underlying HaluMem is CC BY-NC-ND 4.0. So `reports/` holds only IMLogic question ids, ranks and metrics — no question or memory text.
+- **IMLogic licence:** data CC BY-NC-ND 4.0 (inherited from HaluMem), code MIT. Summary Recall is published with the authors' permission for non-commercial research, with attribution. `reports/` holds only IMLogic question ids, ranks and metrics — no question or memory text.
 - D0 uses `everalgo` (Apache-2.0), installed via pip.

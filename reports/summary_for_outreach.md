@@ -58,7 +58,7 @@ Below are all the hypotheses that were tested, failures included. Detailed pre-r
 - **Embeddings are e5-base.** HippoRAG 2 / NV-Embed-v2 report higher absolute numbers (MuSiQue R@5: 74.7 / 69.7 vs our 51–60). Our conclusions are about differences against the same base.
 - **Dev is small** (IMLogic 285, ImplexConv 45 questions). Dev expectations are a guide, not a conclusion.
 - **One run per hypothesis,** with no repeats on other seeds. The planner is one model (Mistral Large 4 via NVIDIA), temperature 0.
-- **IMLogic has no license** (the underlying HaluMem is CC BY-NC-ND 4.0) — internal research only. The repository holds only ids and numbers for it.
+- **IMLogic licence:** data CC BY-NC-ND 4.0 (from HaluMem), code MIT. Summary Recall is published with the authors' permission (2026-11-12), with attribution to arXiv 2606.23283v2. The repository holds only ids and numbers for it.
 
 ## 4. Where things are
 

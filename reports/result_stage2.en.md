@@ -40,3 +40,11 @@
 
 - The analysis was run exactly once — in the step of the kernel chain where 300 ImplexConv questions had been collected.
 - D0 variants were not computed. They are secondary and wait for the GPU quota to reset.
+
+## Addendum 2026-11-12 (after the freeze; the result does not change): IMLogic attribution and licence
+
+*(Translation of the addendum in the Russian original.)*
+
+- IMLogic benchmark: Ding et al., *Towards Root Memory: Benchmarking and Enhancing Implicit Logical Memory Retrieval for Personalized LLMs*, arXiv 2606.23283v2; data and code — https://github.com/ThisIsCosine/IMLogic.
+- Licence: data CC BY-NC-ND 4.0 (from HaluMem), code MIT. Summary Recall is published with the authors' permission (received 2026-11-12) for non-commercial research, with attribution. The data and question texts are not published.
+- Data version: the copy downloaded on 2026-10-30 is identical to the v2 repository (commit `8823def`) apart from line endings; SHA-256 (LF): `HaluMem-Medium.jsonl` 39d284f936c5130a…, the 20 `qa/qa_userNN.json` files concatenated bde5fc6027e03346….

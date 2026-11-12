@@ -64,3 +64,11 @@ R@5 by IMLogic question category:
 - **Search, s per question:**
   - A — 0.018; B — 0.015; C — 0.034;
   - D0 — 5.74 (almost all of it is the Qwen3-Reranker-4B reranker); D — 5.78.
+
+## Addendum 2026-11-12 (after the freeze; the result does not change): IMLogic attribution and licence
+
+*(Translation of the addendum in the Russian original.)*
+
+- IMLogic benchmark: Ding et al., *Towards Root Memory: Benchmarking and Enhancing Implicit Logical Memory Retrieval for Personalized LLMs*, arXiv 2606.23283v2; data and code — https://github.com/ThisIsCosine/IMLogic.
+- Licence: data CC BY-NC-ND 4.0 (from HaluMem), code MIT. Summary Recall is published with the authors' permission (received 2026-11-12) for non-commercial research, with attribution. The data and question texts are not published.
+- Data version: the copy downloaded on 2026-10-30 is identical to the v2 repository (commit `8823def`) apart from line endings; SHA-256 (LF): `HaluMem-Medium.jsonl` 39d284f936c5130a…, the 20 `qa/qa_userNN.json` files concatenated bde5fc6027e03346….
